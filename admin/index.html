@@ -221,9 +221,9 @@ async function addEmployee() {
   msg.textContent = '';
   if (!numero || !nombre) { msg.className = 'msg error'; msg.textContent = 'Numero y nombre son obligatorios.'; return; }
   try {
-    const [row] = await rpc('admin_add_employee', { p_passcode: passcode, p_numero: numero, p_nombre: nombre, p_tienda: tienda, p_plaza: plaza, p_asesor: asesor });
+    await rpc('admin_add_employee', { p_passcode: passcode, p_numero: numero, p_nombre: nombre, p_tienda: tienda, p_plaza: plaza, p_asesor: asesor });
     msg.className = 'msg ok';
-    msg.textContent = `Agregado. PIN temporal: ${row.temp_pin} (dale este PIN al empleado).`;
+    msg.textContent = 'Agregado. Puede crear su PIN en su primer ingreso a la app.';
     document.getElementById('empNumero').value = '';
     document.getElementById('empNombre').value = '';
     document.getElementById('empTienda').value = '';
@@ -237,9 +237,10 @@ async function addEmployee() {
 }
 
 async function resetPin(numero) {
+  if (!confirm(`Quitar el PIN de ${numero}? Va a poder crear uno nuevo en su siguiente ingreso.`)) return;
   try {
-    const [row] = await rpc('admin_reset_pin', { p_passcode: passcode, p_numero: numero });
-    alert(`Nuevo PIN temporal para ${numero}: ${row.temp_pin}`);
+    await rpc('admin_reset_pin', { p_passcode: passcode, p_numero: numero });
+    alert(`Listo. ${numero} puede crear un PIN nuevo en su siguiente ingreso.`);
     listEmployees();
   } catch (e) {
     alert('No se pudo reiniciar el PIN.');
