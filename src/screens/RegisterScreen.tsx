@@ -1,0 +1,146 @@
+// src/screens/RegisterScreen.tsx
+// Two modes, both PIN creation for someone already in the roster:
+// - first login (no PIN yet): name locked, pulled from the roster.
+// - temp PIN just verified: must set their own definitive PIN.
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { StepsHeader } from '../components/StepsHeader';
+import { OxField, OxLabel, OxHint } from '../components/OxField';
+import { PinDots } from '../components/PinDots';
+import { OxKeypad } from '../components/OxKeypad';
+import { OxButton } from '../components/OxButton';
+import { Icon } from '../components/Icon';
+import { useOnboarding } from '../context/OnboardingContext';
+import { setInitialPin, changePin } from '../services/auth';
+import { colors, type } from '../theme/tokens';
+
+export function RegisterScreen({
+  onBack,
+  onContinue,
+}: {
+  onBack: () => void;
+  onContinue: () => void;
+}) {
+  const { empNum, pin, verifiedName, mustSetNewPin, regPin, setRegPin } = useOnboarding();
+  const len = regPin.length;
+  const ready = len === 4;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const onKey = (k: string) => {
+    if (len < 4) setRegPin(regPin + k);
+  };
+  const onDel = () => setRegPin(regPin.slice(0, -1));
+
+  const handleCreate = async () => {
+    if (!ready || loading) return;
+    setLoading(true);
+    setError('');
+    try {
+      if (mustSetNewPin) {
+        const status = await changePin(empNum, pin, regPin);
+        if (status !== 'ok') {
+          setError('No pudimos actualizar tu PIN. Intenta de nuevo.');
+          return;
+        }
+      } else {
+        await setInitialPin(empNum, regPin);
+      }
+      onContinue();
+    } catch (e: any) {
+      const message = typeof e?.message === 'string' ? e.message : '';
+      setError(
+        message.includes('pin_already_set')
+          ? 'Este número ya tiene un PIN. Usa "Inicia sesión".'
+          : 'No pudimos crear tu PIN. Intenta de nuevo.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <View style={styles.screen}>
+      <View style={[styles.body, { paddingTop: Platform.OS === 'ios' ? 8 : 4 }]}>
+        <StepsHeader active={2} onBack={onBack} />
+
+        <View style={styles.head}>
+          <Text style={styles.kicker}>{mustSetNewPin ? 'PIN temporal' : 'Primer ingreso'}</Text>
+          <Text style={styles.title}>{mustSetNewPin ? 'Crea tu PIN definitivo' : 'Crea tu PIN'}</Text>
+          <Text style={styles.sub}>
+            {mustSetNewPin
+              ? `${verifiedName ? `Hola, ${verifiedName}. ` : ''}Entraste con un PIN temporal. Crea tu PIN definitivo de 4 digitos para continuar.`
+              : `${verifiedName ? `Hola, ${verifiedName}. ` : ''}Este es tu primer ingreso a Oxxito, crea un PIN de 4 digitos para proteger tu cuenta.`}
+          </Text>
+        </View>
+
+        <View style={styles.fields}>
+          <OxField icon="user" label="Nombre" value={verifiedName} locked />
+          <OxField icon="badge" label="Número de empleado" value={empNum} locked tail="Verificado" />
+          <View>
+            <OxLabel>Crea tu PIN de acceso</OxLabel>
+            <View style={{ paddingVertical: 6, paddingHorizontal: 2 }}>
+              <PinDots length={len} total={4} />
+            </View>
+            <OxHint>Usarás este PIN cada vez que ingreses a Oxxito.</OxHint>
+            {error ? <OxHint>{error}</OxHint> : null}
+          </View>
+        </View>
+
+        <View style={{ flex: 1, minHeight: 8 }} />
+
+        <OxKeypad onKey={onKey} onDel={onDel} />
+      </View>
+
+      <SafeAreaView edges={['bottom']} style={styles.cta}>
+        <OxButton
+          disabled={!ready || loading}
+          onPress={handleCreate}
+          icon={loading ? <ActivityIndicator color="#fff" /> : <Icon name="arrowR" size={19} color="#fff" />}
+        >
+          {mustSetNewPin ? 'Guardar PIN' : 'Crear PIN'}
+        </OxButton>
+      </SafeAreaView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.bg,
+  },
+  body: {
+    flex: 1,
+  },
+  head: {
+    paddingHorizontal: 24,
+    paddingTop: 22,
+    paddingBottom: 6,
+  },
+  kicker: {
+    ...type.eyebrow,
+    color: colors.oxRed,
+    marginBottom: 10,
+  },
+  title: {
+    ...type.title,
+    color: colors.ink,
+  },
+  sub: {
+    ...type.body,
+    color: colors.ink2,
+    marginTop: 10,
+    maxWidth: 300,
+  },
+  fields: {
+    paddingHorizontal: 24,
+    paddingTop: 18,
+    gap: 16,
+  },
+  cta: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+  },
+});
