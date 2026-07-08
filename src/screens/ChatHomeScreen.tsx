@@ -18,7 +18,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BearAvatar } from '../components/Bear';
 import { Icon } from '../components/Icon';
-import { ChatMessage, ChatSource, chatSuggestions, initialChatMessages, matchQA } from '../services/chatQa';
+import {
+  ChatChoice,
+  ChatMessage,
+  ChatSource,
+  chatSuggestions,
+  getReglamentoItem,
+  getSancion,
+  initialChatMessages,
+  matchQA,
+} from '../services/chatQa';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
 
@@ -62,15 +71,19 @@ export function ChatHomeScreen({ onQuestionAsked }: { onQuestionAsked?: (questio
         id: `a-${Date.now()}`,
         role: 'assistant',
         text: result.answer,
-        citation: result.article,
+        citation: result.choices ? undefined : result.article,
         title: result.title,
-        source: {
-          article: result.article,
-          title: result.title,
-          summary: result.summary,
-          nextStep: result.nextStep,
-          contact: result.contact,
-        },
+        source: result.choices
+          ? undefined
+          : {
+              article: result.article,
+              title: result.title,
+              summary: result.summary,
+              nextStep: result.nextStep,
+              contact: result.contact,
+            },
+        choices: result.choices,
+        choiceKind: result.choiceKind,
       };
       setMessages((current) => [...current, assistantMessage]);
     } catch {
@@ -80,6 +93,48 @@ export function ChatHomeScreen({ onQuestionAsked }: { onQuestionAsked?: (questio
           id: `a-${Date.now()}`,
           role: 'assistant',
           text: 'No pude conectar con el reglamento en este momento. Intenta de nuevo en unos segundos.',
+        },
+      ]);
+    } finally {
+      setTyping(false);
+    }
+  };
+
+  const pickChoice = async (choice: ChatChoice, kind: 'sancion' | 'item' = 'sancion') => {
+    setMessages((current) => [...current, { id: `u-${Date.now()}`, role: 'user', text: choice.label }]);
+    setTyping(true);
+    try {
+      let text: string;
+      let articleLabel: string;
+      let title: string;
+
+      if (kind === 'item') {
+        const item = await getReglamentoItem(choice.id);
+        text = item ? item.body : 'No encontré el detalle de ese punto.';
+        articleLabel = item ? `Artículo ${item.articleNumber}` : 'Reglamento';
+        title = 'Reglamento';
+      } else {
+        const sancion = await getSancion(choice.id);
+        text = sancion ? `${sancion.infraccion}: ${sancion.pasos.join(' -> ')}.` : 'No encontré el detalle de esa sanción.';
+        articleLabel = sancion ? `Artículo ${sancion.articleNumber}` : 'Artículo 79';
+        title = 'Sanciones';
+      }
+
+      setMessages((current) => [
+        ...current,
+        {
+          id: `a-${Date.now()}`,
+          role: 'assistant',
+          text,
+          citation: articleLabel,
+          title,
+          source: {
+            article: articleLabel,
+            title,
+            summary: text,
+            nextStep: 'Si necesitas más detalle, contacta a Recursos Humanos o a tu líder directo.',
+            contact: { name: 'Recursos Humanos', area: 'Personas' },
+          },
         },
       ]);
     } finally {
@@ -123,7 +178,9 @@ export function ChatHomeScreen({ onQuestionAsked }: { onQuestionAsked?: (questio
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-        renderItem={({ item }) => <Bubble message={item} onOpenSource={setSelectedSource} />}
+        renderItem={({ item }) => (
+          <Bubble message={item} onOpenSource={setSelectedSource} onPickChoice={pickChoice} />
+        )}
         ListFooterComponent={typing ? <TypingBubble pulse={pulse} /> : null}
       />
 
@@ -175,9 +232,11 @@ export function ChatHomeScreen({ onQuestionAsked }: { onQuestionAsked?: (questio
 function Bubble({
   message,
   onOpenSource,
+  onPickChoice,
 }: {
   message: ChatMessage;
   onOpenSource: (source: ChatSource) => void;
+  onPickChoice: (choice: ChatChoice, kind: 'sancion' | 'item') => void;
 }) {
   const isUser = message.role === 'user';
 
@@ -198,6 +257,20 @@ function Bubble({
       </View>
       <BlurView intensity={28} tint="light" style={[styles.bubble, styles.assistantBubble]}>
         <Text style={styles.assistantText}>{message.text}</Text>
+        {message.choices ? (
+          <View style={styles.choiceList}>
+            {message.choices.map((choice) => (
+              <Pressable
+                key={choice.id}
+                style={styles.choiceItem}
+                onPress={() => onPickChoice(choice, message.choiceKind ?? 'sancion')}
+              >
+                <Text style={styles.choiceText}>{choice.label}</Text>
+                <Icon name="chevR" size={16} color={colors.ink3} />
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
         {message.source ? (
           <Pressable style={styles.citation} onPress={() => onOpenSource(message.source!)}>
             <View style={styles.citationIcon}>
@@ -363,6 +436,28 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     lineHeight: 20,
     color: colors.white,
+  },
+  choiceList: {
+    marginTop: 10,
+    gap: 7,
+  },
+  choiceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 12,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  choiceText: {
+    flex: 1,
+    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontSize: 12.5,
+    lineHeight: 17,
+    color: colors.ink,
   },
   citation: {
     marginTop: 11,

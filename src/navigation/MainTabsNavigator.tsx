@@ -1,7 +1,7 @@
 ﻿// src/navigation/MainTabsNavigator.tsx
 // Lightweight post-login tabs without adding a navigation dependency.
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,19 +15,23 @@ import { getJson, setJson, storageKeys } from '../services/appStorage';
 import { fetchNotices } from '../services/notices';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile';
+type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard';
 
 type TabItem = {
   key: TabKey;
   label: string;
   icon: string;
+  external?: string;
 };
+
+const DASHBOARD_URL = 'https://angelfranco-oxxo.github.io/DashboardsOxxo/';
 
 const TABS: TabItem[] = [
   { key: 'home', label: 'Inicio', icon: 'home' },
   { key: 'chat', label: 'Chat', icon: 'chat' },
   { key: 'directory', label: 'Directorio', icon: 'headset' },
   { key: 'notifications', label: 'Avisos', icon: 'bell' },
+  { key: 'dashboard', label: 'Dashboard', icon: 'globe', external: DASHBOARD_URL },
   { key: 'profile', label: 'Perfil', icon: 'user' },
 ];
 
@@ -109,7 +113,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
               <Pressable
                 key={tab.key}
                 style={styles.tabButton}
-                onPress={() => setActiveTab(tab.key)}
+                onPress={() => (tab.external ? Linking.openURL(tab.external) : setActiveTab(tab.key))}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
               >

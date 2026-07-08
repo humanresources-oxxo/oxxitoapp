@@ -1,7 +1,6 @@
 // src/screens/RegisterScreen.tsx
-// Two modes, both PIN creation for someone already in the roster:
-// - first login (no PIN yet): name locked, pulled from the roster.
-// - temp PIN just verified: must set their own definitive PIN.
+// First-login PIN creation for an employee already in the real roster
+// (no free-text name entry — the name comes from the roster lookup).
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -69,9 +68,8 @@ export function RegisterScreen({
           <Text style={styles.kicker}>{mustSetNewPin ? 'PIN temporal' : 'Primer ingreso'}</Text>
           <Text style={styles.title}>{mustSetNewPin ? 'Crea tu PIN definitivo' : 'Crea tu PIN'}</Text>
           <Text style={styles.sub}>
-            {mustSetNewPin
-              ? `${verifiedName ? `Hola, ${verifiedName}. ` : ''}Entraste con un PIN temporal. Crea tu PIN definitivo de 4 digitos para continuar.`
-              : `${verifiedName ? `Hola, ${verifiedName}. ` : ''}Este es tu primer ingreso a Oxxito, crea un PIN de 4 digitos para proteger tu cuenta.`}
+            {verifiedName ? `Hola, ${verifiedName}. ` : ''}Este es tu primer ingreso a Oxxito, crea un PIN de 4
+            dígitos para proteger tu cuenta.
           </Text>
         </View>
 
