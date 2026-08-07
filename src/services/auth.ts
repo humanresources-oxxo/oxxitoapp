@@ -38,6 +38,29 @@ export async function setInitialPin(numeroEmpleado: string, pin: string): Promis
   return { numeroEmpleado: row.numero_empleado, nombre: row.nombre };
 }
 
+export type RequestEmailCodeResult = 'sent' | 'already_has_pin' | 'rate_limited' | 'not_found';
+export type VerifyEmailCodeResult = 'ok' | 'wrong_code' | 'expired' | 'too_many_attempts' | 'not_found';
+
+export async function requestEmailCode(numeroEmpleado: string, email: string): Promise<RequestEmailCodeResult> {
+  const { data, error } = await supabase.rpc('request_email_code', { p_numero: numeroEmpleado, p_email: email });
+  if (error) throw error;
+  return (data?.[0]?.status as RequestEmailCodeResult) ?? 'not_found';
+}
+
+export async function verifyEmailCode(
+  numeroEmpleado: string,
+  email: string,
+  code: string
+): Promise<VerifyEmailCodeResult> {
+  const { data, error } = await supabase.rpc('verify_email_code', {
+    p_numero: numeroEmpleado,
+    p_email: email,
+    p_code: code,
+  });
+  if (error) throw error;
+  return (data?.[0]?.status as VerifyEmailCodeResult) ?? 'not_found';
+}
+
 export type VerifyPinResult =
   | { status: 'ok'; numeroEmpleado: string; nombre: string }
   | { status: 'wrong_pin' }
