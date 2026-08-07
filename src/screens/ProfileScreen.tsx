@@ -31,6 +31,8 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
     nombre: string;
     tienda?: string;
     plaza?: string;
+    puesto?: string;
+    createdAt?: string;
   } | null>(null);
   const [consultas, setConsultas] = useState(0);
   const [avisosLeidos, setAvisosLeidos] = useState(0);
@@ -45,6 +47,8 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         nombre: string;
         tienda?: string;
         plaza?: string;
+        puesto?: string;
+        createdAt?: string;
       } | null>(storageKeys.session, null);
       const questionCount = await getJson<number>(storageKeys.chatQuestionCount, 0);
       const noticeReadState = await getJson<Record<string, boolean>>(storageKeys.noticeReadState, {});
@@ -134,7 +138,14 @@ function ProfileBody({
   onPrivacyNotice,
   onHelp,
 }: {
-  session: { numeroEmpleado: string; nombre: string; tienda?: string; plaza?: string } | null;
+  session: {
+    numeroEmpleado: string;
+    nombre: string;
+    tienda?: string;
+    plaza?: string;
+    puesto?: string;
+    createdAt?: string;
+  } | null;
   stats: Array<{ label: string; value: string }>;
   prefs: Record<PreferenceKey, boolean>;
   togglePref: (key: PreferenceKey) => void;
@@ -178,7 +189,7 @@ function ProfileBody({
             <BearAvatar size={64} bg="rgba(255,255,255,.88)" />
             <View style={styles.profileCopy}>
               <Text style={styles.profileName}>{session?.nombre || employeeProfile.name}</Text>
-              <Text style={styles.profileRole}>{employeeProfile.role}</Text>
+              <Text style={styles.profileRole}>{session?.puesto || employeeProfile.role}</Text>
               <View style={styles.verifiedPill}>
                 <Icon name="shieldCheck" size={14} color={colors.oxRed} />
                 <Text style={styles.verifiedText}>Verificado</Text>
@@ -190,7 +201,7 @@ function ProfileBody({
             <InfoItem label="Empleado" value={session?.numeroEmpleado || employeeProfile.employeeId} />
             <InfoItem label="Tienda" value={session?.tienda || employeeProfile.store} />
             <InfoItem label="Plaza" value={session?.plaza || employeeProfile.area} />
-            <InfoItem label="Desde" value={employeeProfile.since} />
+            <InfoItem label="Desde" value={formatSince(session?.createdAt) || employeeProfile.since} />
           </View>
         </LinearGradient>
 
@@ -252,6 +263,13 @@ function ProfileBody({
       </ScrollView>
     </View>
   );
+}
+
+function formatSince(iso?: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('es-MX', { month: 'short', year: 'numeric' }).format(d);
 }
 
 function InfoItem({ label, value }: { label: string; value: string }) {

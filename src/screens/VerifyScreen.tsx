@@ -22,13 +22,11 @@ function minutesLeft(lockedUntil: string) {
 export function VerifyScreen({
   onBack,
   onContinue,
-  onMustSetNewPin,
 }: {
   onBack: () => void;
   onContinue: () => void;
-  onMustSetNewPin: () => void;
 }) {
-  const { empNum, pin, setPin, verifiedName, setMustSetNewPin } = useOnboarding();
+  const { empNum, pin, setPin, verifiedName } = useOnboarding();
   const len = pin.length;
   const [error, setError] = useState(false);
   const [checking, setChecking] = useState(false);
@@ -44,12 +42,7 @@ export function VerifyScreen({
       verifyPin(empNum, next)
         .then((result) => {
           if (result.status === 'ok') {
-            if (result.pinIsTemporary) {
-              setMustSetNewPin(true);
-              onMustSetNewPin();
-            } else {
-              onContinue();
-            }
+            onContinue();
             return;
           }
           if (result.status === 'locked') {

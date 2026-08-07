@@ -18,11 +18,12 @@ export function PermissionsScreen({
   onBack: () => void;
   onContinue: () => void;
 }) {
-  const { empNum, verifiedName, tienda, plaza, notif, setNotif, terms, setTerms } = useOnboarding();
+  const { empNum, verifiedName, tienda, plaza, puesto, createdAt, notif, setNotif, terms, setTerms } =
+    useOnboarding();
 
   const finish = () => {
     if (!terms) return;
-    setJson(storageKeys.session, { numeroEmpleado: empNum, nombre: verifiedName, tienda, plaza });
+    setJson(storageKeys.session, { numeroEmpleado: empNum, nombre: verifiedName, tienda, plaza, puesto, createdAt });
     onContinue();
   };
 

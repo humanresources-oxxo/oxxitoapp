@@ -11,7 +11,7 @@ import { OxKeypad } from '../components/OxKeypad';
 import { OxButton } from '../components/OxButton';
 import { Icon } from '../components/Icon';
 import { useOnboarding } from '../context/OnboardingContext';
-import { setInitialPin, changePin } from '../services/auth';
+import { setInitialPin } from '../services/auth';
 import { colors, type } from '../theme/tokens';
 
 export function RegisterScreen({
@@ -21,7 +21,7 @@ export function RegisterScreen({
   onBack: () => void;
   onContinue: () => void;
 }) {
-  const { empNum, pin, verifiedName, mustSetNewPin, regPin, setRegPin } = useOnboarding();
+  const { empNum, verifiedName, regPin, setRegPin } = useOnboarding();
   const len = regPin.length;
   const ready = len === 4;
   const [loading, setLoading] = useState(false);
@@ -37,15 +37,7 @@ export function RegisterScreen({
     setLoading(true);
     setError('');
     try {
-      if (mustSetNewPin) {
-        const status = await changePin(empNum, pin, regPin);
-        if (status !== 'ok') {
-          setError('No pudimos actualizar tu PIN. Intenta de nuevo.');
-          return;
-        }
-      } else {
-        await setInitialPin(empNum, regPin);
-      }
+      await setInitialPin(empNum, regPin);
       onContinue();
     } catch (e: any) {
       const message = typeof e?.message === 'string' ? e.message : '';
@@ -65,8 +57,8 @@ export function RegisterScreen({
         <StepsHeader active={2} onBack={onBack} />
 
         <View style={styles.head}>
-          <Text style={styles.kicker}>{mustSetNewPin ? 'PIN temporal' : 'Primer ingreso'}</Text>
-          <Text style={styles.title}>{mustSetNewPin ? 'Crea tu PIN definitivo' : 'Crea tu PIN'}</Text>
+          <Text style={styles.kicker}>Primer ingreso</Text>
+          <Text style={styles.title}>Crea tu PIN</Text>
           <Text style={styles.sub}>
             {verifiedName ? `Hola, ${verifiedName}. ` : ''}Este es tu primer ingreso a Oxxito, crea un PIN de 4
             dígitos para proteger tu cuenta.
@@ -97,7 +89,7 @@ export function RegisterScreen({
           onPress={handleCreate}
           icon={loading ? <ActivityIndicator color="#fff" /> : <Icon name="arrowR" size={19} color="#fff" />}
         >
-          {mustSetNewPin ? 'Guardar PIN' : 'Crear PIN'}
+          Crear PIN
         </OxButton>
       </SafeAreaView>
     </View>

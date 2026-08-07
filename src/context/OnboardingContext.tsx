@@ -10,7 +10,8 @@ type OnboardingState = {
   verifiedName: string;
   tienda: string;
   plaza: string;
-  mustSetNewPin: boolean;
+  puesto: string;
+  createdAt: string;
   notif: boolean;
   terms: boolean;
   setEmpNum: (v: string) => void;
@@ -19,7 +20,8 @@ type OnboardingState = {
   setVerifiedName: (v: string) => void;
   setTienda: (v: string) => void;
   setPlaza: (v: string) => void;
-  setMustSetNewPin: (v: boolean) => void;
+  setPuesto: (v: string) => void;
+  setCreatedAt: (v: string) => void;
   setNotif: (v: boolean) => void;
   setTerms: (v: boolean) => void;
   reset: () => void;
@@ -34,7 +36,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [verifiedName, setVerifiedName] = useState('');
   const [tienda, setTienda] = useState('');
   const [plaza, setPlaza] = useState('');
-  const [mustSetNewPin, setMustSetNewPin] = useState(false);
+  const [puesto, setPuesto] = useState('');
+  const [createdAt, setCreatedAt] = useState('');
   const [notif, setNotif] = useState(true);
   const [terms, setTerms] = useState(false);
 
@@ -45,7 +48,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setVerifiedName('');
     setTienda('');
     setPlaza('');
-    setMustSetNewPin(false);
+    setPuesto('');
+    setCreatedAt('');
     setNotif(true);
     setTerms(false);
   }, []);
@@ -59,7 +63,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         verifiedName,
         tienda,
         plaza,
-        mustSetNewPin,
+        puesto,
+        createdAt,
         notif,
         terms,
         setEmpNum,
@@ -68,7 +73,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         setVerifiedName,
         setTienda,
         setPlaza,
-        setMustSetNewPin,
+        setPuesto,
+        setCreatedAt,
         setNotif,
         setTerms,
         reset,

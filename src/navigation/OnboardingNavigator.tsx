@@ -52,11 +52,7 @@ export function OnboardingNavigator({ onFinished }: { onFinished: () => void }) 
         </Stack.Screen>
         <Stack.Screen name="Verify">
           {({ navigation }) => (
-            <VerifyScreen
-              onBack={() => navigation.navigate('Login')}
-              onContinue={() => navigation.navigate('Permissions')}
-              onMustSetNewPin={() => navigation.navigate('Register')}
-            />
+            <VerifyScreen onBack={() => navigation.navigate('Login')} onContinue={() => navigation.navigate('Permissions')} />
           )}
         </Stack.Screen>
         <Stack.Screen name="Register">

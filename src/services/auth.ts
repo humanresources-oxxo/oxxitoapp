@@ -9,6 +9,8 @@ export type EmployeeLookup = {
   tienda?: string;
   plaza?: string;
   asesor?: string;
+  puesto?: string;
+  createdAt?: string;
 };
 export type Employee = { numeroEmpleado: string; nombre: string };
 
@@ -24,6 +26,8 @@ export async function lookupEmployee(numeroEmpleado: string): Promise<EmployeeLo
     tienda: row.tienda,
     plaza: row.plaza,
     asesor: row.asesor,
+    puesto: row.puesto,
+    createdAt: row.created_at,
   };
 }
 
@@ -35,7 +39,7 @@ export async function setInitialPin(numeroEmpleado: string, pin: string): Promis
 }
 
 export type VerifyPinResult =
-  | { status: 'ok'; numeroEmpleado: string; nombre: string; pinIsTemporary: boolean }
+  | { status: 'ok'; numeroEmpleado: string; nombre: string }
   | { status: 'wrong_pin' }
   | { status: 'locked'; lockedUntil: string }
   | { status: 'not_found' };
@@ -59,11 +63,6 @@ export async function verifyPin(numeroEmpleado: string, pin: string): Promise<Ve
   if (!row || row.status === 'not_found') return { status: 'not_found' };
   if (row.status === 'locked') return { status: 'locked', lockedUntil: row.locked_until };
   if (row.status === 'ok')
-    return {
-      status: 'ok',
-      numeroEmpleado: row.numero_empleado,
-      nombre: row.nombre,
-      pinIsTemporary: row.pin_is_temporary,
-    };
+    return { status: 'ok', numeroEmpleado: row.numero_empleado, nombre: row.nombre };
   return { status: 'wrong_pin' };
 }

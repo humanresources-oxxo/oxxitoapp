@@ -77,7 +77,7 @@ export async function matchQA(question: string): Promise<QAResult> {
     }
   }
 
-  if (top.number === 77) {
+  if (top.number === 77 || top.number === 78) {
     const { data: items } = await supabase.rpc('list_reglamento_items', { p_article: top.number });
     if (items && items.length > 0) {
       return {
