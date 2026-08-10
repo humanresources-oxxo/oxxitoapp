@@ -24,7 +24,7 @@ type TabItem = {
   external?: string;
 };
 
-const DASHBOARD_URL = 'https://angelfranco-oxxo.github.io/DashboardsOxxo/';
+const DASHBOARD_URL = 'https://humanresources-oxxo.github.io/DashboardsOxxo/';
 
 const TABS: TabItem[] = [
   { key: 'home', label: 'Inicio', icon: 'home' },
