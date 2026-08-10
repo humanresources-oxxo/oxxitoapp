@@ -14,9 +14,24 @@ type OxFieldProps = {
   tail?: string;
   locked?: boolean;
   onChangeText?: (value: string) => void;
+  keyboardType?: 'default' | 'email-address' | 'number-pad' | 'phone-pad';
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoCorrect?: boolean;
 };
 
-export function OxField({ icon, label, value, placeholder, focused, tail, locked, onChangeText }: OxFieldProps) {
+export function OxField({
+  icon,
+  label,
+  value,
+  placeholder,
+  focused,
+  tail,
+  locked,
+  onChangeText,
+  keyboardType,
+  autoCapitalize,
+  autoCorrect,
+}: OxFieldProps) {
   const hasValue = !!value;
   return (
     <View>
@@ -41,6 +56,9 @@ export function OxField({ icon, label, value, placeholder, focused, tail, locked
             placeholder={placeholder}
             placeholderTextColor={colors.ink3}
             editable={!locked}
+            keyboardType={keyboardType}
+            autoCapitalize={autoCapitalize}
+            autoCorrect={autoCorrect}
           />
         ) : (
           <Text style={[styles.value, !hasValue && styles.placeholder]} numberOfLines={1}>

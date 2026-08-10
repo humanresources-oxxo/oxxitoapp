@@ -533,6 +533,8 @@ function NoticeComposer({ visible, onClose }: { visible: boolean; onClose: () =>
               placeholder="Passcode de RH"
               placeholderTextColor={colors.ink3}
               secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
             />
             {error ? <Text style={styles.composerError}>{error}</Text> : null}
 

@@ -30,6 +30,7 @@ export function RegisterScreen({
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
 
   const emailReady = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const codeReady = code.length === 6;
@@ -40,10 +41,16 @@ export function RegisterScreen({
     if (!emailReady || loading) return;
     setLoading(true);
     setError('');
+    setNotice('');
     try {
       const status = await requestEmailCode(empNum, email.trim());
       if (status === 'sent') {
-        setStep('code');
+        if (step === 'code') {
+          setCode('');
+          setNotice('Te mandamos un código nuevo.');
+        } else {
+          setStep('code');
+        }
       } else if (status === 'already_has_pin') {
         setError('Este número ya tiene un PIN. Usa "Inicia sesión".');
       } else if (status === 'rate_limited') {
@@ -67,6 +74,7 @@ export function RegisterScreen({
     if (!codeReady || loading) return;
     setLoading(true);
     setError('');
+    setNotice('');
     try {
       const status = await verifyEmailCode(empNum, email.trim(), code);
       if (status === 'ok') {
@@ -115,12 +123,12 @@ export function RegisterScreen({
   };
 
   const back = () => {
+    setError('');
+    setNotice('');
     if (step === 'code') {
       setStep('email');
-      setError('');
     } else if (step === 'pin') {
       setStep('code');
-      setError('');
     } else {
       onBack();
     }
@@ -151,6 +159,9 @@ export function RegisterScreen({
                 value={email}
                 onChangeText={setEmail}
                 placeholder="tucorreo@ejemplo.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
               />
               {error ? <OxHint>{error}</OxHint> : null}
             </View>
@@ -170,8 +181,9 @@ export function RegisterScreen({
                   <PinDots length={code.length} total={6} />
                 </View>
                 {error ? <OxHint>{error}</OxHint> : null}
+                {notice ? <OxHint>{notice}</OxHint> : null}
               </View>
-              <Pressable onPress={sendCode} disabled={loading}>
+              <Pressable onPress={sendCode} disabled={loading} style={loading && { opacity: 0.5 }}>
                 <OxHint>¿No te llegó? Reenviar código</OxHint>
               </Pressable>
             </View>
