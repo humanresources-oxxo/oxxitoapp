@@ -74,6 +74,17 @@ export function DirectoryScreen() {
     }
   };
 
+  const whatsappSelected = async () => {
+    if (!selected) return;
+    const digits = selected.phone.replace(/\D/g, '');
+    const url = `https://wa.me/${digits}`;
+    try {
+      await Linking.openURL(url);
+    } finally {
+      setSelected(null);
+    }
+  };
+
   return (
     <View style={styles.screen}>
       <LinearGradient
@@ -157,14 +168,18 @@ export function DirectoryScreen() {
                   <Text style={styles.phoneLineText}>{selected.schedule}</Text>
                 </View>
                 <View style={styles.sheetActions}>
-                  <Pressable style={styles.secondaryButton} onPress={() => setSelected(null)}>
-                    <Text style={styles.secondaryButtonText}>Cancelar</Text>
+                  <Pressable style={styles.whatsappButton} onPress={whatsappSelected}>
+                    <Icon name="whatsapp" size={18} color="#fff" />
+                    <Text style={styles.primaryButtonText}>WhatsApp</Text>
                   </Pressable>
                   <Pressable style={styles.primaryButton} onPress={callSelected}>
                     <Icon name="phone" size={18} color="#fff" />
                     <Text style={styles.primaryButtonText}>Llamar</Text>
                   </Pressable>
                 </View>
+                <Pressable style={styles.cancelRow} onPress={() => setSelected(null)}>
+                  <Text style={styles.secondaryButtonText}>Cancelar</Text>
+                </Pressable>
               </>
             ) : null}
           </BlurView>
@@ -462,6 +477,23 @@ const styles = StyleSheet.create({
     fontFamily: 'PlusJakartaSans_800ExtraBold',
     fontSize: 14,
     color: colors.ink,
+  },
+  cancelRow: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+    width: '100%',
+  },
+  whatsappButton: {
+    flex: 1,
+    minHeight: 50,
+    borderRadius: 16,
+    backgroundColor: '#25D366',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
   },
   primaryButton: {
     flex: 1,
