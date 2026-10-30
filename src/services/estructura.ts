@@ -1,12 +1,13 @@
 // src/services/estructura.ts
 // Store structure from DashboardsOxxo's Dashboard 1 (tab Dashboard_1_Diario):
 // every position of every store in the latest month cut, either occupied (with
-// the employee's name) or vacant (with the date it opened). Same defaults as
+// the employee's name) or vacant (with the date it opened), Plaza Oaxaca only.
+// Same defaults as
 // dashboard-1.html: operating stores only (no Entrenamiento/Operaciones units,
 // no pre-openings) and its six default puestos. The AT comes from
 // Catalogo_Asesores by CR when the store is there (applyAsesorCatalog in the web).
 // If DashboardsOxxo renames the tab or its columns, update this file too.
-import { clave, fechaConfiguracion, leerCsv, letra, normalizarNombre, plazaDe } from './gviz';
+import { clave, esPlaza, fechaConfiguracion, leerCsv, letra, normalizarNombre, PLAZA } from './gviz';
 import { cargarTiendas, normalizarCr, normalizarTienda } from './tiendas';
 
 const TAB = 'Dashboard_1_Diario';
@@ -103,13 +104,13 @@ async function mesVigente(): Promise<string> {
 
 const vacante = (status: string, empleado: string) => /vacante|no ocupado/.test(clave(status)) || (!empleado && !!status);
 
-function aCorte(filas: string[][], plaza: string, mes: string, asesorPorCr: Map<string, string>): TiendaEstructura[] {
+function aCorte(filas: string[][], mes: string, asesorPorCr: Map<string, string>): TiendaEstructura[] {
   const idx = indices(filas[0] || []);
   const v = (r: string[], k: Col) => (idx[k] >= 0 ? String(r[idx[k]] ?? '').trim() : '');
   const tiendas = new Map<string, TiendaEstructura>();
   filas.slice(1).forEach((r) => {
     if (mes && v(r, 'mes') !== mes) return;
-    if (plazaDe(v(r, 'plaza')) !== plaza) return;
+    if (!esPlaza(v(r, 'plaza'))) return;
     const tienda = v(r, 'tienda');
     const t = clave(tienda);
     if (!t || t === 'sintienda' || t.includes('entrenamiento') || t.includes('operaciones')) return;
@@ -120,7 +121,7 @@ function aCorte(filas: string[][], plaza: string, mes: string, asesorPorCr: Map<
     const llave = cr || normalizarTienda(tienda);
     if (!tiendas.has(llave)) {
       const asesor = asesorPorCr.get(cr) || v(r, 'asesor');
-      tiendas.set(llave, { tienda, cr, asesor, plaza, posiciones: [], ocupadas: 0, vacantes: 0 });
+      tiendas.set(llave, { tienda, cr, asesor, plaza: PLAZA, posiciones: [], ocupadas: 0, vacantes: 0 });
     }
     const item = tiendas.get(llave)!;
     const empleado = v(r, 'empleado');
@@ -140,47 +141,42 @@ function aCorte(filas: string[][], plaza: string, mes: string, asesorPorCr: Map<
 }
 
 let tabCompleta: Promise<string[][]> | null = null;
-const porPlaza = new Map<string, Promise<Corte>>();
+let estructura: Promise<Corte> | null = null;
 
-// One plaza of the latest cut (~1,500 positions). Never mixes months: if the
+// Plaza Oaxaca in the latest cut (~1,700 positions). Never mixes months: if the
 // latest month can't be read, the whole tab is read and the latest taken here.
-export function cargarEstructura(plaza: string): Promise<Corte> {
-  const p = plazaDe(plaza);
-  if (!p) return Promise.resolve({ mes: '', tiendas: [] });
-  if (!porPlaza.has(p)) {
-    const pedido = (async () => {
-      const catalogo = await cargarTiendas();
-      const asesorPorCr = new Map(catalogo.map((t) => [t.cr, t.asesor]));
-      try {
-        const mes = await mesVigente();
-        if (!mes) throw new Error('sin mes');
-        const filas = await leerCsv(TAB, `select * where ${COL_PLAZA} = '${p}' and ${COL_MES} = '${mes}'`);
-        const idx = indices(filas[0] || []);
-        if (letra(idx.plaza) !== COL_PLAZA || letra(idx.mes) !== COL_MES) throw new Error('columnas movidas');
-        return { mes, tiendas: aCorte(filas, p, mes, asesorPorCr) };
-      } catch {
-        tabCompleta ??= leerCsv(TAB).catch((e) => {
-          tabCompleta = null;
-          throw e;
-        });
-        const filas = await tabCompleta;
-        const idx = indices(filas[0] || []);
-        const mes =
-          filas
-            .slice(1)
-            .map((r) => String(r[idx.mes] ?? '').trim())
-            .filter(mesClave)
-            .sort((a, b) => mesClave(a).localeCompare(mesClave(b)))
-            .pop() || '';
-        return { mes, tiendas: aCorte(filas, p, mes, asesorPorCr) };
-      }
-    })().catch((e) => {
-      porPlaza.delete(p);
-      throw e;
-    });
-    porPlaza.set(p, pedido);
-  }
-  return porPlaza.get(p)!;
+export function cargarEstructura(): Promise<Corte> {
+  estructura ??= (async () => {
+    const catalogo = await cargarTiendas();
+    const asesorPorCr = new Map(catalogo.map((t) => [t.cr, t.asesor]));
+    try {
+      const mes = await mesVigente();
+      if (!mes) throw new Error('sin mes');
+      const filas = await leerCsv(TAB, `select * where ${COL_PLAZA} = '${PLAZA}' and ${COL_MES} = '${mes}'`);
+      const idx = indices(filas[0] || []);
+      if (letra(idx.plaza) !== COL_PLAZA || letra(idx.mes) !== COL_MES) throw new Error('columnas movidas');
+      return { mes, tiendas: aCorte(filas, mes, asesorPorCr) };
+    } catch {
+      tabCompleta ??= leerCsv(TAB).catch((e) => {
+        tabCompleta = null;
+        throw e;
+      });
+      const filas = await tabCompleta;
+      const idx = indices(filas[0] || []);
+      const mes =
+        filas
+          .slice(1)
+          .map((r) => String(r[idx.mes] ?? '').trim())
+          .filter(mesClave)
+          .sort((a, b) => mesClave(a).localeCompare(mesClave(b)))
+          .pop() || '';
+      return { mes, tiendas: aCorte(filas, mes, asesorPorCr) };
+    }
+  })().catch((e) => {
+    estructura = null;
+    throw e;
+  });
+  return estructura;
 }
 
 export function buscarTiendas(tiendas: TiendaEstructura[], texto: string, soloAsesor?: string) {
