@@ -70,6 +70,11 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   - El AT de cada tienda sale de `Catalogo_Asesores` por CR (como `applyAsesorCatalog`);
     si la tienda no está en el catálogo, el de la hoja. "Mis tiendas" filtra por el
     nombre de la sesión.
+  - **Descargar Excel:** un `.xlsx` con una fila por posición de las tiendas a la vista
+    (tienda, CR, asesor, puesto, ID, ocupada/vacante, colaborador, vacante desde y días). Un
+    AT solo descarga sus tiendas; RH y demás, toda la plaza o lo que hayan filtrado. Se
+    genera en el teléfono sin librerías (`src/utils/xlsx.ts`) y se comparte con
+    `src/utils/compartir.ts` (en web se descarga), igual que el Word de las actas.
   - Si DashboardsOxxo cambia los puestos por defecto, la lista de preaperturas, la
     pestaña o sus columnas, hay que actualizar el servicio.
   - `src/services/gviz.ts` concentra la lectura por GViz que comparten Vacaciones y
