@@ -10,7 +10,8 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   Paleta del logo en `src/theme/tokens.ts`: rojo `#E30613`, amarillo `#F6B800`, azul
   `#005AAE`. Se conserva el osito como mascota. La dirección web sigue siendo `/oxxitoapp/`
   y las llaves guardadas (`oxxito:*`) no cambian, para no cerrar sesiones ni romper la app
-  instalada. Al publicar, `index.html` lleva title "Conoxxo" y `theme-color` `#E30613`.
+  instalada. Al publicar, `index.html` lleva title "Conoxxo" y `theme-color` `#E30613`
+  (lo pone `scripts/patch-web-index.mjs`).
 
 ✅ **Onboarding + tabs post-login completos:**
 - Splash, Welcome, Login, Verify, Register (crear PIN / PIN temporal → definitivo), Permissions
@@ -106,6 +107,22 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   Falta su número de empleado para darle el puesto `ASESOR TIENDA`.
 - El resto del personal de tienda no tiene `puesto` en `employees` (solo los 22 de la
   migración 22 y la cuenta de prueba 1599067). Hoy no les quita acceso a nada.
+
+## Publicación web (automática)
+
+Cada push a `main` publica la versión web en https://humanresources-oxxo.github.io/oxxitoapp/
+con el workflow `.github/workflows/deploy-web.yml` (también se puede lanzar a mano desde la
+pestaña Actions → "Publicar web" → Run workflow). El workflow:
+
+1. instala dependencias (`npm ci`) y revisa tipos (`tsc --noEmit`); si falla, no publica;
+2. exporta la web (`expo export -p web`) con `EXPO_PUBLIC_SUPABASE_URL` y
+   `EXPO_PUBLIC_SUPABASE_ANON_KEY` (valores publicables; una variable del repo con el mismo
+   nombre los reemplaza);
+3. ajusta `index.html` con `scripts/patch-web-index.mjs`;
+4. reemplaza en la rama `gh-pages` los archivos de la app (`_expo`, `assets`, `index.html`,
+   íconos, manifest…) y conserva lo demás (`instalar.html`, `.nojekyll`).
+
+`instalar.html` (la guía de instalación) solo vive en `gh-pages`; se edita ahí.
 
 ## Cómo correrlo
 
