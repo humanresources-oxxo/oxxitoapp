@@ -6,10 +6,11 @@
 // The sheet only has store staff (SINDICALIZADO): office staff won't be found.
 // If DashboardsOxxo renames the tab or its columns, update this file too.
 import { getJson, setJson, storageKeys } from './appStorage';
+import { clave, fechaConfiguracion, leerCsv, letra, normalizarNombre, PLAZAS, plazaDeSesion } from './gviz';
 
-const SPREADSHEET_ID = '1EbUuyy-PRXiDwPmn9L14P93cGN6VXTyLfAHx-CE8M_A';
+export { normalizarNombre, PLAZAS, plazaDeSesion };
+
 const TAB = 'Dashboard_5_Semanal';
-const CONFIG_TAB = 'Configuracion';
 const CONFIG_ID = 's5';
 // Columns used in GViz queries (same letters as DashboardsOxxo js/config.js):
 // the reply is checked against the header and falls back to the full tab.
@@ -32,48 +33,6 @@ export type Vacacion = {
   venceActual: string; // Bucket_Act, e.g. "Más de 9 MESES"
 };
 
-const sinAcentos = (v: unknown) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-const clave = (v: unknown) => sinAcentos(v).toLowerCase().replace(/^_buffer_\s*/, '').replace(/[^a-z0-9]/g, '');
-export const normalizarNombre = (v: unknown) =>
-  sinAcentos(v).toUpperCase().replace(/[^A-Z ]/g, ' ').replace(/\s+/g, ' ').trim();
-
-function parsearCsv(texto: string): string[][] {
-  const filas: string[][] = [];
-  let fila: string[] = [], celda = '', comillas = false;
-  for (let i = 0; i < texto.length; i++) {
-    const c = texto[i];
-    if (comillas) {
-      if (c === '"' && texto[i + 1] === '"') { celda += '"'; i++; }
-      else if (c === '"') comillas = false;
-      else celda += c;
-    } else if (c === '"') comillas = true;
-    else if (c === ',') { fila.push(celda); celda = ''; }
-    else if (c === '\n' || c === '\r') {
-      if (c === '\r' && texto[i + 1] === '\n') i++;
-      fila.push(celda); filas.push(fila); fila = []; celda = '';
-    } else celda += c;
-  }
-  if (celda || fila.length) { fila.push(celda); filas.push(fila); }
-  return filas;
-}
-
-async function leerCsv(hoja: string, consulta?: string) {
-  const params = [`tqx=out:csv`, `sheet=${encodeURIComponent(hoja)}`];
-  // Published tabs have a _buffer_ row above the real headers; with a query
-  // GViz must be told about both or it takes the first result as a header.
-  if (consulta) params.push('headers=2', `tq=${encodeURIComponent(consulta)}`);
-  const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?${params.join('&')}`;
-  const control = new AbortController();
-  const t = setTimeout(() => control.abort(), 15000);
-  try {
-    const r = await fetch(url, { signal: control.signal });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return parsearCsv(await r.text());
-  } finally {
-    clearTimeout(t);
-  }
-}
-
 // Same aliases as findKey in js/dashboard-5-vacaciones.js.
 const ALIAS: Record<keyof Vacacion, string[]> = {
   plaza: ['Plaza'],
@@ -91,7 +50,6 @@ const ALIAS: Record<keyof Vacacion, string[]> = {
   venceActual: ['Bucket_Act'],
 };
 const NUMEROS: Array<keyof Vacacion> = ['periodoAnterior', 'periodoActual', 'diasRestantes'];
-const letra = (i: number) => String.fromCharCode(65 + i);
 
 function columnas(encabezado: string[]) {
   const claves = encabezado.map(clave);
@@ -159,8 +117,6 @@ export async function cargarMiVacacion(numeroEmpleado: string): Promise<MiVacaci
   }
 }
 
-export const PLAZAS = ['Oaxaca', 'Villahermosa', 'Chontalpa', 'Costa Istmo', 'Tuxtla'];
-
 // Team view: one plaza at a time (~1,000 rows) so it stays light on the phone.
 const porPlaza = new Map<string, Promise<Vacacion[]>>();
 export function cargarPlaza(plaza: string): Promise<Vacacion[]> {
@@ -176,10 +132,6 @@ export function cargarPlaza(plaza: string): Promise<Vacacion[]> {
     porPlaza.set(p, pedido);
   }
   return porPlaza.get(p)!;
-}
-
-export function plazaDeSesion(plaza?: string) {
-  return PLAZAS.find((x) => clave(x) === clave(plaza)) || PLAZAS[0];
 }
 
 export function buscarVacaciones(lista: Vacacion[], texto: string, soloAsesor?: string) {
@@ -203,13 +155,4 @@ export function urgencia(v: Vacacion): 'vencido' | 'pronto' | null {
 }
 
 // Date of the last Dashboard 5 upload, from the Configuracion tab (row s5).
-let actualizado: Promise<string> | null = null;
-export function fechaActualizacion(): Promise<string> {
-  actualizado ??= leerCsv(CONFIG_TAB)
-    .then((filas) => String(filas.find((r) => String(r[0] ?? '').trim() === CONFIG_ID)?.[3] ?? '').trim())
-    .catch(() => {
-      actualizado = null;
-      return '';
-    });
-  return actualizado;
-}
+export const fechaActualizacion = () => fechaConfiguracion(CONFIG_ID);

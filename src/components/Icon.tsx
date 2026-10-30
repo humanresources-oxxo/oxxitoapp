@@ -12,6 +12,7 @@ export const ICONS: Record<string, string> = {
   arrowR: 'M5 12h13M13 6l6 6-6 6',
   check: 'M5 12.5 10 17.5 19 7',
   close: 'M6 6l12 12M18 6 6 18',
+  chart: 'M4 20V10M10 20V4M16 20v-7M22 20V7',
   bell: 'M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6M9.5 19a2.5 2.5 0 0 0 5 0',
   shield: 'M12 3 5 6v5c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z',
   doc: 'M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM13 3v5h5M9 13h6M9 16.5h6',
