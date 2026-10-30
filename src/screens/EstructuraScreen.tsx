@@ -1,7 +1,8 @@
 // src/screens/EstructuraScreen.tsx
 // Estructura: each store's positions from DashboardsOxxo's Dashboard 1, who
 // holds each one and which are vacant (and since when). Plaza Oaxaca only,
-// with search by store, CR or employee and "Mis tiendas" for the logged-in AT.
+// with search by store, CR or employee and "Mis tiendas" for the logged-in AT,
+// and an Excel download of every position in view.
 // Only for the same puestos as Actas (see services/actas.ts).
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -14,12 +15,15 @@ import {
   cargarEstructura,
   Corte,
   diasVacante,
+  excelEstructura,
   fechaActualizacion,
   mesTexto,
   TiendaEstructura,
   totales,
 } from '../services/estructura';
 import { normalizarNombre } from '../services/gviz';
+import { showAlert } from '../utils/alert';
+import { compartirArchivo, MIME } from '../utils/compartir';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
 type Sesion = { nombre?: string } | null;
@@ -75,6 +79,21 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
   }, [corte, texto, tengoTiendas, soloMias, soloMisTiendas, yo, conVacantes, sesion?.nombre]);
   const sinTiendas = soloMisTiendas && !!corte && !tengoTiendas;
   const t = totales(resultado);
+
+  // Excel with every position of the stores in view (an AT: only theirs).
+  const [descargando, setDescargando] = useState(false);
+  const descargar = async () => {
+    if (!corte || !resultado.length || descargando) return;
+    setDescargando(true);
+    try {
+      const { bytes, nombre } = excelEstructura(resultado, corte.mes);
+      await compartirArchivo(bytes, nombre, MIME.xlsx);
+    } catch (e) {
+      showAlert('No se pudo descargar', `No se pudo generar el Excel: ${e instanceof Error ? e.message : 'error desconocido'}.`);
+    } finally {
+      setDescargando(false);
+    }
+  };
 
   return (
     <View style={styles.screen}>
@@ -140,6 +159,14 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
                 {soloMisTiendas ? ' a tu cargo' : ''}
                 {resultado.length > MAX_LISTA ? ` · se muestran ${MAX_LISTA}, usa la búsqueda` : ''}
               </Text>
+            ) : null}
+            {corte && resultado.length ? (
+              <Pressable style={[styles.descargar, descargando && { opacity: 0.6 }]} onPress={descargar} disabled={descargando} accessibilityRole="button">
+                <Icon name="doc" size={18} color={colors.oxRed} />
+                <Text style={styles.descargarTexto}>
+                  {descargando ? 'Generando Excel…' : `Descargar Excel · ${plural(t.total, 'posición', 'posiciones')}`}
+                </Text>
+              </Pressable>
             ) : null}
           </View>
         }
@@ -343,6 +370,18 @@ const styles = StyleSheet.create({
   },
   buscadorInput: { flex: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 15, color: colors.ink, paddingVertical: 12 },
   resumen: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink3 },
+  descargar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 46,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.oxRed,
+    backgroundColor: colors.white,
+  },
+  descargarTexto: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: colors.oxRed },
   tienda: {
     flexDirection: 'row',
     alignItems: 'center',

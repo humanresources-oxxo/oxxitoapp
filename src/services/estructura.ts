@@ -9,6 +9,7 @@
 // If DashboardsOxxo renames the tab or its columns, update this file too.
 import { clave, esPlaza, fechaConfiguracion, leerCsv, letra, normalizarNombre, PLAZA } from './gviz';
 import { asesorDelCatalogo, cargarTiendas, normalizarCr, normalizarTienda, Tienda } from './tiendas';
+import { xlsx } from '../utils/xlsx';
 
 const TAB = 'Dashboard_1_Diario';
 const CONFIG_ID = 'd1';
@@ -212,3 +213,27 @@ export function diasVacante(desde: string, hoy = new Date()) {
 
 // Date of the last Dashboard 1 upload, from the Configuracion tab (row d1).
 export const fechaActualizacion = () => fechaConfiguracion(CONFIG_ID);
+
+// Excel with one row per position of the given stores (the ones the user is
+// looking at: an AT only gets their own). Vacant positions have no employee.
+export function excelEstructura(tiendas: TiendaEstructura[], mes: string, hoy = new Date()) {
+  const filas = tiendas.flatMap((t) =>
+    t.posiciones.map((p) => [
+      t.tienda,
+      t.cr,
+      t.asesor,
+      p.puesto,
+      p.id,
+      p.empleado ? 'Ocupada' : 'Vacante',
+      p.empleado,
+      p.empleado ? '' : p.vacanteDesde.replace(/^(\d{4})-(\d{2})-(\d{2}).*/, '$3/$2/$1'),
+      p.empleado ? '' : diasVacante(p.vacanteDesde, hoy),
+    ])
+  );
+  const bytes = xlsx(
+    'Estructura',
+    ['Tienda', 'CR', 'Asesor', 'Puesto', 'ID posición', 'Estatus', 'Colaborador', 'Vacante desde', 'Días vacante'],
+    filas
+  );
+  return { bytes, nombre: `estructura-oaxaca-${mesClave(mes) || 'corte'}.xlsx`, posiciones: filas.length };
+}

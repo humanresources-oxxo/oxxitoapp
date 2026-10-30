@@ -419,7 +419,8 @@ export function crc32(bytes: Uint8Array, inicio = 0xffffffff) {
 export function utf8(s: string) {
   return new TextEncoder().encode(s);
 }
-function zip(archivos: Record<string, string | Uint8Array>) {
+// Stored (uncompressed) zip; also used for the Excel export (utils/xlsx.ts).
+export function zip(archivos: Record<string, string | Uint8Array>) {
   const partes: Uint8Array[] = [], central: Uint8Array[] = [];
   let offset = 0;
   const u16 = (v: number[], n: number) => { v.push(n & 0xff, (n >>> 8) & 0xff); };
