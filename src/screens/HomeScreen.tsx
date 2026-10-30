@@ -8,7 +8,7 @@ import { BearAvatar } from '../components/Bear';
 import { Icon } from '../components/Icon';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-type HomeTarget = 'chat' | 'directory' | 'notifications' | 'profile' | 'actas';
+type HomeTarget = 'chat' | 'directory' | 'notifications' | 'profile' | 'actas' | 'vacaciones';
 
 export type ChatHistoryItem = {
   id: string;
@@ -39,6 +39,14 @@ const ACTAS_ACTION: QuickAction = {
   icon: 'clipboard',
   target: 'actas',
   accent: 'dark',
+};
+
+const VACACIONES_ACTION: QuickAction = {
+  title: 'Mis vacaciones',
+  desc: 'Dias que te quedan y cuando vencen.',
+  icon: 'plane',
+  target: 'vacaciones',
+  accent: 'blue',
 };
 
 const QUICK_ACTIONS: QuickAction[] = [
@@ -74,7 +82,7 @@ const QUICK_ACTIONS: QuickAction[] = [
 
 
 export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, showActas = false }: HomeScreenProps) {
-  const actions = showActas ? [ACTAS_ACTION, ...QUICK_ACTIONS] : QUICK_ACTIONS;
+  const actions = [...(showActas ? [ACTAS_ACTION] : []), VACACIONES_ACTION, ...QUICK_ACTIONS];
   return (
     <View style={styles.screen}>
       <LinearGradient
