@@ -40,6 +40,24 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   editar el Directorio. Se corre local con `npx serve admin` o similar — no está
   desplegada en ningún lado público.
 
+✅ **Cuota sindical (`src/screens/CuotaSindicalScreen.tsx`):** lo descontado de cuota
+  sindical por mes en Plaza Oaxaca, desde el dashboard Cuota Sindical de DashboardsOxxo
+  (`src/services/cuotaSindical.ts`). Solo para los puestos de `PUESTOS_ACTAS`; los Asesores
+  de Tienda solo ven sus tiendas. Se abre desde Inicio.
+  - Los datos no están en el Sheet público: vienen de la acción pública
+    `consultarCuotaSindical` del Apps Script, que solo devuelve totales por mes, división,
+    tienda y puesto de su libro privado (sin nombres: la afiliación sindical es un dato
+    personal sensible).
+  - Por mes: descontado y variación contra el mes anterior, personas con descuento (exactas
+    para toda la plaza, desde `Resumen`; para un AT, suma por tienda y puesto), promedio por
+    persona y ajustes (devoluciones y reversos); tendencia de los meses cargados; desglose
+    por asesor (solo quien ve toda la plaza), por puesto y por tienda.
+  - El AT de cada tienda sale de `Catalogo_Asesores` por nombre (los nombres de nómina vienen
+    cortados a 25 caracteres; se acepta un inicio único). Entrenamiento/Operaciones va
+    aparte y lo que no se encuentra queda en "Sin Asesor Asignado".
+  - El mes llega como fecha ("2025-10-01T06:00:00.000Z") porque Sheets convierte "2025-10";
+    la app lo toma como `AAAA-MM`.
+
 ✅ **Estructura (`src/screens/EstructuraScreen.tsx`):** posiciones de cada tienda desde el
   Dashboard 1 de DashboardsOxxo (pestaña `Dashboard_1_Diario`, `src/services/estructura.ts`).
   Solo para los puestos de `PUESTOS_ACTAS` y solo Plaza Oaxaca; se abre desde Inicio.
@@ -161,12 +179,14 @@ src/
     PermissionsScreen.tsx
     ActasScreen.tsx         — Actas y Formatos (solo ciertos puestos)
     VacacionesScreen.tsx    — saldo de vacaciones (propio y, para ciertos puestos, del equipo)
+    CuotaSindicalScreen.tsx — cuota sindical por mes, asesor, puesto y tienda (solo ciertos puestos)
     EstructuraScreen.tsx    — posiciones ocupadas y vacantes por tienda (solo ciertos puestos)
   services/actas.ts         — quién puede levantar actas, envío a RH, compartir Word
   services/tiendas.ts       — catálogo de tiendas (nombre, CR, AT) para las actas
   services/vacaciones.ts    — saldos del Dashboard 5 (Dashboard_5_Semanal) vía GViz
   services/estructura.ts    — estructura por tienda del Dashboard 1 (Dashboard_1_Diario)
   services/gviz.ts          — lectura de pestañas del Sheet de los dashboards (GViz CSV)
+  services/cuotaSindical.ts — totales de cuota sindical (Apps Script consultarCuotaSindical)
   utils/
     actaDocx.ts             — texto de cada formato + generador del .docx
     firmaPng.ts             — firma (trazos) → PNG

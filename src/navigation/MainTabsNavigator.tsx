@@ -9,6 +9,7 @@ import { Icon } from '../components/Icon';
 import { ActasScreen } from '../screens/ActasScreen';
 import { ChatHistoryItem, HomeScreen } from '../screens/HomeScreen';
 import { ChatHomeScreen } from '../screens/ChatHomeScreen';
+import { CuotaSindicalScreen } from '../screens/CuotaSindicalScreen';
 import { DirectoryScreen } from '../screens/DirectoryScreen';
 import { EstructuraScreen } from '../screens/EstructuraScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
@@ -20,9 +21,10 @@ import { lookupEmployee } from '../services/auth';
 import { fetchNotices } from '../services/notices';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-// 'actas', 'vacaciones' and 'estructura' are not in the tab bar: they open from
-// Inicio. Actas, Estructura and the team view of Vacaciones are only for some puestos.
-type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas' | 'vacaciones' | 'estructura';
+// 'actas', 'vacaciones', 'estructura' and 'cuota' are not in the tab bar: they open
+// from Inicio. Actas, Estructura, Cuota sindical and the team view of Vacaciones are
+// only for some puestos.
+type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas' | 'vacaciones' | 'estructura' | 'cuota';
 
 type Sesion = { numeroEmpleado?: string; nombre?: string; tienda?: string; plaza?: string; puesto?: string; createdAt?: string };
 
@@ -139,6 +141,8 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
         return canUseActas ? <ActasScreen onBack={() => setActiveTab('home')} /> : null;
       case 'estructura':
         return canUseActas ? <EstructuraScreen onBack={() => setActiveTab('home')} soloMisTiendas={onlyOwnStores} /> : null;
+      case 'cuota':
+        return canUseActas ? <CuotaSindicalScreen onBack={() => setActiveTab('home')} soloMisTiendas={onlyOwnStores} /> : null;
       case 'vacaciones':
         return <VacacionesScreen onBack={() => setActiveTab('home')} conEquipo={canUseActas} soloMisTiendas={onlyOwnStores} />;
       default:
