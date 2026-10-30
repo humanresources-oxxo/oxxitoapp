@@ -23,6 +23,9 @@
     },
     "experiments": {
       "baseUrl": "/oxxitoapp"
-    }
+    },
+    "plugins": [
+      "expo-sharing"
+    ]
   }
 }

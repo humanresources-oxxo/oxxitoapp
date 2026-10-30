@@ -29,6 +29,28 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   editar el Directorio. Se corre local con `npx serve admin` o similar — no está
   desplegada en ningún lado público.
 
+✅ **Actas y Formatos (`src/screens/ActasScreen.tsx`):** versión nativa del formulario
+  de DashboardsOxxo (`dashboards/acta-administrativa.html`). Seis formatos de RH: acta
+  administrativa, acta por falta de probidad, acta ultimátum, retroalimentación, acta de
+  hechos y renuncia voluntaria. Solo la ven ciertos puestos (`PUESTOS_ACTAS` en
+  `src/services/actas.ts`, contra `employees.puesto` de la sesión); se abre desde Inicio.
+  - El texto y el Word salen de `src/utils/actaDocx.ts`, copia fiel de
+    `js/acta-administrativa.js` de DashboardsOxxo (genera el mismo `.docx` byte por byte).
+    Si se cambia el texto de un formato allá, hay que copiarlo aquí también.
+  - Firmas con el dedo (`SignaturePad`); `src/utils/firmaPng.ts` las convierte en PNG para
+    el Word. Con alguna firma los datos quedan bloqueados, igual que en la web.
+  - "Enviar a RH" usa la misma acción pública `enviarActa` del Apps Script de
+    DashboardsOxxo: llega al correo de RH y queda en el mismo registro privado de actas.
+    "Compartir Word" (en web, "Descargar Word") no lo registra.
+  - La tienda se elige del catálogo de DashboardsOxxo (`Catalogo_Asesores`, en
+    `src/services/tiendas.ts`): primero la hoja en vivo vía Apps Script (`readSheet`), si
+    falla el CSV de GitHub Pages, y sin señal la última copia guardada. Así el acta se
+    envía con el **CR** de la tienda y en el registro de RH (panel admin → Registro de
+    actas) se junta con las de la web, que también agrupan por CR. Al elegir la tienda
+    se llena su AT como representante.
+  - El número de empleado del trabajador se busca en la nómina con `employee_lookup`.
+  - El borrador se guarda en el teléfono (sin firmas) y se borra al cerrar sesión.
+
 🚧 **Pendiente:**
 - Persistencia nativa (hoy `appStorage.ts` usa `@react-native-async-storage/async-storage`,
   que sí funciona en iOS/Android — falta solamente *probarlo* en un dispositivo real).
@@ -58,6 +80,7 @@ src/
     OxKeypad.tsx            — teclado numérico 3×4
     PinDots.tsx             — puntos de PIN con shake de error
     StepsHeader.tsx         — header con back + progreso de 4 pasos
+    SignaturePad.tsx        — recuadro de firma con el dedo (Actas)
   screens/
     SplashScreen.tsx
     WelcomeScreen.tsx
@@ -65,6 +88,12 @@ src/
     VerifyScreen.tsx
     RegisterScreen.tsx
     PermissionsScreen.tsx
+    ActasScreen.tsx         — Actas y Formatos (solo ciertos puestos)
+  services/actas.ts         — quién puede levantar actas, envío a RH, compartir Word
+  services/tiendas.ts       — catálogo de tiendas (nombre, CR, AT) para las actas
+  utils/
+    actaDocx.ts             — texto de cada formato + generador del .docx
+    firmaPng.ts             — firma (trazos) → PNG
   navigation/
     OnboardingNavigator.tsx — stack nativo (@react-navigation/native-stack)
   context/

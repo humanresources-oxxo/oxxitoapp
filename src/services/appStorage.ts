@@ -10,6 +10,8 @@ export const storageKeys = {
   profilePrefs: 'oxxito:profilePrefs',
   session: 'oxxito:session',
   chatQuestionCount: 'oxxito:chatQuestionCount',
+  actaDraft: 'oxxito:actaDraft',
+  storeCatalog: 'oxxito:storeCatalog',
 };
 
 export async function getBoolean(key: string) {
