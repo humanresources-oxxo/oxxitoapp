@@ -15,7 +15,7 @@ import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { VacacionesScreen } from '../screens/VacacionesScreen';
 import { getJson, setJson, storageKeys } from '../services/appStorage';
-import { puedeLevantarActas } from '../services/actas';
+import { puedeLevantarActas, soloSusTiendas } from '../services/actas';
 import { lookupEmployee } from '../services/auth';
 import { fetchNotices } from '../services/notices';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
@@ -49,6 +49,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const [firstName, setFirstName] = useState('');
   const [canUseActas, setCanUseActas] = useState(false);
+  const [onlyOwnStores, setOnlyOwnStores] = useState(false);
   const [unreadNotices, setUnreadNotices] = useState(0);
 
   const refreshUnreadNotices = () => {
@@ -68,6 +69,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       if (!active) return;
       setFirstName(session?.nombre?.split(' ')[0] ?? '');
       setCanUseActas(puedeLevantarActas(session?.puesto));
+      setOnlyOwnStores(soloSusTiendas(session?.puesto));
       revalidarSesion(session);
     });
     refreshUnreadNotices();
@@ -88,6 +90,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
         setJson(storageKeys.session, nueva);
         setFirstName(nueva.nombre?.split(' ')[0] ?? '');
         setCanUseActas(puedeLevantarActas(nueva.puesto));
+        setOnlyOwnStores(soloSusTiendas(nueva.puesto));
       })
       .catch(() => {});
   };
@@ -135,13 +138,13 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       case 'actas':
         return canUseActas ? <ActasScreen onBack={() => setActiveTab('home')} /> : null;
       case 'estructura':
-        return canUseActas ? <EstructuraScreen onBack={() => setActiveTab('home')} /> : null;
+        return canUseActas ? <EstructuraScreen onBack={() => setActiveTab('home')} soloMisTiendas={onlyOwnStores} /> : null;
       case 'vacaciones':
-        return <VacacionesScreen onBack={() => setActiveTab('home')} conEquipo={canUseActas} />;
+        return <VacacionesScreen onBack={() => setActiveTab('home')} conEquipo={canUseActas} soloMisTiendas={onlyOwnStores} />;
       default:
         return null;
     }
-  }, [activeTab, chatHistory, firstName, unreadNotices, canUseActas]);
+  }, [activeTab, chatHistory, firstName, unreadNotices, canUseActas, onlyOwnStores]);
 
   return (
     <View style={styles.shell}>

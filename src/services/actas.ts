@@ -31,6 +31,13 @@ export const PUESTOS_ACTAS = [
 const normalizar = (s?: string) =>
   limpio(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ');
 
+// Asesores de Tienda (also "ASESOR TIENDA CV") only see their own stores in
+// Estructura and in the team view of Vacaciones; the other puestos with access
+// see the whole plaza.
+export function soloSusTiendas(puesto?: string) {
+  return normalizar(puesto).startsWith('ASESOR TIENDA');
+}
+
 export function puedeLevantarActas(puesto?: string) {
   const p = normalizar(puesto);
   return !!p && PUESTOS_ACTAS.some((permitido) => p.startsWith(normalizar(permitido)));

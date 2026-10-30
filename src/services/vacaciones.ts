@@ -6,6 +6,7 @@
 // The sheet only has store staff (SINDICALIZADO): office staff won't be found.
 // If DashboardsOxxo renames the tab or its columns, update this file too.
 import { getJson, setJson, storageKeys } from './appStorage';
+import { asesorDelCatalogo, cargarTiendas } from './tiendas';
 import { clave, esPlaza, fechaConfiguracion, leerCsv, letra, normalizarNombre, PLAZA } from './gviz';
 
 export { normalizarNombre };
@@ -98,6 +99,13 @@ async function leerFiltrado(col: string, campo: keyof Vacacion, consulta: string
 
 const sinCeros = (v: unknown) => String(v ?? '').replace(/\D/g, '').replace(/^0+/, '');
 
+// The sheet's Asesor column lags behind; like the dashboards, the AT of each
+// store comes from Catalogo_Asesores when the store is there.
+async function conAsesorDelCatalogo(lista: Vacacion[]) {
+  const catalogo = await cargarTiendas();
+  return lista.map((v) => ({ ...v, asesor: asesorDelCatalogo(catalogo, { tienda: v.tienda }) || v.asesor }));
+}
+
 export type MiVacacion = { vacacion: Vacacion | null; guardada?: boolean };
 
 // Own balance. The last one read is kept on the phone (removed on logout)
@@ -112,7 +120,7 @@ export async function cargarMiVacacion(numeroEmpleado: string): Promise<MiVacaci
       `select * where ${COL_NUMERO} = ${numero} and ${COL_PLAZA} = '${PLAZA}'`,
       (v) => sinCeros(v.numEmpleado) === numero && esPlaza(v.plaza)
     );
-    const vacacion = lista[0] || null;
+    const vacacion = (await conAsesorDelCatalogo(lista))[0] || null;
     setJson(storageKeys.vacationBalance, vacacion ? { numero, vacacion } : null);
     return { vacacion };
   } catch (e) {
@@ -126,6 +134,7 @@ export async function cargarMiVacacion(numeroEmpleado: string): Promise<MiVacaci
 let equipo: Promise<Vacacion[]> | null = null;
 export function cargarEquipo(): Promise<Vacacion[]> {
   equipo ??= leerFiltrado(COL_PLAZA, 'plaza', `select * where ${COL_PLAZA} = '${PLAZA}'`, (v) => esPlaza(v.plaza))
+    .then(conAsesorDelCatalogo)
     .then((l) => l.sort((a, b) => b.diasRestantes - a.diasRestantes))
     .catch((e) => {
       equipo = null;

@@ -34,7 +34,8 @@ const num = (n: number) => n.toLocaleString('es-MX');
 const pct = (x: number) => `${(x * 100).toLocaleString('es-MX', { maximumFractionDigits: 1 })}%`;
 const plural = (n: number, uno: string, varios: string) => `${num(n)} ${n === 1 ? uno : varios}`;
 
-export function EstructuraScreen({ onBack }: { onBack: () => void }) {
+// soloMisTiendas: Asesores de Tienda only see their own stores.
+export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: () => void; soloMisTiendas?: boolean }) {
   const [sesion, setSesion] = useState<Sesion>(null);
   const [corte, setCorte] = useState<Corte | null>(null);
   const [error, setError] = useState(false);
@@ -62,13 +63,17 @@ export function EstructuraScreen({ onBack }: { onBack: () => void }) {
     };
   }, [intento]);
 
-  // "Mis tiendas" only exists when the logged-in person is the AT of some stores.
+  // An AT only sees their own stores (and nothing if their name isn't found).
+  // Others get an optional "Mis tiendas" when they are the AT of some stores.
   const yo = normalizarNombre(sesion?.nombre);
   const tengoTiendas = useMemo(() => !!yo && !!corte?.tiendas.some((t) => normalizarNombre(t.asesor) === yo), [corte, yo]);
   const resultado = useMemo(() => {
-    const base = buscarTiendas(corte?.tiendas || [], texto, tengoTiendas && soloMias ? sesion?.nombre : undefined);
+    if (soloMisTiendas && !yo) return [];
+    const filtro = soloMisTiendas || (tengoTiendas && soloMias) ? sesion?.nombre : undefined;
+    const base = buscarTiendas(corte?.tiendas || [], texto, filtro);
     return conVacantes ? base.filter((t) => t.vacantes > 0) : base;
-  }, [corte, texto, tengoTiendas, soloMias, conVacantes, sesion?.nombre]);
+  }, [corte, texto, tengoTiendas, soloMias, soloMisTiendas, yo, conVacantes, sesion?.nombre]);
+  const sinTiendas = soloMisTiendas && !!corte && !tengoTiendas;
   const t = totales(resultado);
 
   return (
@@ -126,12 +131,13 @@ export function EstructuraScreen({ onBack }: { onBack: () => void }) {
               />
             </View>
             <View style={styles.chips}>
-              {tengoTiendas ? <Chip texto="Mis tiendas" activo={soloMias} onPress={() => setSoloMias((x) => !x)} /> : null}
+              {tengoTiendas && !soloMisTiendas ? <Chip texto="Mis tiendas" activo={soloMias} onPress={() => setSoloMias((x) => !x)} /> : null}
               <Chip texto="Con vacantes" activo={conVacantes} onPress={() => setConVacantes((x) => !x)} />
             </View>
             {corte ? (
               <Text style={styles.resumen}>
                 {plural(t.tiendas, 'tienda', 'tiendas')}
+                {soloMisTiendas ? ' a tu cargo' : ''}
                 {resultado.length > MAX_LISTA ? ` · se muestran ${MAX_LISTA}, usa la búsqueda` : ''}
               </Text>
             ) : null}
@@ -150,6 +156,12 @@ export function EstructuraScreen({ onBack }: { onBack: () => void }) {
           ) : !corte ? (
             <View style={styles.cargando}>
               <ActivityIndicator color={colors.oxRed} />
+            </View>
+          ) : sinTiendas ? (
+            <View style={[styles.card, styles.aviso]}>
+              <Icon name="pin" size={26} color={colors.oxRed} />
+              <Text style={styles.avisoTitulo}>No encontramos tiendas a tu nombre</Text>
+              <Text style={styles.avisoTexto}>Tus tiendas salen del catálogo de asesores de RH. Si te falta alguna, avisa a RH.</Text>
             </View>
           ) : (
             <Text style={styles.nota}>Ninguna tienda coincide con la búsqueda.</Text>
