@@ -114,7 +114,13 @@ export function buscarTienda(tiendas: Tienda[], texto?: string) {
 export function asesorDelCatalogo(tiendas: Tienda[], { cr, tienda }: { cr?: string; tienda?: string }) {
   const c = normalizarCr(cr);
   const n = normalizarTienda(tienda);
-  return (c && tiendas.find((t) => t.cr === c)?.asesor) || (n && tiendas.find((t) => normalizarTienda(t.tienda) === n)?.asesor) || '';
+  const exacta = (c && tiendas.find((t) => t.cr === c)?.asesor) || (n && tiendas.find((t) => normalizarTienda(t.tienda) === n)?.asesor);
+  if (exacta) return exacta;
+  // Payroll reports cut store names at 25 characters ("OXXO SAN JOSE DEL PROGRES"):
+  // a long name that starts exactly one catalog store is that store.
+  if (String(tienda ?? '').trim().length < 25 || n.length < 12) return '';
+  const inicio = tiendas.filter((t) => normalizarTienda(t.tienda).startsWith(n));
+  return inicio.length === 1 ? inicio[0].asesor : '';
 }
 
 export function sugerirTiendas(tiendas: Tienda[], texto?: string, max = 6) {

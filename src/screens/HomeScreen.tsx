@@ -8,7 +8,7 @@ import { BearAvatar } from '../components/Bear';
 import { Icon } from '../components/Icon';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-type HomeTarget = 'chat' | 'directory' | 'notifications' | 'profile' | 'actas' | 'vacaciones' | 'estructura';
+type HomeTarget = 'chat' | 'directory' | 'notifications' | 'profile' | 'actas' | 'vacaciones' | 'estructura' | 'cuota';
 
 export type ChatHistoryItem = {
   id: string;
@@ -21,7 +21,7 @@ type HomeScreenProps = {
   history: ChatHistoryItem[];
   firstName?: string;
   unreadNotices?: number;
-  // Actas y Formatos and Estructura are only for some puestos (see services/actas.ts).
+  // Actas y Formatos, Estructura and Cuota sindical are only for some puestos (see services/actas.ts).
   showActas?: boolean;
 };
 
@@ -47,6 +47,14 @@ const ESTRUCTURA_ACTION: QuickAction = {
   icon: 'chart',
   target: 'estructura',
   accent: 'green',
+};
+
+const CUOTA_ACTION: QuickAction = {
+  title: 'Cuota sindical',
+  desc: 'Lo descontado por mes, tienda y puesto.',
+  icon: 'shield',
+  target: 'cuota',
+  accent: 'purple',
 };
 
 const VACACIONES_ACTION: QuickAction = {
@@ -90,7 +98,7 @@ const QUICK_ACTIONS: QuickAction[] = [
 
 
 export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, showActas = false }: HomeScreenProps) {
-  const actions = [...(showActas ? [ACTAS_ACTION, ESTRUCTURA_ACTION] : []), VACACIONES_ACTION, ...QUICK_ACTIONS];
+  const actions = [...(showActas ? [ACTAS_ACTION, ESTRUCTURA_ACTION, CUOTA_ACTION] : []), VACACIONES_ACTION, ...QUICK_ACTIONS];
   return (
     <View style={styles.screen}>
       <LinearGradient
