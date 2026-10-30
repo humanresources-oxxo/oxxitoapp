@@ -1,6 +1,6 @@
 // src/screens/EstructuraScreen.tsx
 // Estructura: each store's positions from DashboardsOxxo's Dashboard 1, who
-// holds each one and which are vacant (and since when). One plaza at a time,
+// holds each one and which are vacant (and since when). Plaza Oaxaca only,
 // with search by store, CR or employee and "Mis tiendas" for the logged-in AT.
 // Only for the same puestos as Actas (see services/actas.ts).
 import React, { useEffect, useMemo, useState } from 'react';
@@ -19,10 +19,10 @@ import {
   TiendaEstructura,
   totales,
 } from '../services/estructura';
-import { normalizarNombre, PLAZAS, plazaDeSesion } from '../services/gviz';
+import { normalizarNombre } from '../services/gviz';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-type Sesion = { nombre?: string; plaza?: string } | null;
+type Sesion = { nombre?: string } | null;
 
 const MAX_LISTA = 80;
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -36,7 +36,6 @@ const plural = (n: number, uno: string, varios: string) => `${num(n)} ${n === 1 
 
 export function EstructuraScreen({ onBack }: { onBack: () => void }) {
   const [sesion, setSesion] = useState<Sesion>(null);
-  const [plaza, setPlaza] = useState<string | null>(null);
   const [corte, setCorte] = useState<Corte | null>(null);
   const [error, setError] = useState(false);
   const [intento, setIntento] = useState(0);
@@ -47,25 +46,21 @@ export function EstructuraScreen({ onBack }: { onBack: () => void }) {
   const [detalle, setDetalle] = useState<TiendaEstructura | null>(null);
 
   useEffect(() => {
-    getJson<Sesion>(storageKeys.session, null).then((s) => {
-      setSesion(s);
-      setPlaza(plazaDeSesion(s?.plaza));
-    });
+    getJson<Sesion>(storageKeys.session, null).then(setSesion);
     fechaActualizacion().then(setActualizado);
   }, []);
 
   useEffect(() => {
-    if (!plaza) return;
     let activo = true;
     setCorte(null);
     setError(false);
-    cargarEstructura(plaza)
+    cargarEstructura()
       .then((c) => activo && setCorte(c))
       .catch(() => activo && setError(true));
     return () => {
       activo = false;
     };
-  }, [plaza, intento]);
+  }, [intento]);
 
   // "Mis tiendas" only exists when the logged-in person is the AT of some stores.
   const yo = normalizarNombre(sesion?.nombre);
@@ -86,7 +81,7 @@ export function EstructuraScreen({ onBack }: { onBack: () => void }) {
           </Pressable>
           <View style={styles.headerCopy}>
             <Text style={styles.eyebrow}>
-              {corte?.mes ? `Corte ${mesTexto(corte.mes)}` : 'Dashboard de vacantes'}
+              Plaza Oaxaca
               {actualizado ? ` · ${actualizado}` : ''}
             </Text>
             <Text style={styles.title}>Estructura</Text>
@@ -102,16 +97,10 @@ export function EstructuraScreen({ onBack }: { onBack: () => void }) {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={{ gap: 10 }}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-              {PLAZAS.map((p) => (
-                <Chip key={p} texto={p} activo={p === plaza} onPress={() => setPlaza(p)} />
-              ))}
-            </ScrollView>
-
             {corte ? (
               <LinearGradient colors={gradients.oxGrad.colors} start={gradients.oxGrad.start} end={gradients.oxGrad.end} style={styles.hero}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.heroKicker}>Cobertura</Text>
+                  <Text style={styles.heroKicker}>Cobertura{corte.mes ? ` · ${mesTexto(corte.mes)}` : ''}</Text>
                   <Text style={styles.heroNumero}>{pct(t.cobertura)}</Text>
                   <Text style={styles.heroBody}>
                     {plural(t.ocupadas, 'posición ocupada', 'posiciones ocupadas')} de {num(t.total)}

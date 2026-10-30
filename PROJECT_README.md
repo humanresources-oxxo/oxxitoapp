@@ -31,8 +31,8 @@ a partir del design handoff (`design_handoff_oxxito_app`).
 
 ✅ **Estructura (`src/screens/EstructuraScreen.tsx`):** posiciones de cada tienda desde el
   Dashboard 1 de DashboardsOxxo (pestaña `Dashboard_1_Diario`, `src/services/estructura.ts`).
-  Solo para los puestos de `PUESTOS_ACTAS`; se abre desde Inicio.
-  - Usa el corte del mes más reciente (columna `Mes`), una plaza a la vez: cobertura,
+  Solo para los puestos de `PUESTOS_ACTAS` y solo Plaza Oaxaca; se abre desde Inicio.
+  - Usa el corte del mes más reciente (columna `Mes`): cobertura,
     vacantes, y por tienda quién ocupa cada posición y desde cuándo está vacante cada una.
   - Mismos filtros por defecto que `dashboard-1.html`: sin unidades de Entrenamiento u
     Operaciones, sin preaperturas (`PREOPENING_STORE_KEYS`) y solo sus seis puestos por
@@ -43,16 +43,17 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   - Si DashboardsOxxo cambia los puestos por defecto, la lista de preaperturas, la
     pestaña o sus columnas, hay que actualizar el servicio.
   - `src/services/gviz.ts` concentra la lectura por GViz que comparten Vacaciones y
-    Estructura (y el parser CSV que usa el catálogo de tiendas).
+    Estructura (y el parser CSV que usa el catálogo de tiendas). Las hojas traen las cinco
+    plazas de la Región; la app filtra a `PLAZA = 'Oaxaca'` en la consulta y otra vez al leer.
 
 ✅ **Vacaciones (`src/screens/VacacionesScreen.tsx`):** saldo de vacaciones desde el
   Dashboard 5 de DashboardsOxxo (pestaña `Dashboard_5_Semanal` del Google Sheet de los
   dashboards, leída por GViz CSV como la web; `src/services/vacaciones.ts`). Se abre desde
-  Inicio ("Mis vacaciones").
+  Inicio ("Mis vacaciones"). **Solo Plaza Oaxaca** (`PLAZA` en `src/services/gviz.ts`).
   - Todos ven su propio saldo, buscado por su número de empleado: días restantes, periodo
     anterior y actual, y cuándo vencen (`Bucket_Ant` / `Bucket_Act`). El último saldo leído
     se guarda en el teléfono para verlo sin señal y se borra al cerrar sesión.
-  - Los puestos de `PUESTOS_ACTAS` tienen además "Mi equipo": la plaza completa con
+  - Los puestos de `PUESTOS_ACTAS` tienen además "Mi equipo": toda Plaza Oaxaca con
     búsqueda por nombre, número o tienda, el filtro "Mis tiendas" (cuando el nombre de la
     sesión es el Asesor de esas filas) y "Por vencer o vencidos".
   - La fecha de actualización sale de la pestaña `Configuracion` (fila `s5`).

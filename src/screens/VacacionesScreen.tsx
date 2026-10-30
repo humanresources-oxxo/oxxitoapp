@@ -1,8 +1,9 @@
 // src/screens/VacacionesScreen.tsx
 // Vacaciones: the employee's own balance (days left, previous and current
 // period, when they expire) from DashboardsOxxo's Dashboard 5. Puestos with
-// team access (same as Actas) also get a "Mi equipo" view: look up anyone in a
-// plaza by name, number or store, or just the stores of the logged-in AT.
+// team access (same as Actas) also get a "Mi equipo" view: look up anyone in
+// Plaza Oaxaca by name, number or store, or just the stores of the logged-in AT.
+// Plaza Oaxaca only (see services/gviz.ts).
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,18 +13,16 @@ import { getJson, storageKeys } from '../services/appStorage';
 import {
   buscarVacaciones,
   cargarMiVacacion,
-  cargarPlaza,
+  cargarEquipo,
   fechaActualizacion,
   MiVacacion,
   normalizarNombre,
-  PLAZAS,
-  plazaDeSesion,
   urgencia,
   Vacacion,
 } from '../services/vacaciones';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-type Sesion = { numeroEmpleado?: string; nombre?: string; plaza?: string } | null;
+type Sesion = { numeroEmpleado?: string; nombre?: string } | null;
 type Vista = 'mias' | 'equipo';
 
 const MAX_LISTA = 80;
@@ -74,7 +73,7 @@ export function VacacionesScreen({ onBack, conEquipo = false }: { onBack: () => 
             <Icon name="chevL" size={20} color={colors.ink} />
           </Pressable>
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>{actualizado ? `Actualizado ${actualizado}` : 'Dashboard de vacaciones'}</Text>
+            <Text style={styles.eyebrow}>Plaza Oaxaca{actualizado ? ` · ${actualizado}` : ''}</Text>
             <Text style={styles.title}>Vacaciones</Text>
           </View>
         </View>
@@ -121,7 +120,7 @@ export function VacacionesScreen({ onBack, conEquipo = false }: { onBack: () => 
             <Aviso
               icono="calendar"
               titulo="No apareces en el reporte de vacaciones"
-              texto={`El reporte de RH incluye al personal de tienda. Si eres de tienda y no apareces con el número ${
+              texto={`Aquí solo aparece el personal de tienda de Plaza Oaxaca. Si eres de tienda en Oaxaca y no apareces con el número ${
                 sesion?.numeroEmpleado || ''
               }, avisa a RH.`}
             />
@@ -208,7 +207,6 @@ function Aviso({ icono, titulo, texto, accion }: { icono: string; titulo: string
 }
 
 function Equipo({ sesion }: { sesion: Sesion }) {
-  const [plaza, setPlaza] = useState(plazaDeSesion(sesion?.plaza));
   const [filas, setFilas] = useState<Vacacion[] | null>(null);
   const [error, setError] = useState(false);
   const [texto, setTexto] = useState('');
@@ -221,13 +219,13 @@ function Equipo({ sesion }: { sesion: Sesion }) {
     let activo = true;
     setFilas(null);
     setError(false);
-    cargarPlaza(plaza)
+    cargarEquipo()
       .then((l) => activo && setFilas(l))
       .catch(() => activo && setError(true));
     return () => {
       activo = false;
     };
-  }, [plaza, intento]);
+  }, [intento]);
 
   // "Mis tiendas" only exists when the logged-in person is the AT of some rows.
   const yo = normalizarNombre(sesion?.nombre);
@@ -248,11 +246,6 @@ function Equipo({ sesion }: { sesion: Sesion }) {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={{ gap: 10 }}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-              {PLAZAS.map((p) => (
-                <Chip key={p} texto={p} activo={p === plaza} onPress={() => setPlaza(p)} />
-              ))}
-            </ScrollView>
             <View style={styles.buscador}>
               <Icon name="search" size={18} color={colors.ink3} />
               <TextInput
@@ -281,7 +274,7 @@ function Equipo({ sesion }: { sesion: Sesion }) {
           error ? (
             <Aviso
               icono="alert"
-              titulo="No se pudo cargar la plaza"
+              titulo="No se pudo cargar el equipo"
               texto="Revisa tu conexión e intenta de nuevo."
               accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }}
             />

@@ -1,14 +1,14 @@
 // src/services/vacaciones.ts
 // Vacation balances from DashboardsOxxo's Dashboard 5 (tab Dashboard_5_Semanal
 // of the dashboards' Google Sheet, read through GViz CSV like the web does).
-// Each employee looks up their own row by employee number; some puestos (the
-// same as Actas, see services/actas.ts) can also look up their team.
+// Plaza Oaxaca only. Each employee looks up their own row by employee number;
+// some puestos (the same as Actas, see services/actas.ts) can also look up the plaza.
 // The sheet only has store staff (SINDICALIZADO): office staff won't be found.
 // If DashboardsOxxo renames the tab or its columns, update this file too.
 import { getJson, setJson, storageKeys } from './appStorage';
-import { clave, fechaConfiguracion, leerCsv, letra, normalizarNombre, PLAZAS, plazaDeSesion } from './gviz';
+import { clave, esPlaza, fechaConfiguracion, leerCsv, letra, normalizarNombre, PLAZA } from './gviz';
 
-export { normalizarNombre, PLAZAS, plazaDeSesion };
+export { normalizarNombre };
 
 const TAB = 'Dashboard_5_Semanal';
 const CONFIG_ID = 's5';
@@ -106,7 +106,12 @@ export async function cargarMiVacacion(numeroEmpleado: string): Promise<MiVacaci
   const numero = sinCeros(numeroEmpleado);
   if (!numero) return { vacacion: null };
   try {
-    const lista = await leerFiltrado(COL_NUMERO, 'numEmpleado', `select * where ${COL_NUMERO} = ${numero}`, (v) => sinCeros(v.numEmpleado) === numero);
+    const lista = await leerFiltrado(
+      COL_NUMERO,
+      'numEmpleado',
+      `select * where ${COL_NUMERO} = ${numero} and ${COL_PLAZA} = '${PLAZA}'`,
+      (v) => sinCeros(v.numEmpleado) === numero && esPlaza(v.plaza)
+    );
     const vacacion = lista[0] || null;
     setJson(storageKeys.vacationBalance, vacacion ? { numero, vacacion } : null);
     return { vacacion };
@@ -117,21 +122,16 @@ export async function cargarMiVacacion(numeroEmpleado: string): Promise<MiVacaci
   }
 }
 
-// Team view: one plaza at a time (~1,000 rows) so it stays light on the phone.
-const porPlaza = new Map<string, Promise<Vacacion[]>>();
-export function cargarPlaza(plaza: string): Promise<Vacacion[]> {
-  const p = PLAZAS.find((x) => clave(x) === clave(plaza));
-  if (!p) return Promise.resolve([]);
-  if (!porPlaza.has(p)) {
-    const pedido = leerFiltrado(COL_PLAZA, 'plaza', `select * where ${COL_PLAZA} = '${p}'`, (v) => clave(v.plaza) === clave(p))
-      .then((l) => l.sort((a, b) => b.diasRestantes - a.diasRestantes))
-      .catch((e) => {
-        porPlaza.delete(p);
-        throw e;
-      });
-    porPlaza.set(p, pedido);
-  }
-  return porPlaza.get(p)!;
+// Team view: all of Plaza Oaxaca (~1,000 rows).
+let equipo: Promise<Vacacion[]> | null = null;
+export function cargarEquipo(): Promise<Vacacion[]> {
+  equipo ??= leerFiltrado(COL_PLAZA, 'plaza', `select * where ${COL_PLAZA} = '${PLAZA}'`, (v) => esPlaza(v.plaza))
+    .then((l) => l.sort((a, b) => b.diasRestantes - a.diasRestantes))
+    .catch((e) => {
+      equipo = null;
+      throw e;
+    });
+  return equipo;
 }
 
 export function buscarVacaciones(lista: Vacacion[], texto: string, soloAsesor?: string) {

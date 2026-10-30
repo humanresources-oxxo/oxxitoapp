@@ -13,11 +13,10 @@ export const normalizarNombre = (v: unknown) =>
   sinAcentos(v).toUpperCase().replace(/[^A-Z ]/g, ' ').replace(/\s+/g, ' ').trim();
 export const letra = (i: number) => String.fromCharCode(65 + i);
 
-// The five plazas of Region TABASCO (DashboardsOxxo js/config.js SCOPE_MODEL).
-export const PLAZAS = ['Oaxaca', 'Villahermosa', 'Chontalpa', 'Costa Istmo', 'Tuxtla'];
-// Sheets sometimes write the plaza as "OXXO OAXACA".
-export const plazaDe = (v?: string) => PLAZAS.find((x) => clave(x) === clave(String(v ?? '').replace(/^\s*oxxo\s+/i, '')));
-export const plazaDeSesion = (plaza?: string) => plazaDe(plaza) || PLAZAS[0];
+// The sheets cover the five plazas of Region TABASCO, but the app only shows
+// Plaza Oaxaca. Sheets sometimes write it as "OXXO OAXACA".
+export const PLAZA = 'Oaxaca';
+export const esPlaza = (v?: string) => clave(String(v ?? '').replace(/^\s*oxxo\s+/i, '')) === clave(PLAZA);
 
 export function parsearCsv(texto: string): string[][] {
   const filas: string[][] = [];
