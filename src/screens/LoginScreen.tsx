@@ -74,7 +74,7 @@ export function LoginScreen({
         <View style={styles.head}>
           <Text style={styles.kicker}>Identificación</Text>
           <Text style={styles.title}>Inicia sesión</Text>
-          <Text style={styles.sub}>Ingresa tu número de empleado para acceder a Oxxito.</Text>
+          <Text style={styles.sub}>Ingresa tu número de empleado para acceder a Conoxxo.</Text>
         </View>
 
         <View style={styles.fields}>

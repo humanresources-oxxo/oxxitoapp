@@ -3,7 +3,7 @@ export type PreferenceKey = 'push' | 'privacy' | 'biometric';
 export const employeeProfile = {
   name: 'Juan Perez',
   role: 'Colaborador de tienda',
-  store: 'Oxxito Plaza Oaxaca',
+  store: 'Conoxxo Plaza Oaxaca',
   employeeId: '123456',
   area: 'Operacion',
   since: 'Mar 2024',

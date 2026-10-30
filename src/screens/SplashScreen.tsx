@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { gradients, colors } from '../theme/tokens';
 
 const BEAR_GIF = require('../../assets/images/osito_saludando.gif');
+const LOGO = require('../../assets/images/conoxxo-logo.png');
 
 export function SplashScreen({ onDone }: { onDone: () => void }) {
   const bearScale = useRef(new Animated.Value(0.35)).current;
@@ -156,7 +157,7 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
         </View>
 
         <Animated.View style={[styles.wordWrap, { opacity: wordOpacity, transform: [{ translateY: wordY }] }]}>
-          <Text style={styles.wordmark}>Oxxito</Text>
+          <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel="Conoxxo" />
           <Text style={styles.tagline}>TU ASISTENTE DEL REGLAMENTO</Text>
         </Animated.View>
       </LinearGradient>
@@ -177,7 +178,7 @@ const styles = StyleSheet.create({
   orb: {
     position: 'absolute',
     borderRadius: 999,
-    opacity: 0.45,
+    opacity: 0.16,
   },
   orbGold: {
     width: 220,
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
     height: 240,
     bottom: -70,
     right: -70,
-    backgroundColor: '#FF3B24',
+    backgroundColor: colors.oxGold,
   },
   sheen: {
     position: 'absolute',
@@ -199,7 +200,7 @@ const styles = StyleSheet.create({
     right: 0,
     width: '70%',
     height: '40%',
-    backgroundColor: 'rgba(255,255,255,.18)',
+    backgroundColor: 'rgba(255,255,255,.55)',
     borderBottomLeftRadius: 400,
   },
   stage: {
@@ -235,7 +236,7 @@ const styles = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 5,
-    backgroundColor: '#fff',
+    backgroundColor: colors.oxGold,
   },
   wordWrap: {
     position: 'absolute',
@@ -243,18 +244,16 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
   },
-  wordmark: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
-    fontSize: 44,
-    color: '#fff',
-    letterSpacing: -0.4,
+  logo: {
+    width: 250,
+    height: 102, // conoxxo-logo.png is 1000x408
   },
   tagline: {
     fontFamily: 'PlusJakartaSans_700Bold',
     fontSize: 15,
     letterSpacing: 1.3,
     textTransform: 'uppercase',
-    color: 'rgba(255,255,255,.95)',
-    marginTop: 8,
+    color: colors.ink2,
+    marginTop: 12,
   },
 });

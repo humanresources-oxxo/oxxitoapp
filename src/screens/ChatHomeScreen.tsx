@@ -160,7 +160,7 @@ export function ChatHomeScreen({ onQuestionAsked }: { onQuestionAsked?: (questio
           <View style={styles.identity}>
             <BearAvatar size={48} />
             <View>
-              <Text style={styles.eyebrow}>Oxxito Plaza Oaxaca</Text>
+              <Text style={styles.eyebrow}>Conoxxo Plaza Oaxaca</Text>
               <Text style={styles.title}>Chat Home</Text>
               <Text style={styles.subtitle}>{subtitle}</Text>
             </View>

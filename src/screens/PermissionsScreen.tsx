@@ -35,7 +35,7 @@ export function PermissionsScreen({
         <View style={styles.head}>
           <Text style={styles.kicker}>Casi listo</Text>
           <Text style={styles.title}>Permisos y términos</Text>
-          <Text style={styles.sub}>Un último paso para personalizar tu experiencia con Oxxito.</Text>
+          <Text style={styles.sub}>Un último paso para personalizar tu experiencia con Conoxxo.</Text>
         </View>
 
         <View style={styles.fields}>

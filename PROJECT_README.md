@@ -1,9 +1,16 @@
-# Oxxito App — React Native / Expo
+# Conoxxo (antes Oxxito) — React Native / Expo
 
-Implementación en React Native (Expo SDK 56) del flujo de **onboarding** de Oxxito,
+Implementación en React Native (Expo SDK 56) del flujo de **onboarding** de Conoxxo (antes Oxxito),
 a partir del design handoff (`design_handoff_oxxito_app`).
 
 ## Estado actual
+
+🎨 **Marca Conoxxo:** la app se llama Conoxxo. Logo en `assets/images/conoxxo-logo.png`
+  (y el emblema circular en `conoxxo-emblem.png`, base de los íconos de app, web y Android).
+  Paleta del logo en `src/theme/tokens.ts`: rojo `#E30613`, amarillo `#F6B800`, azul
+  `#005AAE`. Se conserva el osito como mascota. La dirección web sigue siendo `/oxxitoapp/`
+  y las llaves guardadas (`oxxito:*`) no cambian, para no cerrar sesiones ni romper la app
+  instalada. Al publicar, `index.html` lleva title "Conoxxo" y `theme-color` `#E30613`.
 
 ✅ **Onboarding + tabs post-login completos:**
 - Splash, Welcome, Login, Verify, Register (crear PIN / PIN temporal → definitivo), Permissions
