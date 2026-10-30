@@ -60,7 +60,7 @@ export function RegisterScreen({
           <Text style={styles.kicker}>Primer ingreso</Text>
           <Text style={styles.title}>Crea tu PIN</Text>
           <Text style={styles.sub}>
-            {verifiedName ? `Hola, ${verifiedName}. ` : ''}Este es tu primer ingreso a Oxxito, crea un PIN de 4
+            {verifiedName ? `Hola, ${verifiedName}. ` : ''}Este es tu primer ingreso a Conoxxo, crea un PIN de 4
             dígitos para proteger tu cuenta.
           </Text>
         </View>
@@ -73,7 +73,7 @@ export function RegisterScreen({
             <View style={{ paddingVertical: 6, paddingHorizontal: 2 }}>
               <PinDots length={len} total={4} />
             </View>
-            <OxHint>Usarás este PIN cada vez que ingreses a Oxxito.</OxHint>
+            <OxHint>Usarás este PIN cada vez que ingreses a Conoxxo.</OxHint>
             {error ? <OxHint>{error}</OxHint> : null}
           </View>
         </View>

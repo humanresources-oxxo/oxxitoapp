@@ -129,6 +129,6 @@ export const initialChatMessages: ChatMessage[] = [
   {
     id: 'welcome',
     role: 'assistant',
-    text: 'Hola, soy Oxxito. Preguntame sobre el reglamento, permisos, vacaciones o asistencia.',
+    text: 'Hola, soy el asistente de Conoxxo. Preguntame sobre el reglamento, permisos, vacaciones o asistencia.',
   },
 ];

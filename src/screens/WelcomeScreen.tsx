@@ -4,6 +4,7 @@ import React from 'react';
 import {
   View,
   Text,
+  Image,
   ScrollView,
   StyleSheet,
   Platform,
@@ -15,6 +16,8 @@ import { Bear } from '../components/Bear';
 import { Icon } from '../components/Icon';
 import { OxButton, GhostAccent } from '../components/OxButton';
 import { colors, gradients, radii, type } from '../theme/tokens';
+
+const LOGO = require('../../assets/images/conoxxo-logo.png');
 
 const FEATURES: { icon: string; bg: 'oxGrad' | 'blue' | 'green'; title: string; desc: string }[] = [
   {
@@ -70,9 +73,10 @@ export function WelcomeScreen({ onContinue }: { onContinue: () => void }) {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel="Conoxxo" />
           <Text style={styles.eyebrow}>Tu asistente del reglamento</Text>
           <Text style={styles.title}>
-            <Text style={styles.brand}>Oxxito</Text> Plaza Oaxaca
+            <Text style={styles.brand}>Conoxxo</Text> Plaza Oaxaca
           </Text>
 
           <View style={styles.feats}>
@@ -165,6 +169,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 26,
     paddingTop: 26,
     paddingBottom: 8,
+  },
+  logo: {
+    width: 176,
+    height: 72, // conoxxo-logo.png is 1000x408
+    marginLeft: -6,
+    marginBottom: 14,
   },
   eyebrow: {
     ...type.eyebrowSm,

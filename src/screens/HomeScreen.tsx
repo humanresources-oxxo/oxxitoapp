@@ -107,7 +107,7 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, s
             <View style={styles.headerCopy}>
               <Text style={styles.eyebrow}>{firstName ? `Hola, ${firstName}` : 'Buenos dias'}</Text>
               <Text style={styles.title}>Inicio</Text>
-              <Text style={styles.subtitle}>Todo lo importante de Oxxito en un solo lugar.</Text>
+              <Text style={styles.subtitle}>Todo lo importante de Conoxxo en un solo lugar.</Text>
             </View>
           </View>
           <Pressable style={styles.headerButton} onPress={() => onOpenTab('notifications')}>

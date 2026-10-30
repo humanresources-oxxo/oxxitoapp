@@ -1,11 +1,13 @@
 // src/theme/tokens.ts
 // Design tokens — single source of truth, ported from oxxito.css (design handoff).
+// Conoxxo palette: red, yellow and blue taken from the Conoxxo logo.
 
 export const colors = {
-  oxRed: '#EE2C24',
-  oxRedDark: '#C81E16',
-  oxOrange: '#FF8A1F',
-  oxGold: '#F5B100',
+  oxRed: '#E30613',
+  oxRedDark: '#B5000F',
+  oxOrange: '#F6B800', // logo yellow (kept the old name; used as accent)
+  oxGold: '#F6B800',
+  oxBlue: '#005AAE',
   ink: '#241A17',
   ink2: '#6E605B',
   ink3: '#A2948D',
@@ -21,34 +23,34 @@ export const colors = {
 
 // Gradient stop arrays for expo-linear-gradient (colors, locations, angle handled via start/end points)
 export const gradients = {
-  // linear-gradient(152deg, #FF4F2D 0%, #FF7A1A 52%, #FF9A12 100%)
+  // Logo red, a little deeper at the start and warmer at the end.
   oxGrad: {
-    colors: ['#FF4F2D', '#FF7A1A', '#FF9A12'] as const,
+    colors: ['#C8000F', '#E30613', '#F2412A'] as const,
     locations: [0, 0.52, 1] as const,
     start: { x: 0.1, y: 0 },
     end: { x: 0.85, y: 1 },
   },
-  // linear-gradient(155deg, #FF4F2D 0%, #FF7A1A 50%, #FF9A12 100%) — welcome hero (near identical angle)
+  // Welcome hero (same reds, near identical angle)
   oxGradHero: {
-    colors: ['#FF4F2D', '#FF7A1A', '#FF9A12'] as const,
+    colors: ['#C8000F', '#E30613', '#F2412A'] as const,
     locations: [0, 0.5, 1] as const,
     start: { x: 0.08, y: 0 },
     end: { x: 0.86, y: 1 },
   },
   oxGradSoft: {
-    colors: ['#FFF1E8', '#FFE6D6'] as const,
+    colors: ['#FFF3EF', '#FFE5DE'] as const,
     start: { x: 0.1, y: 0 },
     end: { x: 0.85, y: 1 },
   },
   // category accent gradients (icons)
-  blue: { colors: ['#3B6FE0', '#5B8DF5'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
+  blue: { colors: ['#005AAE', '#2B7FD4'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
   green: { colors: ['#2E9E6B', '#46B883'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
   purple: { colors: ['#8A4FD8', '#A875E8'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
   dark: { colors: ['#34324A', '#5A5570'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
   alertRed: { colors: ['#E0453B', '#FF6A4D'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
-  // splash background: linear-gradient(160deg, #FF4F2D 0%, #FF7A1A 52%, #FF9A12 100%)
+  // Splash background: light, so the logo's red sign stands out.
   splash: {
-    colors: ['#FF4F2D', '#FF7A1A', '#FF9A12'] as const,
+    colors: ['#FFFFFF', '#FFFAEC', '#FFF1CC'] as const,
     locations: [0, 0.52, 1] as const,
     start: { x: 0.05, y: 0 },
     end: { x: 0.9, y: 1 },
@@ -108,14 +110,14 @@ export const shadows = {
     elevation: 3,
   },
   button: {
-    shadowColor: 'rgba(238,44,36,1)',
+    shadowColor: 'rgba(227,6,19,1)',
     shadowOpacity: 0.3,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 8 },
     elevation: 6,
   },
   hero: {
-    shadowColor: 'rgba(238,44,36,1)',
+    shadowColor: 'rgba(227,6,19,1)',
     shadowOpacity: 0.55,
     shadowRadius: 30,
     shadowOffset: { width: 0, height: 20 },
