@@ -133,6 +133,10 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   Falta su número de empleado para darle el puesto `ASESOR TIENDA`.
 - El resto del personal de tienda no tiene `puesto` en `employees` (solo los 22 de la
   migración 22 y la cuenta de prueba 1599067). Hoy no les quita acceso a nada.
+- Sindicato (migración 31): David (`9900000001`) y Antonio Cruz (`9900000002`), puesto
+  `SINDICATO`, acceso completo. No tienen número de empleado real; se les dieron números de
+  10 dígitos que empiezan con 99 (los reales tienen 7) porque el login solo acepta dígitos.
+  Falta el nombre completo de David.
 
 ## Publicación web (automática)
 
