@@ -60,7 +60,7 @@
     <div class="card">
       <h3>Agregar empleado</h3>
       <div class="row">
-        <input id="empNumero" placeholder="Numero de empleado" />
+        <input id="empNumero" placeholder="Número de empleado" />
         <input id="empNombre" placeholder="Nombre completo" />
       </div>
       <div class="row">
@@ -75,10 +75,10 @@
     <div class="card">
       <h3>Buscar empleados</h3>
       <div class="row">
-        <input id="empSearch" placeholder="Buscar por numero o nombre..." oninput="listEmployees()" />
+        <input id="empSearch" placeholder="Buscar por número o nombre..." oninput="listEmployees()" />
       </div>
       <table>
-        <thead><tr><th>Numero</th><th>Nombre</th><th>Tienda</th><th>PIN</th><th></th></tr></thead>
+        <thead><tr><th>Número</th><th>Nombre</th><th>Tienda</th><th>PIN</th><th></th></tr></thead>
         <tbody id="empTableBody"></tbody>
       </table>
     </div>
@@ -89,15 +89,15 @@
     <div class="card">
       <h3>Publicar aviso</h3>
       <div class="row">
-        <input id="noticeTitle" placeholder="Titulo" />
+        <input id="noticeTitle" placeholder="Título" />
       </div>
       <div class="row">
         <textarea id="noticeBody" placeholder="Mensaje" rows="3"></textarea>
       </div>
       <div class="row">
         <select id="noticeKind">
-          <option value="policy">Politica</option>
-          <option value="training">Capacitacion</option>
+          <option value="policy">Política</option>
+          <option value="training">Capacitación</option>
           <option value="schedule">Turnos</option>
           <option value="benefit">Beneficio</option>
         </select>
@@ -123,11 +123,11 @@
       <input type="hidden" id="contactId" />
       <div class="row">
         <input id="contactName" placeholder="Nombre" />
-        <input id="contactArea" placeholder="Area" />
+        <input id="contactArea" placeholder="Área" />
       </div>
       <div class="row">
-        <input id="contactRole" placeholder="Rol / descripcion" />
-        <input id="contactPhone" placeholder="Telefono (+52...)" />
+        <input id="contactRole" placeholder="Rol / descripción" />
+        <input id="contactPhone" placeholder="Teléfono (+52...)" />
       </div>
       <div class="row">
         <input id="contactSchedule" placeholder="Horario" />
@@ -135,14 +135,14 @@
         <label class="checkbox"><input type="checkbox" id="contactUrgent" /> Prioritario</label>
       </div>
       <button onclick="saveContact()">Guardar</button>
-      <button class="secondary" onclick="resetContactForm()">Cancelar edicion</button>
+      <button class="secondary" onclick="resetContactForm()">Cancelar edición</button>
       <div id="contactMsg" class="msg"></div>
     </div>
 
     <div class="card">
       <h3>Contactos</h3>
       <table>
-        <thead><tr><th>Nombre</th><th>Area</th><th>Telefono</th><th></th></tr></thead>
+        <thead><tr><th>Nombre</th><th>Área</th><th>Teléfono</th><th></th></tr></thead>
         <tbody id="contactTableBody"></tbody>
       </table>
     </div>
@@ -219,7 +219,7 @@ async function addEmployee() {
   const msg = document.getElementById('empAddMsg');
   msg.className = 'msg';
   msg.textContent = '';
-  if (!numero || !nombre) { msg.className = 'msg error'; msg.textContent = 'Numero y nombre son obligatorios.'; return; }
+  if (!numero || !nombre) { msg.className = 'msg error'; msg.textContent = 'Número y nombre son obligatorios.'; return; }
   try {
     await rpc('admin_add_employee', { p_passcode: passcode, p_numero: numero, p_nombre: nombre, p_tienda: tienda, p_plaza: plaza, p_asesor: asesor });
     msg.className = 'msg ok';
@@ -232,12 +232,12 @@ async function addEmployee() {
     listEmployees();
   } catch (e) {
     msg.className = 'msg error';
-    msg.textContent = e.message.includes('employee_already_exists') ? 'Ese numero ya existe.' : 'No se pudo agregar.';
+    msg.textContent = e.message.includes('employee_already_exists') ? 'Ese número ya existe.' : 'No se pudo agregar.';
   }
 }
 
 async function resetPin(numero) {
-  if (!confirm(`Quitar el PIN de ${numero}? Va a poder crear uno nuevo en su siguiente ingreso.`)) return;
+  if (!confirm(`¿Quitar el PIN de ${numero}? Va a poder crear uno nuevo en su siguiente ingreso.`)) return;
   try {
     await rpc('admin_reset_pin', { p_passcode: passcode, p_numero: numero });
     alert(`Listo. ${numero} puede crear un PIN nuevo en su siguiente ingreso.`);
@@ -267,7 +267,7 @@ async function createNotice() {
   const kind = document.getElementById('noticeKind').value;
   const priority = document.getElementById('noticePriority').checked;
   const msg = document.getElementById('noticeAddMsg');
-  if (!title || !body) { msg.className = 'msg error'; msg.textContent = 'Titulo y mensaje son obligatorios.'; return; }
+  if (!title || !body) { msg.className = 'msg error'; msg.textContent = 'Título y mensaje son obligatorios.'; return; }
   try {
     await rpc('create_notice', { p_passcode: passcode, p_title: title, p_body: body, p_kind: kind, p_priority: priority });
     msg.className = 'msg ok';
@@ -283,7 +283,7 @@ async function createNotice() {
 }
 
 async function deleteNotice(id) {
-  if (!confirm('Borrar este aviso?')) return;
+  if (!confirm('¿Borrar este aviso?')) return;
   await rpc('admin_delete_notice', { p_passcode: passcode, p_id: id }).catch(() => {});
   listNotices();
 }
@@ -348,7 +348,7 @@ async function saveContact() {
 }
 
 async function deleteContact(id) {
-  if (!confirm('Borrar este contacto?')) return;
+  if (!confirm('¿Borrar este contacto?')) return;
   await rpc('admin_delete_contact', { p_passcode: passcode, p_id: id }).catch(() => {});
   listContacts();
 }

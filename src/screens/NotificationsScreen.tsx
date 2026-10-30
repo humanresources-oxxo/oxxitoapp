@@ -103,7 +103,7 @@ export function NotificationsScreen() {
             <Text style={styles.eyebrow}>Centro de avisos</Text>
             <Text style={styles.title}>Avisos</Text>
             <Text style={styles.subtitle}>
-              {unreadCount > 0 ? `${unreadCount} pendientes por revisar` : 'Todo esta al dia'}
+              {unreadCount > 0 ? `${unreadCount} ${unreadCount === 1 ? 'pendiente' : 'pendientes'} por revisar` : 'Todo está al día'}
             </Text>
           </View>
           <Pressable style={styles.headerAction} onPress={markAllRead}>
@@ -118,7 +118,7 @@ export function NotificationsScreen() {
         </LinearGradient>
         <View style={styles.summaryCopy}>
           <Text style={styles.summaryTitle}>Comunicados internos</Text>
-          <Text style={styles.summaryBody}>Prioriza cambios de politica, turnos y capacitaciones.</Text>
+          <Text style={styles.summaryBody}>Prioriza cambios de política, turnos y capacitaciones.</Text>
         </View>
       </View>
 

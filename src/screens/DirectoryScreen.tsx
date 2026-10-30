@@ -99,7 +99,7 @@ export function DirectoryScreen() {
           <View style={styles.headerCopy}>
             <Text style={styles.eyebrow}>Contactos internos</Text>
             <Text style={styles.title}>Directorio</Text>
-            <Text style={styles.subtitle}>Encuentra al area correcta y llama cuando necesites apoyo.</Text>
+            <Text style={styles.subtitle}>Encuentra el área correcta y llama cuando necesites apoyo.</Text>
           </View>
           <LinearGradient colors={gradients.oxGrad.colors} style={styles.headerIcon}>
             <Icon name="headset" size={25} color="#fff" />
@@ -113,7 +113,7 @@ export function DirectoryScreen() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Buscar por area o tema..."
+            placeholder="Buscar por área o tema..."
             placeholderTextColor={colors.ink3}
             style={styles.searchInput}
           />
@@ -145,7 +145,7 @@ export function DirectoryScreen() {
           <View style={styles.empty}>
             <Icon name="search" size={28} color={colors.ink3} />
             <Text style={styles.emptyText}>
-              {loading ? 'Cargando directorio...' : 'No encontramos contactos con esa busqueda.'}
+              {loading ? 'Cargando directorio...' : 'No encontramos contactos con esa búsqueda.'}
             </Text>
           </View>
         }

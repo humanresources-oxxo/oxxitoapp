@@ -5,7 +5,7 @@ export const employeeProfile = {
   role: 'Colaborador de tienda',
   store: 'Conoxxo Plaza Oaxaca',
   employeeId: '123456',
-  area: 'Operacion',
+  area: 'Operación',
   since: 'Mar 2024',
 };
 
@@ -29,8 +29,8 @@ export const profileSettings: Array<{
   },
   {
     key: 'biometric',
-    title: 'Acceso rapido',
-    desc: 'Usar biometria cuando el dispositivo lo permita.',
+    title: 'Acceso rápido',
+    desc: 'Usar biometría cuando el dispositivo lo permita.',
     icon: 'fingerprint',
   },
 ];

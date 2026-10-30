@@ -15,8 +15,8 @@ export const noticeKindMeta: Record<
   NoticeKind,
   { label: string; icon: string; accent: 'oxGrad' | 'blue' | 'green' | 'purple' }
 > = {
-  policy: { label: 'Politica', icon: 'doc', accent: 'oxGrad' },
-  training: { label: 'Capacitacion', icon: 'book', accent: 'blue' },
+  policy: { label: 'Política', icon: 'doc', accent: 'oxGrad' },
+  training: { label: 'Capacitación', icon: 'book', accent: 'blue' },
   schedule: { label: 'Turnos', icon: 'calendar', accent: 'green' },
   benefit: { label: 'Beneficio', icon: 'gift', accent: 'purple' },
 };
@@ -24,7 +24,7 @@ export const noticeKindMeta: Record<
 export const noticeFilters: Array<{ key: NoticeFilter; label: string }> = [
   { key: 'all', label: 'Todos' },
   { key: 'unread', label: 'Sin leer' },
-  { key: 'policy', label: 'Politicas' },
-  { key: 'training', label: 'Capacitacion' },
+  { key: 'policy', label: 'Políticas' },
+  { key: 'training', label: 'Capacitación' },
   { key: 'schedule', label: 'Turnos' },
 ];

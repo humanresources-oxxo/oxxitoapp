@@ -17,7 +17,7 @@ import { showAlert } from '../utils/alert';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
 const PRIVACY_NOTICE =
-  'Segun el Articulo 75, fraccion X del Reglamento Interior de Trabajo: la Empresa se compromete a llevar y mantener actualizados los registros administrativos y expedientes laborales de los Trabajadores, asi como resguardar y tratar la informacion de manera confidencial y conforme a la legislacion en materia de proteccion de datos personales.\n\nPara el aviso de privacidad completo, contacta a Recursos Humanos.';
+  'Según el Artículo 75, fracción X del Reglamento Interior de Trabajo: la Empresa se compromete a llevar y mantener actualizados los registros administrativos y expedientes laborales de los Trabajadores, así como resguardar y tratar la información de manera confidencial y conforme a la legislación en materia de protección de datos personales.\n\nPara el aviso de privacidad completo, contacta a Recursos Humanos.';
 
 
 export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
@@ -73,7 +73,7 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
   );
   const stats = [
     { label: 'Consultas', value: String(consultas) },
-    { label: 'Avisos leidos', value: String(avisosLeidos) },
+    { label: 'Avisos leídos', value: String(avisosLeidos) },
     { label: 'Perfil', value: `${profileCompletion}%` },
   ];
 
@@ -234,14 +234,14 @@ function ProfileBody({
         <View style={styles.sectionCard}>
           <ActionRow
             title="Cambiar PIN"
-            desc="Actualiza tu clave de 4 digitos"
+            desc="Actualiza tu clave de 4 dígitos"
             icon="key"
             onPress={onChangePin}
           />
           <View style={styles.divider} />
           <ActionRow
             title="Aviso de privacidad"
-            desc="Consulta terminos y uso de datos"
+            desc="Consulta términos y uso de datos"
             icon="doc"
             onPress={onPrivacyNotice}
           />
@@ -258,7 +258,7 @@ function ProfileBody({
 
         <Pressable style={styles.logoutButton} onPress={logout}>
           <Icon name="logout" size={19} color={colors.oxRed} />
-          <Text style={styles.logoutText}>Cerrar sesion</Text>
+          <Text style={styles.logoutText}>Cerrar sesión</Text>
         </Pressable>
       </ScrollView>
     </View>
@@ -375,11 +375,11 @@ function ChangePinModal({
       if (status === 'ok') {
         reset();
         onClose();
-        showAlert('PIN actualizado', 'Tu nuevo PIN ya esta activo.');
+        showAlert('PIN actualizado', 'Tu nuevo PIN ya está activo.');
       } else if (status === 'wrong_pin') {
         setError('Tu PIN actual no es correcto.');
       } else if (status === 'locked') {
-        setError('Cuenta bloqueada por varios intentos fallidos. Intenta mas tarde.');
+        setError('Cuenta bloqueada por varios intentos fallidos. Intenta más tarde.');
       } else {
         setError('No pudimos actualizar tu PIN.');
       }
@@ -466,7 +466,7 @@ function NoticeComposer({ visible, onClose }: { visible: boolean; onClose: () =>
       await createNotice(passcode, title.trim(), body.trim(), kind, priority);
       reset();
       onClose();
-      showAlert('Aviso publicado', 'Ya esta visible para todos los colaboradores.');
+      showAlert('Aviso publicado', 'Ya está visible para todos los colaboradores.');
     } catch (e: any) {
       const message = typeof e?.message === 'string' ? e.message : '';
       setError(message.includes('invalid_passcode') ? 'Passcode incorrecto.' : 'No pudimos publicar el aviso.');
@@ -489,7 +489,7 @@ function NoticeComposer({ visible, onClose }: { visible: boolean; onClose: () =>
               style={styles.composerInput}
               value={title}
               onChangeText={setTitle}
-              placeholder="Ej. Actualizacion de puntualidad"
+              placeholder="Ej. Actualización de puntualidad"
               placeholderTextColor={colors.ink3}
             />
 
