@@ -29,6 +29,23 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   editar el Directorio. Se corre local con `npx serve admin` o similar — no está
   desplegada en ningún lado público.
 
+✅ **Vacaciones (`src/screens/VacacionesScreen.tsx`):** saldo de vacaciones desde el
+  Dashboard 5 de DashboardsOxxo (pestaña `Dashboard_5_Semanal` del Google Sheet de los
+  dashboards, leída por GViz CSV como la web; `src/services/vacaciones.ts`). Se abre desde
+  Inicio ("Mis vacaciones").
+  - Todos ven su propio saldo, buscado por su número de empleado: días restantes, periodo
+    anterior y actual, y cuándo vencen (`Bucket_Ant` / `Bucket_Act`). El último saldo leído
+    se guarda en el teléfono para verlo sin señal y se borra al cerrar sesión.
+  - Los puestos de `PUESTOS_ACTAS` tienen además "Mi equipo": la plaza completa con
+    búsqueda por nombre, número o tienda, el filtro "Mis tiendas" (cuando el nombre de la
+    sesión es el Asesor de esas filas) y "Por vencer o vencidos".
+  - La fecha de actualización sale de la pestaña `Configuracion` (fila `s5`).
+  - El reporte solo trae personal de tienda (SINDICALIZADO): el personal de oficina no
+    aparece y, si tiene acceso, la pantalla abre directo en "Mi equipo".
+  - La hoja es pública por GViz, igual que para los dashboards: el filtro por puesto solo
+    oculta la vista de equipo en la app, no es un candado.
+  - Si DashboardsOxxo renombra la pestaña o sus columnas, hay que actualizar el servicio.
+
 ✅ **Actas y Formatos (`src/screens/ActasScreen.tsx`):** versión nativa del formulario
   de DashboardsOxxo (`dashboards/acta-administrativa.html`). Seis formatos de RH: acta
   administrativa, acta por falta de probidad, acta ultimátum, retroalimentación, acta de
@@ -89,8 +106,10 @@ src/
     RegisterScreen.tsx
     PermissionsScreen.tsx
     ActasScreen.tsx         — Actas y Formatos (solo ciertos puestos)
+    VacacionesScreen.tsx    — saldo de vacaciones (propio y, para ciertos puestos, del equipo)
   services/actas.ts         — quién puede levantar actas, envío a RH, compartir Word
   services/tiendas.ts       — catálogo de tiendas (nombre, CR, AT) para las actas
+  services/vacaciones.ts    — saldos del Dashboard 5 (Dashboard_5_Semanal) vía GViz
   utils/
     actaDocx.ts             — texto de cada formato + generador del .docx
     firmaPng.ts             — firma (trazos) → PNG

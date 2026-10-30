@@ -51,6 +51,8 @@ export default function App() {
     removeItem(storageKeys.session);
     // An unsent acta draft has a worker's data: it must not outlive the session.
     removeItem(storageKeys.actaDraft);
+    // The saved vacation balance belongs to this employee too.
+    removeItem(storageKeys.vacationBalance);
   }, []);
 
   if (!fontsLoaded || !sessionLoaded) {
