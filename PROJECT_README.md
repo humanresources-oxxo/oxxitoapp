@@ -20,6 +20,9 @@ a partir del design handoff (`design_handoff_oxxito_app`).
 - Auth: tabla `employees` cargada con la nómina real (`employee_lookup` / `set_initial_pin` /
   `verify_pin` / `change_pin`). Solo empleados ya en la nómina pueden entrar — no hay
   registro libre; un empleado nuevo se agrega vía el panel admin (`admin/index.html`).
+  Al abrir la app, la sesión guardada se revisa contra la nómina (`employee_lookup`): se
+  actualiza el puesto y, si el empleado ya no está en `employees`, se cierra la sesión.
+  Sin red (o con el rate-limit) se conserva la sesión guardada.
   Cada empleado arranca con un **PIN temporal aleatorio** (generado por
   `generate_temp_pins()` / el panel admin) que debe cambiar en su primer login.
 - Seguridad: bloqueo de cuenta tras 5 intentos fallidos de PIN (`verify_pin`/`change_pin`),
