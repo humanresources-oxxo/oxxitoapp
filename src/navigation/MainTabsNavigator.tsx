@@ -16,12 +16,15 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 import { VacacionesScreen } from '../screens/VacacionesScreen';
 import { getJson, setJson, storageKeys } from '../services/appStorage';
 import { puedeLevantarActas } from '../services/actas';
+import { lookupEmployee } from '../services/auth';
 import { fetchNotices } from '../services/notices';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
 // 'actas', 'vacaciones' and 'estructura' are not in the tab bar: they open from
 // Inicio. Actas, Estructura and the team view of Vacaciones are only for some puestos.
 type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas' | 'vacaciones' | 'estructura';
+
+type Sesion = { numeroEmpleado?: string; nombre?: string; tienda?: string; plaza?: string; puesto?: string; createdAt?: string };
 
 type TabItem = {
   key: TabKey;
@@ -61,16 +64,33 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
     getJson<ChatHistoryItem[]>(storageKeys.chatHistory, []).then((saved) => {
       if (active) setChatHistory(saved);
     });
-    getJson<{ nombre?: string; puesto?: string } | null>(storageKeys.session, null).then((session) => {
+    getJson<Sesion | null>(storageKeys.session, null).then((session) => {
       if (!active) return;
       setFirstName(session?.nombre?.split(' ')[0] ?? '');
       setCanUseActas(puedeLevantarActas(session?.puesto));
+      revalidarSesion(session);
     });
     refreshUnreadNotices();
     return () => {
       active = false;
     };
   }, []);
+
+  // The session is saved at login; check it against the roster on every open
+  // so a puesto change takes effect and someone removed from the roster is
+  // logged out. Network or rate-limit errors keep the saved session.
+  const revalidarSesion = (session: Sesion | null) => {
+    if (!session?.numeroEmpleado) return;
+    lookupEmployee(session.numeroEmpleado)
+      .then((r) => {
+        if (!r.exists) return onLogout();
+        const nueva = { ...session, nombre: r.nombre ?? session.nombre, tienda: r.tienda, plaza: r.plaza, puesto: r.puesto };
+        setJson(storageKeys.session, nueva);
+        setFirstName(nueva.nombre?.split(' ')[0] ?? '');
+        setCanUseActas(puedeLevantarActas(nueva.puesto));
+      })
+      .catch(() => {});
+  };
 
   // Recompute after leaving Avisos, since that's where read-state changes.
   useEffect(() => {
