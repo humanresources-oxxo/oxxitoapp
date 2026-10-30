@@ -49,6 +49,8 @@ export default function App() {
     removeItem(storageKeys.onboardingDone);
     removeItem(storageKeys.chatHistory);
     removeItem(storageKeys.session);
+    // An unsent acta draft has a worker's data: it must not outlive the session.
+    removeItem(storageKeys.actaDraft);
   }, []);
 
   if (!fontsLoaded || !sessionLoaded) {

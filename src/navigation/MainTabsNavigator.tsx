@@ -6,16 +6,19 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
+import { ActasScreen } from '../screens/ActasScreen';
 import { ChatHistoryItem, HomeScreen } from '../screens/HomeScreen';
 import { ChatHomeScreen } from '../screens/ChatHomeScreen';
 import { DirectoryScreen } from '../screens/DirectoryScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { getJson, setJson, storageKeys } from '../services/appStorage';
+import { puedeLevantarActas } from '../services/actas';
 import { fetchNotices } from '../services/notices';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard';
+// 'actas' is not in the tab bar: it opens from Inicio, only for some puestos.
+type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas';
 
 type TabItem = {
   key: TabKey;
@@ -39,6 +42,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState<TabKey>('home');
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const [firstName, setFirstName] = useState('');
+  const [canUseActas, setCanUseActas] = useState(false);
   const [unreadNotices, setUnreadNotices] = useState(0);
 
   const refreshUnreadNotices = () => {
@@ -54,8 +58,10 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
     getJson<ChatHistoryItem[]>(storageKeys.chatHistory, []).then((saved) => {
       if (active) setChatHistory(saved);
     });
-    getJson<{ nombre?: string } | null>(storageKeys.session, null).then((session) => {
-      if (active) setFirstName(session?.nombre?.split(' ')[0] ?? '');
+    getJson<{ nombre?: string; puesto?: string } | null>(storageKeys.session, null).then((session) => {
+      if (!active) return;
+      setFirstName(session?.nombre?.split(' ')[0] ?? '');
+      setCanUseActas(puedeLevantarActas(session?.puesto));
     });
     refreshUnreadNotices();
     return () => {
@@ -87,7 +93,13 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
     switch (activeTab) {
       case 'home':
         return (
-          <HomeScreen onOpenTab={setActiveTab} history={chatHistory} firstName={firstName} unreadNotices={unreadNotices} />
+          <HomeScreen
+            onOpenTab={setActiveTab}
+            history={chatHistory}
+            firstName={firstName}
+            unreadNotices={unreadNotices}
+            showActas={canUseActas}
+          />
         );
       case 'chat':
         return <ChatHomeScreen onQuestionAsked={saveChatQuestion} />;
@@ -97,10 +109,12 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
         return <NotificationsScreen />;
       case 'profile':
         return <ProfileScreen onLogout={onLogout} />;
+      case 'actas':
+        return canUseActas ? <ActasScreen onBack={() => setActiveTab('home')} /> : null;
       default:
         return null;
     }
-  }, [activeTab, chatHistory, firstName, unreadNotices]);
+  }, [activeTab, chatHistory, firstName, unreadNotices, canUseActas]);
 
   return (
     <View style={styles.shell}>

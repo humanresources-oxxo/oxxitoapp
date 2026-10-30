@@ -8,7 +8,7 @@ import { BearAvatar } from '../components/Bear';
 import { Icon } from '../components/Icon';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-type HomeTarget = 'chat' | 'directory' | 'notifications' | 'profile';
+type HomeTarget = 'chat' | 'directory' | 'notifications' | 'profile' | 'actas';
 
 export type ChatHistoryItem = {
   id: string;
@@ -21,15 +21,27 @@ type HomeScreenProps = {
   history: ChatHistoryItem[];
   firstName?: string;
   unreadNotices?: number;
+  // Actas y Formatos is only for some puestos (see services/actas.ts).
+  showActas?: boolean;
 };
 
-const QUICK_ACTIONS: Array<{
+type QuickAction = {
   title: string;
   desc: string;
   icon: string;
   target: HomeTarget;
-  accent: 'oxGrad' | 'blue' | 'green' | 'purple';
-}> = [
+  accent: 'oxGrad' | 'blue' | 'green' | 'purple' | 'dark';
+};
+
+const ACTAS_ACTION: QuickAction = {
+  title: 'Actas y formatos',
+  desc: 'Levanta actas, firmas en pantalla y envio a RH.',
+  icon: 'clipboard',
+  target: 'actas',
+  accent: 'dark',
+};
+
+const QUICK_ACTIONS: QuickAction[] = [
   {
     title: 'Preguntar al asistente',
     desc: 'Consulta reglamento, permisos y asistencia.',
@@ -61,7 +73,8 @@ const QUICK_ACTIONS: Array<{
 ];
 
 
-export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0 }: HomeScreenProps) {
+export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, showActas = false }: HomeScreenProps) {
+  const actions = showActas ? [ACTAS_ACTION, ...QUICK_ACTIONS] : QUICK_ACTIONS;
   return (
     <View style={styles.screen}>
       <LinearGradient
@@ -89,7 +102,7 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0 }:
       </SafeAreaView>
 
       <FlatList
-        data={QUICK_ACTIONS}
+        data={actions}
         keyExtractor={(item) => item.title}
         numColumns={2}
         columnWrapperStyle={styles.actionRow}
@@ -115,7 +128,7 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0 }:
 
             <View style={styles.sectionHead}>
               <Text style={styles.sectionTitle}>Accesos rapidos</Text>
-              <Text style={styles.sectionMeta}>4 opciones</Text>
+              <Text style={styles.sectionMeta}>{actions.length} opciones</Text>
             </View>
           </>
         }
