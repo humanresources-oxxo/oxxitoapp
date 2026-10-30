@@ -35,7 +35,7 @@ type QuickAction = {
 
 const ACTAS_ACTION: QuickAction = {
   title: 'Actas y formatos',
-  desc: 'Levanta actas, firmas en pantalla y envio a RH.',
+  desc: 'Levanta actas, firmas en pantalla y envío a RH.',
   icon: 'clipboard',
   target: 'actas',
   accent: 'dark',
@@ -51,7 +51,7 @@ const ESTRUCTURA_ACTION: QuickAction = {
 
 const VACACIONES_ACTION: QuickAction = {
   title: 'Mis vacaciones',
-  desc: 'Dias que te quedan y cuando vencen.',
+  desc: 'Días que te quedan y cuándo vencen.',
   icon: 'plane',
   target: 'vacaciones',
   accent: 'blue',
@@ -66,7 +66,7 @@ const QUICK_ACTIONS: QuickAction[] = [
     accent: 'oxGrad',
   },
   {
-    title: 'Llamar a un area',
+    title: 'Llamar a un área',
     desc: 'Encuentra contactos internos por tema.',
     icon: 'headset',
     target: 'directory',
@@ -105,7 +105,7 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, s
           <View style={styles.identity}>
             <BearAvatar size={52} />
             <View style={styles.headerCopy}>
-              <Text style={styles.eyebrow}>{firstName ? `Hola, ${firstName}` : 'Buenos dias'}</Text>
+              <Text style={styles.eyebrow}>{firstName ? `Hola, ${firstName}` : 'Buenos días'}</Text>
               <Text style={styles.title}>Inicio</Text>
               <Text style={styles.subtitle}>Todo lo importante de Conoxxo en un solo lugar.</Text>
             </View>
@@ -134,8 +134,8 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, s
             >
               <View style={styles.heroText}>
                 <Text style={styles.heroKicker}>Asistente listo</Text>
-                <Text style={styles.heroTitle}>Pregunta, encuentra y resuelve mas rapido.</Text>
-                <Text style={styles.heroBody}>Puedes empezar con el chat o ir directo al area correcta.</Text>
+                <Text style={styles.heroTitle}>Pregunta, encuentra y resuelve más rápido.</Text>
+                <Text style={styles.heroBody}>Puedes empezar con el chat o ir directo al área correcta.</Text>
               </View>
               <View style={styles.heroIcon}>
                 <Icon name="sparkle" size={30} color="#fff" />
@@ -143,7 +143,7 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, s
             </LinearGradient>
 
             <View style={styles.sectionHead}>
-              <Text style={styles.sectionTitle}>Accesos rapidos</Text>
+              <Text style={styles.sectionTitle}>Accesos rápidos</Text>
               <Text style={styles.sectionMeta}>{actions.length} opciones</Text>
             </View>
           </>
@@ -161,7 +161,7 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, s
           <View style={styles.recents}>
             <View style={styles.sectionHead}>
               <Text style={styles.sectionTitle}>Consultas recientes</Text>
-              <Text style={styles.sectionMeta}>{history.length ? `${history.length} guardadas` : 'Vacio'}</Text>
+              <Text style={styles.sectionMeta}>{history.length ? `${history.length} guardadas` : 'Vacío'}</Text>
             </View>
             {history.length ? (
               history.map((item) => (
@@ -179,7 +179,7 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, s
                 <Icon name="chat" size={20} color={colors.oxRed} />
                 <View style={styles.recentCopy}>
                   <Text style={styles.recentText}>Haz tu primera consulta</Text>
-                  <Text style={styles.recentMeta}>Aparecera aqui automaticamente</Text>
+                  <Text style={styles.recentMeta}>Aparecerá aquí automáticamente</Text>
                 </View>
                 <Icon name="chevR" size={17} color={colors.ink3} />
               </Pressable>

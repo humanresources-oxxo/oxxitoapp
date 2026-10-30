@@ -120,15 +120,15 @@ export async function getReglamentoItem(
 }
 
 export const chatSuggestions = [
-  'Cuando es retardo?',
-  'Como pido vacaciones?',
-  'Como solicito un permiso?',
+  '¿Cuándo es retardo?',
+  '¿Cómo pido vacaciones?',
+  '¿Cómo solicito un permiso?',
 ];
 
 export const initialChatMessages: ChatMessage[] = [
   {
     id: 'welcome',
     role: 'assistant',
-    text: 'Hola, soy el asistente de Conoxxo. Preguntame sobre el reglamento, permisos, vacaciones o asistencia.',
+    text: 'Hola, soy el asistente de Conoxxo. Pregúntame sobre el reglamento, permisos, vacaciones o asistencia.',
   },
 ];

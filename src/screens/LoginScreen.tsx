@@ -59,7 +59,7 @@ export function LoginScreen({
       setError(
         message.includes('rate_limited')
           ? 'Demasiados intentos. Espera un minuto e intenta de nuevo.'
-          : 'No pudimos conectar. Revisa tu conexion e intenta de nuevo.'
+          : 'No pudimos conectar. Revisa tu conexión e intenta de nuevo.'
       );
     } finally {
       setLoading(false);
