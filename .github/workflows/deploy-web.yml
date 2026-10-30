@@ -1,0 +1,63 @@
+# Publishes the web version of the app on GitHub Pages
+# (https://humanresources-oxxo.github.io/oxxitoapp/) on every push to main.
+# Pages serves the gh-pages branch: the build replaces the app's files there
+# and keeps the rest (instalar.html, .nojekyll).
+name: Publicar web
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      # Publishable values (they end up in the public bundle anyway). A repo
+      # variable with the same name overrides them.
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL || 'https://gceuazxrqdbfahtdieod.supabase.co' }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_59I8XugqRxE-LUhMSqmiEQ_HNzD7CRK' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Revisar tipos
+        run: npx tsc --noEmit
+
+      - name: Exportar web
+        run: npx expo export -p web --output-dir dist
+
+      - run: node scripts/patch-web-index.mjs dist/index.html
+
+      # Which commit of main is live: https://humanresources-oxxo.github.io/oxxitoapp/version.txt
+      - run: echo "${GITHUB_SHA}" > dist/version.txt
+
+      - name: Publicar en gh-pages
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git clone --depth 1 --branch gh-pages "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" site
+          # Old bundles and assets go; everything else (instalar.html, .nojekyll) stays.
+          rm -rf site/_expo site/assets
+          cp -r dist/. site/
+          cd site
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Sin cambios que publicar."
+            exit 0
+          fi
+          git commit -m "Deploy main (${GITHUB_SHA::7})"
+          git push origin gh-pages
