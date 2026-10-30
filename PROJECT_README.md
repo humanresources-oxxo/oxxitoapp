@@ -122,6 +122,8 @@ pestaña Actions → "Publicar web" → Run workflow). El workflow:
 4. reemplaza en la rama `gh-pages` los archivos de la app (`_expo`, `assets`, `index.html`,
    íconos, manifest…) y conserva lo demás (`instalar.html`, `.nojekyll`).
 
+Para saber qué commit está publicado: https://humanresources-oxxo.github.io/oxxitoapp/version.txt
+
 `instalar.html` (la guía de instalación) solo vive en `gh-pages`; se edita ahí.
 
 ## Cómo correrlo

@@ -42,6 +42,9 @@ jobs:
 
       - run: node scripts/patch-web-index.mjs dist/index.html
 
+      # Which commit of main is live: https://humanresources-oxxo.github.io/oxxitoapp/version.txt
+      - run: echo "${GITHUB_SHA}" > dist/version.txt
+
       - name: Publicar en gh-pages
         run: |
           git config --global user.name "github-actions[bot]"
