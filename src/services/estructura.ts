@@ -5,10 +5,10 @@
 // Same defaults as
 // dashboard-1.html: operating stores only (no Entrenamiento/Operaciones units,
 // no pre-openings) and its six default puestos. The AT comes from
-// Catalogo_Asesores by CR when the store is there (applyAsesorCatalog in the web).
+// Catalogo_Asesores by CR or name when the store is there (applyAsesorCatalog in the web).
 // If DashboardsOxxo renames the tab or its columns, update this file too.
 import { clave, esPlaza, fechaConfiguracion, leerCsv, letra, normalizarNombre, PLAZA } from './gviz';
-import { cargarTiendas, normalizarCr, normalizarTienda } from './tiendas';
+import { asesorDelCatalogo, cargarTiendas, normalizarCr, normalizarTienda, Tienda } from './tiendas';
 
 const TAB = 'Dashboard_1_Diario';
 const CONFIG_ID = 'd1';
@@ -104,7 +104,7 @@ async function mesVigente(): Promise<string> {
 
 const vacante = (status: string, empleado: string) => /vacante|no ocupado/.test(clave(status)) || (!empleado && !!status);
 
-function aCorte(filas: string[][], mes: string, asesorPorCr: Map<string, string>): TiendaEstructura[] {
+function aCorte(filas: string[][], mes: string, catalogo: Tienda[]): TiendaEstructura[] {
   const idx = indices(filas[0] || []);
   const v = (r: string[], k: Col) => (idx[k] >= 0 ? String(r[idx[k]] ?? '').trim() : '');
   const tiendas = new Map<string, TiendaEstructura>();
@@ -120,7 +120,7 @@ function aCorte(filas: string[][], mes: string, asesorPorCr: Map<string, string>
     const cr = normalizarCr(v(r, 'cr'));
     const llave = cr || normalizarTienda(tienda);
     if (!tiendas.has(llave)) {
-      const asesor = asesorPorCr.get(cr) || v(r, 'asesor');
+      const asesor = asesorDelCatalogo(catalogo, { cr, tienda }) || v(r, 'asesor');
       tiendas.set(llave, { tienda, cr, asesor, plaza: PLAZA, posiciones: [], ocupadas: 0, vacantes: 0 });
     }
     const item = tiendas.get(llave)!;
@@ -148,14 +148,13 @@ let estructura: Promise<Corte> | null = null;
 export function cargarEstructura(): Promise<Corte> {
   estructura ??= (async () => {
     const catalogo = await cargarTiendas();
-    const asesorPorCr = new Map(catalogo.map((t) => [t.cr, t.asesor]));
     try {
       const mes = await mesVigente();
       if (!mes) throw new Error('sin mes');
       const filas = await leerCsv(TAB, `select * where ${COL_PLAZA} = '${PLAZA}' and ${COL_MES} = '${mes}'`);
       const idx = indices(filas[0] || []);
       if (letra(idx.plaza) !== COL_PLAZA || letra(idx.mes) !== COL_MES) throw new Error('columnas movidas');
-      return { mes, tiendas: aCorte(filas, mes, asesorPorCr) };
+      return { mes, tiendas: aCorte(filas, mes, catalogo) };
     } catch {
       tabCompleta ??= leerCsv(TAB).catch((e) => {
         tabCompleta = null;
@@ -170,7 +169,7 @@ export function cargarEstructura(): Promise<Corte> {
           .filter(mesClave)
           .sort((a, b) => mesClave(a).localeCompare(mesClave(b)))
           .pop() || '';
-      return { mes, tiendas: aCorte(filas, mes, asesorPorCr) };
+      return { mes, tiendas: aCorte(filas, mes, catalogo) };
     }
   })().catch((e) => {
     estructura = null;

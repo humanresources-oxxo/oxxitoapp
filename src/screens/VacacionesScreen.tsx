@@ -34,7 +34,16 @@ function fechaCorta(iso: string) {
 const dias = (n: number) => `${n.toLocaleString('es-MX', { maximumFractionDigits: 1 })} ${n === 1 ? 'día' : 'días'}`;
 const vence = (b: string) => (!b || /^n\/?a$/i.test(b) ? 'Sin días pendientes' : b.charAt(0).toUpperCase() + b.slice(1).toLowerCase());
 
-export function VacacionesScreen({ onBack, conEquipo = false }: { onBack: () => void; conEquipo?: boolean }) {
+export function VacacionesScreen({
+  onBack,
+  conEquipo = false,
+  soloMisTiendas = false,
+}: {
+  onBack: () => void;
+  conEquipo?: boolean;
+  // Asesores de Tienda: the team view shows only their own stores.
+  soloMisTiendas?: boolean;
+}) {
   const [sesion, setSesion] = useState<Sesion>(null);
   const [vista, setVista] = useState<Vista>('mias');
   const [mia, setMia] = useState<MiVacacion | null>(null);
@@ -127,7 +136,7 @@ export function VacacionesScreen({ onBack, conEquipo = false }: { onBack: () => 
           )}
         </ScrollView>
       ) : (
-        <Equipo sesion={sesion} />
+        <Equipo sesion={sesion} soloMisTiendas={soloMisTiendas} />
       )}
     </View>
   );
@@ -206,7 +215,7 @@ function Aviso({ icono, titulo, texto, accion }: { icono: string; titulo: string
   );
 }
 
-function Equipo({ sesion }: { sesion: Sesion }) {
+function Equipo({ sesion, soloMisTiendas }: { sesion: Sesion; soloMisTiendas: boolean }) {
   const [filas, setFilas] = useState<Vacacion[] | null>(null);
   const [error, setError] = useState(false);
   const [texto, setTexto] = useState('');
@@ -227,13 +236,17 @@ function Equipo({ sesion }: { sesion: Sesion }) {
     };
   }, [intento]);
 
-  // "Mis tiendas" only exists when the logged-in person is the AT of some rows.
+  // An AT only sees their own stores (and nothing if their name isn't found).
+  // Others get an optional "Mis tiendas" when they are the AT of some rows.
   const yo = normalizarNombre(sesion?.nombre);
   const tengoTiendas = useMemo(() => !!yo && !!filas?.some((f) => normalizarNombre(f.asesor) === yo), [filas, yo]);
   const resultado = useMemo(() => {
-    const base = buscarVacaciones(filas || [], texto, tengoTiendas && soloMias ? sesion?.nombre : undefined);
+    if (soloMisTiendas && !yo) return [];
+    const filtro = soloMisTiendas || (tengoTiendas && soloMias) ? sesion?.nombre : undefined;
+    const base = buscarVacaciones(filas || [], texto, filtro);
     return urgentes ? base.filter((v) => urgencia(v)) : base;
-  }, [filas, texto, tengoTiendas, soloMias, urgentes, sesion?.nombre]);
+  }, [filas, texto, tengoTiendas, soloMias, soloMisTiendas, yo, urgentes, sesion?.nombre]);
+  const sinTiendas = soloMisTiendas && !!filas && !tengoTiendas;
   const total = resultado.reduce((s, v) => s + v.diasRestantes, 0);
 
   return (
@@ -259,12 +272,12 @@ function Equipo({ sesion }: { sesion: Sesion }) {
               />
             </View>
             <View style={styles.chips}>
-              {tengoTiendas ? <Chip texto="Mis tiendas" activo={soloMias} onPress={() => setSoloMias((x) => !x)} /> : null}
+              {tengoTiendas && !soloMisTiendas ? <Chip texto="Mis tiendas" activo={soloMias} onPress={() => setSoloMias((x) => !x)} /> : null}
               <Chip texto="Por vencer o vencidos" activo={urgentes} onPress={() => setUrgentes((x) => !x)} />
             </View>
             {filas ? (
               <Text style={styles.resumen}>
-                {resultado.length} colaboradores · {dias(total)} pendientes
+                {resultado.length} colaboradores{soloMisTiendas ? ' de tus tiendas' : ''} · {dias(total)} pendientes
                 {resultado.length > MAX_LISTA ? ` · se muestran ${MAX_LISTA}, usa la búsqueda` : ''}
               </Text>
             ) : null}
@@ -282,6 +295,12 @@ function Equipo({ sesion }: { sesion: Sesion }) {
             <View style={styles.cargando}>
               <ActivityIndicator color={colors.oxRed} />
             </View>
+          ) : sinTiendas ? (
+            <Aviso
+              icono="pin"
+              titulo="No encontramos tiendas a tu nombre"
+              texto="Tus tiendas salen del catálogo de asesores de RH. Si te falta alguna, avisa a RH."
+            />
           ) : (
             <Text style={styles.nota}>Nadie coincide con la búsqueda.</Text>
           )

@@ -43,6 +43,7 @@ a partir del design handoff (`design_handoff_oxxito_app`).
 ✅ **Estructura (`src/screens/EstructuraScreen.tsx`):** posiciones de cada tienda desde el
   Dashboard 1 de DashboardsOxxo (pestaña `Dashboard_1_Diario`, `src/services/estructura.ts`).
   Solo para los puestos de `PUESTOS_ACTAS` y solo Plaza Oaxaca; se abre desde Inicio.
+  Los Asesores de Tienda solo ven sus tiendas; RH, Gerente Plaza, etc. ven toda la plaza.
   - Usa el corte del mes más reciente (columna `Mes`): cobertura,
     vacantes, y por tienda quién ocupa cada posición y desde cuándo está vacante cada una.
   - Mismos filtros por defecto que `dashboard-1.html`: sin unidades de Entrenamiento u
@@ -64,7 +65,9 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   - Todos ven su propio saldo, buscado por su número de empleado: días restantes, periodo
     anterior y actual, y cuándo vencen (`Bucket_Ant` / `Bucket_Act`). El último saldo leído
     se guarda en el teléfono para verlo sin señal y se borra al cerrar sesión.
-  - Los puestos de `PUESTOS_ACTAS` tienen además "Mi equipo": toda Plaza Oaxaca con
+  - Los puestos de `PUESTOS_ACTAS` tienen además "Mi equipo". Los Asesores de Tienda
+    (`soloSusTiendas` en `src/services/actas.ts`) solo ven sus tiendas; los demás, toda
+    Plaza Oaxaca. El AT de cada tienda sale de `Catalogo_Asesores` (como en Estructura). Con
     búsqueda por nombre, número o tienda, el filtro "Mis tiendas" (cuando el nombre de la
     sesión es el Asesor de esas filas) y "Por vencer o vencidos".
   - La fecha de actualización sale de la pestaña `Configuracion` (fila `s5`).

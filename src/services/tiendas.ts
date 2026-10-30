@@ -108,6 +108,15 @@ export function buscarTienda(tiendas: Tienda[], texto?: string) {
   return tiendas.find((t) => normalizarTienda(t.tienda) === n) || tiendas.find((t) => t.cr === normalizarCr(texto)) || null;
 }
 
+// AT of a store per Catalogo_Asesores (by CR, else by name), as the
+// dashboards correct the sheets' own Asesor column (resolveAsesor in js/core.js).
+// '' when the store isn't in the catalog.
+export function asesorDelCatalogo(tiendas: Tienda[], { cr, tienda }: { cr?: string; tienda?: string }) {
+  const c = normalizarCr(cr);
+  const n = normalizarTienda(tienda);
+  return (c && tiendas.find((t) => t.cr === c)?.asesor) || (n && tiendas.find((t) => normalizarTienda(t.tienda) === n)?.asesor) || '';
+}
+
 export function sugerirTiendas(tiendas: Tienda[], texto?: string, max = 6) {
   const n = normalizarTienda(texto);
   if (!n) return [];
