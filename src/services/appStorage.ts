@@ -11,6 +11,7 @@ export const storageKeys = {
   session: 'oxxito:session',
   chatQuestionCount: 'oxxito:chatQuestionCount',
   actaDraft: 'oxxito:actaDraft',
+  storeCatalog: 'oxxito:storeCatalog',
 };
 
 export async function getBoolean(key: string) {

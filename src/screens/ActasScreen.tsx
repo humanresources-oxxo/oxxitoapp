@@ -26,6 +26,7 @@ import { SignaturePad, SignatureStrokes } from '../components/SignaturePad';
 import { getJson, removeItem, setJson, storageKeys } from '../services/appStorage';
 import { compartirWord, enviarActa, RegistroActa } from '../services/actas';
 import { lookupEmployee } from '../services/auth';
+import { buscarTienda, cargarTiendas, sugerirTiendas, Tienda } from '../services/tiendas';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 import { showAlert } from '../utils/alert';
 import {
@@ -178,6 +179,11 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
   const [aviso, setAviso] = useState<Aviso>(null);
   const [enviando, setEnviando] = useState(false);
   const [buscando, setBuscando] = useState(false);
+  const [tiendas, setTiendas] = useState<Tienda[]>([]);
+  const [catalogoListo, setCatalogoListo] = useState(false);
+  // Last value the app put in each field: choosing another store replaces it,
+  // but never what the user typed (same rule as the web form).
+  const auto = useRef<Record<string, string>>({});
   const cargado = useRef(false);
   const scroll = useRef<ScrollView>(null);
 
@@ -189,9 +195,15 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
         if (!activo) return;
         setSesion(s);
         setForm({ ...valoresIniciales(s), ...(borrador || {}) });
+        auto.current = { representante: s?.nombre ?? '', participante1: s?.nombre ?? '' };
         cargado.current = true;
       }
     );
+    cargarTiendas().then((t) => {
+      if (!activo) return;
+      setTiendas(t);
+      setCatalogoListo(true);
+    });
     return () => {
       activo = false;
     };
@@ -214,6 +226,27 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
   const hayFirmas = firmasActuales.some(Boolean);
 
   const cambiar = (key: string, valor: string) => setForm((f) => ({ ...f, [key]: valor }));
+
+  // The CR goes to RH's register, which groups actas by store CR (as the web does).
+  const tiendaElegida = useMemo(() => buscarTienda(tiendas, form.tienda), [tiendas, form.tienda]);
+  const sugerencias = useMemo(
+    () => (tiendaElegida || hayFirmas ? [] : sugerirTiendas(tiendas, form.tienda)),
+    [tiendas, form.tienda, tiendaElegida, hayFirmas]
+  );
+  const elegirTienda = (t: Tienda) =>
+    setForm((f) => {
+      const next: Record<string, string> = { ...f, tienda: t.tienda };
+      // The store's AT is the employer's representative and first person present.
+      const autoLlenar = (campo: string, valor: string) => {
+        if (valor && (!limpio(f[campo]) || f[campo] === auto.current[campo])) {
+          next[campo] = valor;
+          auto.current[campo] = valor;
+        }
+      };
+      autoLlenar('representante', t.asesor);
+      autoLlenar('participante1', t.asesor);
+      return next;
+    });
 
   const setFirma = (i: number, firma: Firma | null) =>
     setFirmas((actuales) => [...actuales.filter((f) => f && f.clave !== claves[i]), ...(firma ? [firma] : [])]);
@@ -270,7 +303,7 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
     setEnviando(true);
     setAviso({ texto: `Enviando ${def.nombre.toLowerCase()} por correo…`, tipo: 'info' });
     try {
-      const r = await enviarActa(datos, firmasDoc());
+      const r = await enviarActa(datos, firmasDoc(), { crTienda: tiendaElegida?.cr ?? '' });
       const reg: RegistroActa | null = r.registro;
       const conteo = reg && reg.ok && !reg.actasEnTienda
         ? ' Quedó en el registro.'
@@ -335,6 +368,34 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
             </Pressable>
           ) : null}
         </View>
+        {c.key === 'tienda' ? (
+          <>
+            {sugerencias.map((t) => (
+              <Pressable key={t.cr} style={styles.sugerencia} onPress={() => elegirTienda(t)} accessibilityRole="button">
+                <Icon name="pin" size={17} color={colors.oxRed} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.sugerenciaTienda}>{t.tienda}</Text>
+                  <Text style={styles.sugerenciaMeta}>
+                    {t.cr} · AT {t.asesor}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+            <Text style={[styles.ayuda, !tiendaElegida && !sugerencias.length && limpio(valor) && tiendas.length > 0 && styles.ayudaAviso]}>
+              {tiendaElegida
+                ? `CR ${tiendaElegida.cr} · AT ${tiendaElegida.asesor}`
+                : !catalogoListo
+                  ? 'Cargando el catálogo de tiendas…'
+                  : !tiendas.length
+                    ? 'Sin catálogo de tiendas (sin conexión): el acta se registrará sin CR.'
+                    : sugerencias.length
+                      ? 'Elige tu tienda de la lista.'
+                      : limpio(valor)
+                      ? 'Esta tienda no está en el catálogo: elígela de la lista para que RH la registre con su CR.'
+                      : 'Escribe y elige tu tienda de la lista.'}
+            </Text>
+          </>
+        ) : null}
         {c.ayuda ? <Text style={styles.ayuda}>{c.ayuda}</Text> : null}
       </View>
     );
@@ -660,6 +721,21 @@ const styles = StyleSheet.create({
   inputLargo: { minHeight: 110, textAlignVertical: 'top', paddingVertical: 0 },
   inputBoton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginRight: -8 },
   ayuda: { ...type.caption, fontSize: 12.5, lineHeight: 18, color: colors.ink3, marginTop: 4 },
+  ayudaAviso: { color: '#B5121B' },
+  sugerencia: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginTop: 6,
+    borderRadius: radii.md,
+    backgroundColor: colors.field,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  sugerenciaTienda: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: colors.ink },
+  sugerenciaMeta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink3 },
   bloqueo: { backgroundColor: '#FFF4E5', borderColor: '#FFD9A8', borderWidth: 1, borderRadius: radii.md, padding: 12, gap: 10, marginTop: 8 },
   bloqueoText: { ...type.caption, color: colors.ink },
   firma: { marginTop: 12 },

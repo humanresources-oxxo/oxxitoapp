@@ -42,6 +42,12 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   - "Enviar a RH" usa la misma acción pública `enviarActa` del Apps Script de
     DashboardsOxxo: llega al correo de RH y queda en el mismo registro privado de actas.
     "Compartir Word" (en web, "Descargar Word") no lo registra.
+  - La tienda se elige del catálogo de DashboardsOxxo (`Catalogo_Asesores`, en
+    `src/services/tiendas.ts`): primero la hoja en vivo vía Apps Script (`readSheet`), si
+    falla el CSV de GitHub Pages, y sin señal la última copia guardada. Así el acta se
+    envía con el **CR** de la tienda y en el registro de RH (panel admin → Registro de
+    actas) se junta con las de la web, que también agrupan por CR. Al elegir la tienda
+    se llena su AT como representante.
   - El número de empleado del trabajador se busca en la nómina con `employee_lookup`.
   - El borrador se guarda en el teléfono (sin firmas) y se borra al cerrar sesión.
 
@@ -84,6 +90,7 @@ src/
     PermissionsScreen.tsx
     ActasScreen.tsx         — Actas y Formatos (solo ciertos puestos)
   services/actas.ts         — quién puede levantar actas, envío a RH, compartir Word
+  services/tiendas.ts       — catálogo de tiendas (nombre, CR, AT) para las actas
   utils/
     actaDocx.ts             — texto de cada formato + generador del .docx
     firmaPng.ts             — firma (trazos) → PNG
