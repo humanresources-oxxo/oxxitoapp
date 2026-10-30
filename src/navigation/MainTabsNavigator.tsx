@@ -10,6 +10,7 @@ import { ActasScreen } from '../screens/ActasScreen';
 import { ChatHistoryItem, HomeScreen } from '../screens/HomeScreen';
 import { ChatHomeScreen } from '../screens/ChatHomeScreen';
 import { DirectoryScreen } from '../screens/DirectoryScreen';
+import { EstructuraScreen } from '../screens/EstructuraScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { VacacionesScreen } from '../screens/VacacionesScreen';
@@ -18,9 +19,9 @@ import { puedeLevantarActas } from '../services/actas';
 import { fetchNotices } from '../services/notices';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-// 'actas' and 'vacaciones' are not in the tab bar: they open from Inicio.
-// Actas, and the team view of Vacaciones, are only for some puestos.
-type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas' | 'vacaciones';
+// 'actas', 'vacaciones' and 'estructura' are not in the tab bar: they open from
+// Inicio. Actas, Estructura and the team view of Vacaciones are only for some puestos.
+type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas' | 'vacaciones' | 'estructura';
 
 type TabItem = {
   key: TabKey;
@@ -113,6 +114,8 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
         return <ProfileScreen onLogout={onLogout} />;
       case 'actas':
         return canUseActas ? <ActasScreen onBack={() => setActiveTab('home')} /> : null;
+      case 'estructura':
+        return canUseActas ? <EstructuraScreen onBack={() => setActiveTab('home')} /> : null;
       case 'vacaciones':
         return <VacacionesScreen onBack={() => setActiveTab('home')} conEquipo={canUseActas} />;
       default:

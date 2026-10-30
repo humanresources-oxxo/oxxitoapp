@@ -6,6 +6,7 @@
 // Same sources as the web, in order: the live sheet through the Apps Script,
 // then the versioned CSV on GitHub Pages, then the last copy saved on the phone.
 import { getJson, setJson, storageKeys } from './appStorage';
+import { parsearCsv } from './gviz';
 
 const READ_SHEET_URL =
   'https://script.google.com/macros/s/AKfycbwe_RcnVRkZy9x1YcRuum4qdLucIWLTVsnTZcMvQDyobo6f3ot-YG0Lv00hYS-1XEg/exec?action=readSheet&sheet=Catalogo_Asesores';
@@ -55,26 +56,6 @@ function aTiendas(valores: string[][]): Tienda[] {
     .filter((t) => !vistos.has(t.cr) && !!vistos.add(t.cr))
     .map(({ tienda, cr, asesor }) => ({ tienda, cr, asesor }))
     .sort((a, b) => a.tienda.localeCompare(b.tienda, 'es'));
-}
-
-function parsearCsv(texto: string): string[][] {
-  const filas: string[][] = [];
-  let fila: string[] = [], celda = '', comillas = false;
-  for (let i = 0; i < texto.length; i++) {
-    const c = texto[i];
-    if (comillas) {
-      if (c === '"' && texto[i + 1] === '"') { celda += '"'; i++; }
-      else if (c === '"') comillas = false;
-      else celda += c;
-    } else if (c === '"') comillas = true;
-    else if (c === ',') { fila.push(celda); celda = ''; }
-    else if (c === '\n' || c === '\r') {
-      if (c === '\r' && texto[i + 1] === '\n') i++;
-      fila.push(celda); filas.push(fila); fila = []; celda = '';
-    } else celda += c;
-  }
-  if (celda || fila.length) { fila.push(celda); filas.push(fila); }
-  return filas;
 }
 
 async function conTiempo(url: string, ms: number) {

@@ -29,6 +29,22 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   editar el Directorio. Se corre local con `npx serve admin` o similar — no está
   desplegada en ningún lado público.
 
+✅ **Estructura (`src/screens/EstructuraScreen.tsx`):** posiciones de cada tienda desde el
+  Dashboard 1 de DashboardsOxxo (pestaña `Dashboard_1_Diario`, `src/services/estructura.ts`).
+  Solo para los puestos de `PUESTOS_ACTAS`; se abre desde Inicio.
+  - Usa el corte del mes más reciente (columna `Mes`), una plaza a la vez: cobertura,
+    vacantes, y por tienda quién ocupa cada posición y desde cuándo está vacante cada una.
+  - Mismos filtros por defecto que `dashboard-1.html`: sin unidades de Entrenamiento u
+    Operaciones, sin preaperturas (`PREOPENING_STORE_KEYS`) y solo sus seis puestos por
+    defecto. Vacante = `Status ocupacion` dice "vacante" o "no ocupado", igual que la web.
+  - El AT de cada tienda sale de `Catalogo_Asesores` por CR (como `applyAsesorCatalog`);
+    si la tienda no está en el catálogo, el de la hoja. "Mis tiendas" filtra por el
+    nombre de la sesión.
+  - Si DashboardsOxxo cambia los puestos por defecto, la lista de preaperturas, la
+    pestaña o sus columnas, hay que actualizar el servicio.
+  - `src/services/gviz.ts` concentra la lectura por GViz que comparten Vacaciones y
+    Estructura (y el parser CSV que usa el catálogo de tiendas).
+
 ✅ **Vacaciones (`src/screens/VacacionesScreen.tsx`):** saldo de vacaciones desde el
   Dashboard 5 de DashboardsOxxo (pestaña `Dashboard_5_Semanal` del Google Sheet de los
   dashboards, leída por GViz CSV como la web; `src/services/vacaciones.ts`). Se abre desde
@@ -107,9 +123,12 @@ src/
     PermissionsScreen.tsx
     ActasScreen.tsx         — Actas y Formatos (solo ciertos puestos)
     VacacionesScreen.tsx    — saldo de vacaciones (propio y, para ciertos puestos, del equipo)
+    EstructuraScreen.tsx    — posiciones ocupadas y vacantes por tienda (solo ciertos puestos)
   services/actas.ts         — quién puede levantar actas, envío a RH, compartir Word
   services/tiendas.ts       — catálogo de tiendas (nombre, CR, AT) para las actas
   services/vacaciones.ts    — saldos del Dashboard 5 (Dashboard_5_Semanal) vía GViz
+  services/estructura.ts    — estructura por tienda del Dashboard 1 (Dashboard_1_Diario)
+  services/gviz.ts          — lectura de pestañas del Sheet de los dashboards (GViz CSV)
   utils/
     actaDocx.ts             — texto de cada formato + generador del .docx
     firmaPng.ts             — firma (trazos) → PNG
