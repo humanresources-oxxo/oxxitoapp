@@ -15,14 +15,17 @@ const ACTAS_URL =
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-// Puestos (employees.puesto) that see Actas y Formatos. Matched without
-// accents or case, as a prefix: "ASESOR TIENDA" also covers "ASESOR TIENDA CV".
+// Puestos (employees.puesto) that see Actas y Formatos, Estructura and the team
+// view of Vacaciones. Matched without accents or case, as a prefix: "ASESOR
+// TIENDA" also covers "ASESOR TIENDA CV".
 export const PUESTOS_ACTAS = [
   'ASESOR TIENDA',
   'RESPONSABLE RECURSOS HUMANOS',
   'GERENTE PLAZA',
   'ANALISTA EXPERIENCIA COLABORADOR',
   'PRACTICANTE',
+  // Test account with full access (employee 1599067's puesto in Supabase).
+  'ACCES TEST',
 ];
 
 const normalizar = (s?: string) =>
