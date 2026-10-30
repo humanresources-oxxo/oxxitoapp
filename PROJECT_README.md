@@ -101,6 +101,11 @@ a partir del design handoff (`design_handoff_oxxito_app`).
 - Teléfonos de asesores por tienda (el Directorio solo tiene contactos generales de RH/Sistemas/Salud).
 - Probar la app en un dispositivo físico vía Expo Go (bloqueado por un retraso de Apple
   en aprobar la versión de Expo Go compatible con SDK 56 a la fecha de este documento).
+- Jessica Yazmin Verdi Toala es AT de Plaza Oaxaca en `Catalogo_Asesores`, pero no tiene
+  `puesto` en `employees` (o no está en la nómina): no ve Actas, Estructura ni "Mi equipo".
+  Falta su número de empleado para darle el puesto `ASESOR TIENDA`.
+- El resto del personal de tienda no tiene `puesto` en `employees` (solo los 22 de la
+  migración 22 y la cuenta de prueba 1599067). Hoy no les quita acceso a nada.
 
 ## Cómo correrlo
 
