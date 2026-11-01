@@ -131,6 +131,9 @@ a partir del design handoff (`design_handoff_oxxito_app`).
 - Jessica Yazmin Verdi Toala es AT de Plaza Oaxaca en `Catalogo_Asesores`, pero no tiene
   `puesto` en `employees` (o no está en la nómina): no ve Actas, Estructura ni "Mi equipo".
   Falta su número de empleado para darle el puesto `ASESOR TIENDA`.
+- Usuarios sin número de empleado: se les inventa uno de 8 dígitos en el rango `9000000x`
+  (los reales tienen 7 o menos). Hoy: 90000001 David (Sindicato) y 90000002 Antonio Cruz
+  (migración 31).
 - El resto del personal de tienda no tiene `puesto` en `employees` (solo los 22 de la
   migración 22 y la cuenta de prueba 1599067). Hoy no les quita acceso a nada.
 
