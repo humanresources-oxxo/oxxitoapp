@@ -1,13 +1,14 @@
 // src/screens/DilosScreen.tsx
 // Casos DILOS, app only: open cases of the Zona Centro Sur at the report's
-// cut, how long they have been open, who is handling them (RH or
-// Administración), by región and plaza, and the list from oldest to newest.
+// cut: who is handling them (ring RH / ADM), how long they have been open
+// (stacked bar), and, folded, by región and plaza and the list of cases.
 // No names: the facilitator never reaches the app (services/dilos.ts).
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
+import { Anillo, BarraApilada, Barras, Desplegable, Leyenda } from '../components/Visual';
 import { cargarDilos, CasoDilos, contarPor, Dilos, DIAS_ALERTA } from '../services/dilos';
 import { normalizarNombre } from '../services/gviz';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
@@ -49,12 +50,16 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
   const casos = dilos?.casos || [];
   const rh = casos.filter((c) => c.area === 'RH').length;
   const adm = casos.filter((c) => c.area === 'ADM').length;
-  const atrasados = casos.filter((c) => c.dias > DIAS_ALERTA).length;
+  const otra = casos.length - rh - adm;
   const promedio = casos.length ? casos.reduce((s, c) => s + c.dias, 0) / casos.length : 0;
+  // Aging buckets: on time, delayed, very delayed.
+  const enTiempo = casos.filter((c) => c.dias <= DIAS_ALERTA).length;
+  const muyAtrasados = casos.filter((c) => c.dias > DIAS_ALERTA + 5).length;
+  const atrasados = casos.length - enTiempo - muyAtrasados;
   const regiones = useMemo(() => contarPor(casos, 'region'), [casos]);
   const plazas = useMemo(() => contarPor(casos, 'plaza'), [casos]);
-  const maxPlaza = Math.max(1, ...plazas.map(([, n]) => n));
   const tabasco = casos.filter((c) => normalizarNombre(c.region) === 'TABASCO').length;
+  const pct = (n: number) => (casos.length ? `${Math.round((n / casos.length) * 100)}%` : '0%');
 
   const lista = useMemo(() => {
     const n = normalizarNombre(texto);
@@ -100,104 +105,128 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
             <View style={{ flex: 1 }}>
               <Text style={styles.heroKicker}>Casos abiertos</Text>
               <Text style={styles.heroNumero}>{casos.length}</Text>
-              <Text style={styles.heroBody}>
-                {promedio.toLocaleString('es-MX', { maximumFractionDigits: 1 })} días abiertos en promedio · el más antiguo, {casos[0].dias} días
-              </Text>
+              <Text style={styles.heroBody}>{promedio.toLocaleString('es-MX', { maximumFractionDigits: 0 })} días en promedio</Text>
             </View>
             <View style={styles.heroLado}>
-              <Text style={styles.heroLadoNum}>{atrasados}</Text>
-              <Text style={styles.heroLadoTxt}>con más de {DIAS_ALERTA} días</Text>
+              <Text style={styles.heroLadoNum}>{casos[0].dias}</Text>
+              <Text style={styles.heroLadoTxt}>días el más antiguo</Text>
             </View>
           </LinearGradient>
 
-          <View style={styles.fila}>
-            <Dato titulo="En atención RH" valor={String(rh)} />
-            <Dato titulo="En atención ADM" valor={String(adm)} />
-            <Dato titulo="Región Tabasco" valor={String(tabasco)} nota="región de Plaza Oaxaca" />
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>¿Quién los atiende?</Text>
+            <View style={styles.anilloFila}>
+              <Anillo
+                segmentos={[
+                  { valor: rh, color: colors.oxBlue },
+                  { valor: adm, color: colors.oxGold },
+                  { valor: otra, color: colors.ink3 },
+                ]}
+                centro={
+                  <View style={{ alignItems: 'center' }}>
+                    <Text style={styles.anilloNum}>{casos.length}</Text>
+                    <Text style={styles.anilloTxt}>casos</Text>
+                  </View>
+                }
+              />
+              <View style={{ flex: 1 }}>
+                <Leyenda
+                  items={[
+                    { etiqueta: 'Recursos Humanos', valor: `${rh} · ${pct(rh)}`, color: colors.oxBlue },
+                    { etiqueta: 'Administración', valor: `${adm} · ${pct(adm)}`, color: colors.oxGold },
+                    ...(otra ? [{ etiqueta: 'Otra área', valor: String(otra), color: colors.ink3 }] : []),
+                  ]}
+                />
+              </View>
+            </View>
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Por plaza</Text>
-            {plazas.map(([p, n]) => (
-              <View key={p} style={styles.barraFila}>
-                <Text style={styles.barraEtq} numberOfLines={1}>
-                  {titulo(p)}
-                </Text>
-                <View style={styles.barraFondo}>
-                  <View style={[styles.barraLlena, { width: `${Math.max(6, (n / maxPlaza) * 100)}%` }]} />
-                </View>
-                <Text style={styles.barraValor}>{n}</Text>
-              </View>
-            ))}
-          </View>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-            <Chip texto="Todas las regiones" activo={!region} onPress={() => setRegion('')} />
-            {regiones.map(([r, n]) => (
-              <Chip key={r} texto={`${titulo(r)} · ${n}`} activo={region === r} onPress={() => setRegion(region === r ? '' : r)} />
-            ))}
-          </ScrollView>
-          <View style={styles.chipsFila}>
-            {(
-              [
-                ['todos', 'Todos'],
-                ['RH', 'RH'],
-                ['ADM', 'Administración'],
-                ['atrasados', `Más de ${DIAS_ALERTA} días`],
-              ] as Array<[Filtro, string]>
-            ).map(([k, t]) => (
-              <Chip key={k} texto={t} activo={filtro === k} onPress={() => setFiltro(k)} />
-            ))}
-          </View>
-          <View style={styles.buscador}>
-            <Icon name="search" size={18} color={colors.ink3} />
-            <TextInput
-              style={styles.buscadorInput}
-              value={texto}
-              onChangeText={setTexto}
-              placeholder="Número de caso o plaza"
-              placeholderTextColor={colors.ink3}
-              autoCorrect={false}
+            <Text style={styles.cardTitle}>¿Cuánto llevan abiertos?</Text>
+            <BarraApilada
+              segmentos={[
+                { etiqueta: `Hasta ${DIAS_ALERTA} días`, valor: enTiempo, color: colors.ok },
+                { etiqueta: `${DIAS_ALERTA + 1} a ${DIAS_ALERTA + 5} días`, valor: atrasados, color: colors.oxGold },
+                { etiqueta: `Más de ${DIAS_ALERTA + 5} días`, valor: muyAtrasados, color: colors.oxRed },
+              ]}
             />
           </View>
-          <Text style={styles.resumen}>
-            {lista.length} {lista.length === 1 ? 'caso' : 'casos'} · del más antiguo al más reciente
-          </Text>
-          {lista.map((c) => (
-            <View key={c.caso} style={[styles.caso, c.dias > DIAS_ALERTA && styles.casoAtrasado]}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.casoNum}>{c.caso}</Text>
-                <Text style={styles.casoMeta} numberOfLines={1}>
-                  {titulo(c.plaza)} · {titulo(c.region)}
-                </Text>
-                <View style={[styles.pill, c.area === 'RH' ? styles.pillRh : styles.pillAdm]}>
-                  <Text style={[styles.pillTxt, c.area === 'RH' ? styles.pillTxtRh : styles.pillTxtAdm]}>{c.estatus || c.area}</Text>
-                </View>
-              </View>
-              <View style={styles.dias}>
-                <Text style={[styles.diasNum, c.dias > DIAS_ALERTA && { color: colors.oxRed }]}>{c.dias}</Text>
-                <Text style={styles.diasTxt}>{c.dias === 1 ? 'día' : 'días'}</Text>
-              </View>
+
+          <View style={[styles.card, styles.oaxaca]}>
+            <Icon name="pin" size={20} color={colors.oxRed} />
+            <Text style={styles.oaxacaTexto}>
+              {tabasco ? (
+                <>
+                  <Text style={styles.oaxacaFuerte}>{tabasco === 1 ? '1 caso' : `${tabasco} casos`}</Text> en la región Tabasco, la de Plaza Oaxaca
+                </>
+              ) : (
+                'Sin casos en la región Tabasco, la de Plaza Oaxaca'
+              )}
+            </Text>
+          </View>
+
+          <Desplegable
+            titulo="Por región y plaza"
+            icono="pin"
+            resumen={plazas.length ? `${titulo(plazas[0][0])} tiene más casos (${plazas[0][1]}) · ${regiones.length} regiones` : undefined}
+          >
+            <Text style={styles.subTitulo}>Regiones</Text>
+            <Barras filas={regiones.map(([r, n]) => ({ etiqueta: titulo(r), valor: n }))} formato={(v) => String(v)} destacar="Tabasco" />
+            <Text style={[styles.subTitulo, { marginTop: 6 }]}>Plazas</Text>
+            <Barras filas={plazas.map(([p, n]) => ({ etiqueta: titulo(p), valor: n }))} formato={(v) => String(v)} maxFilas={5} />
+          </Desplegable>
+
+          <Desplegable titulo="Lista de casos" icono="doc" resumen={`${casos.length} casos · del más antiguo al más reciente`}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              <Chip texto="Todas" activo={!region} onPress={() => setRegion('')} />
+              {regiones.map(([r, n]) => (
+                <Chip key={r} texto={`${titulo(r)} · ${n}`} activo={region === r} onPress={() => setRegion(region === r ? '' : r)} />
+              ))}
+            </ScrollView>
+            <View style={styles.chipsFila}>
+              {(
+                [
+                  ['todos', 'Todos'],
+                  ['RH', 'RH'],
+                  ['ADM', 'ADM'],
+                  ['atrasados', `+${DIAS_ALERTA} días`],
+                ] as Array<[Filtro, string]>
+              ).map(([k, t]) => (
+                <Chip key={k} texto={t} activo={filtro === k} onPress={() => setFiltro(k)} />
+              ))}
             </View>
-          ))}
-          <Text style={styles.nota}>
-            Reporte DILOS que carga RH en el panel admin. No incluye el nombre del facilitador. "Días" son los días abiertos al corte del
-            reporte.
-          </Text>
+            <View style={styles.buscador}>
+              <Icon name="search" size={18} color={colors.ink3} />
+              <TextInput
+                style={styles.buscadorInput}
+                value={texto}
+                onChangeText={setTexto}
+                placeholder="Número de caso o plaza"
+                placeholderTextColor={colors.ink3}
+                autoCorrect={false}
+              />
+            </View>
+            {lista.length ? (
+              lista.map((c, i) => (
+                <View key={c.caso} style={[styles.caso, i < lista.length - 1 && styles.linea]}>
+                  <View style={[styles.casoBarra, { backgroundColor: c.dias > DIAS_ALERTA + 5 ? colors.oxRed : c.dias > DIAS_ALERTA ? colors.oxGold : colors.ok }]} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.casoNum}>{c.caso}</Text>
+                    <Text style={styles.casoMeta} numberOfLines={1}>
+                      {titulo(c.plaza)} · {c.area === 'RH' ? 'RH' : c.area === 'ADM' ? 'Administración' : c.estatus}
+                    </Text>
+                  </View>
+                  <Text style={styles.casoDias}>{c.dias} d</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.nota}>Ningún caso coincide con los filtros.</Text>
+            )}
+          </Desplegable>
+
+          <Text style={styles.nota}>Reporte DILOS que carga RH. No incluye el nombre del facilitador; los días son los abiertos al corte.</Text>
         </ScrollView>
       )}
-    </View>
-  );
-}
-
-function Dato({ titulo, valor, nota }: { titulo: string; valor: string; nota?: string }) {
-  return (
-    <View style={[styles.card, styles.kpi]}>
-      <Text style={styles.kpiTitulo} numberOfLines={2}>
-        {titulo}
-      </Text>
-      <Text style={styles.kpiValor}>{valor}</Text>
-      {nota ? <Text style={styles.kpiNota}>{nota}</Text> : null}
     </View>
   );
 }
@@ -253,6 +282,16 @@ const styles = StyleSheet.create({
   heroLadoNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 28, color: colors.white },
   heroLadoTxt: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11.5, color: 'rgba(255,255,255,.9)', textAlign: 'center' },
   fila: { flexDirection: 'row', gap: 10 },
+  anilloFila: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  anilloNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 26, color: colors.ink },
+  anilloTxt: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11, color: colors.ink3, marginTop: -2 },
+  oaxaca: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
+  oaxacaTexto: { flex: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13.5, lineHeight: 19, color: colors.ink2 },
+  oaxacaFuerte: { fontFamily: 'PlusJakartaSans_800ExtraBold', color: colors.ink },
+  subTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: colors.ink3, textTransform: 'uppercase', letterSpacing: 0.8 },
+  linea: { borderBottomWidth: 1, borderBottomColor: colors.line },
+  casoBarra: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
+  casoDias: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 15, color: colors.ink },
   card: {
     borderRadius: radii.xl,
     backgroundColor: colors.white,
@@ -290,17 +329,7 @@ const styles = StyleSheet.create({
   },
   buscadorInput: { flex: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 15, color: colors.ink, paddingVertical: 12 },
   resumen: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink3 },
-  caso: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderRadius: radii.xl,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
+  caso: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   casoAtrasado: { borderColor: '#FFC9BF' },
   casoNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14.5, color: colors.ink },
   casoMeta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink2, marginTop: 2 },

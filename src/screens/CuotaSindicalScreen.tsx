@@ -1,15 +1,16 @@
 // src/screens/CuotaSindicalScreen.tsx
 // Cuota sindical: what was withheld each month in Plaza Oaxaca, from
-// DashboardsOxxo's Cuota Sindical dashboard. Totals only (no names). Month
-// chips, the month's KPIs, the monthly trend, and breakdowns by AT, puesto and
-// store. Asesores de Tienda only see their own stores.
+// DashboardsOxxo's Cuota Sindical dashboard. Totals only (no names). The
+// month's amount, a tappable column per month, a ring by puesto and, folded,
+// by AT and by store. Asesores de Tienda only see their own stores.
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
+import { Anillo, Barras, Columnas, Delta, Desplegable, Leyenda } from '../components/Visual';
 import { getJson, storageKeys } from '../services/appStorage';
-import { agrupar, cargarCuota, Cuota, Grupo, suma } from '../services/cuotaSindical';
+import { agrupar, cargarCuota, Cuota, suma } from '../services/cuotaSindical';
 import { normalizarNombre } from '../services/gviz';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
@@ -27,6 +28,12 @@ function compacto(v: number) {
   return dinero(v);
 }
 const num = (n: number) => n.toLocaleString('es-MX');
+// "AYUDANTE TIENDA SIND" -> "Ayudante Tienda Sind"; "OXXO" stays.
+const titulo = (s: string) =>
+  s
+    .split(' ')
+    .map((w) => (/^(OXXO|AT|CV|II|III|IV|VSA|OAX)$/i.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()))
+    .join(' ');
 
 export function CuotaSindicalScreen({ onBack, soloMisTiendas = false }: { onBack: () => void; soloMisTiendas?: boolean }) {
   const [sesion, setSesion] = useState<Sesion>(null);
@@ -76,7 +83,6 @@ export function CuotaSindicalScreen({ onBack, soloMisTiendas = false }: { onBack
   const ajustes = suma(delMes, 'devoluciones') + suma(delMes, 'reversos');
 
   const tendencia = useMemo(() => meses.map((m) => ({ mes: m, importe: suma(base.filter((f) => f.mes === m), 'importe') })), [meses, base]);
-  const maxMes = Math.max(1, ...tendencia.map((t) => t.importe));
   const porAsesor = useMemo(() => agrupar(delMes, 'asesor'), [delMes]);
   const porPuesto = useMemo(() => agrupar(delMes, 'funcion'), [delMes]);
   const tiendas = useMemo(() => {
@@ -87,64 +93,11 @@ export function CuotaSindicalScreen({ onBack, soloMisTiendas = false }: { onBack
       .map((t) => ({ ...t, asesor: at.get(t.nombre) || '' }))
       .filter((t) => !n || normalizarNombre(`${t.nombre} ${t.asesor}`).includes(n));
   }, [delMes, texto]);
-
-  const cabecera = (
-    <View style={{ gap: 12 }}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-        {[...meses].reverse().map((m) => (
-          <Chip key={m} texto={mesCorto(m)} activo={m === mes} onPress={() => setMes(m)} />
-        ))}
-      </ScrollView>
-
-      <LinearGradient colors={gradients.oxGrad.colors} start={gradients.oxGrad.start} end={gradients.oxGrad.end} style={styles.hero}>
-        <Text style={styles.heroKicker}>Descontado · {mesLargo(mes)}</Text>
-        <Text style={styles.heroNumero}>{dinero(importe)}</Text>
-        <Text style={styles.heroBody}>
-          {previo ? `${importe >= previo ? '▲' : '▼'} ${Math.abs(((importe - previo) / previo) * 100).toLocaleString('es-MX', { maximumFractionDigits: 1 })}% vs ${mesCorto(meses[iMes - 1])}` : 'Primer mes con datos'}
-        </Text>
-      </LinearGradient>
-
-      <View style={styles.fila}>
-        <Dato titulo="Personas" valor={num(personas)} nota={res ? 'con descuento' : 'por tienda y puesto'} />
-        <Dato titulo="Promedio" valor={personas ? dinero(importe / personas) : '—'} nota="por persona" />
-        <Dato titulo="Ajustes" valor={num(ajustes)} nota="devol. y reversos" />
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Tendencia mensual</Text>
-        {tendencia.map((t) => (
-          <Pressable key={t.mes} style={styles.barraFila} onPress={() => setMes(t.mes)}>
-            <Text style={[styles.barraEtq, t.mes === mes && styles.barraEtqActiva]}>{mesCorto(t.mes)}</Text>
-            <View style={styles.barraFondo}>
-              <View style={[styles.barraLlena, t.mes === mes && styles.barraActiva, { width: `${Math.max(2, (t.importe / maxMes) * 100)}%` }]} />
-            </View>
-            <Text style={styles.barraValor}>{compacto(t.importe)}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {!soloMisTiendas ? <Barras titulo="Por asesor" grupos={porAsesor} detalle={(g) => `${g.tiendas} tiendas · ${num(g.personas)} personas`} /> : null}
-      <Barras titulo="Por puesto" grupos={porPuesto} detalle={(g) => `${num(g.personas)} personas`} />
-
-      <View style={styles.buscador}>
-        <Icon name="search" size={18} color={colors.ink3} />
-        <TextInput
-          style={styles.buscadorInput}
-          value={texto}
-          onChangeText={setTexto}
-          placeholder={soloMisTiendas ? 'Buscar tienda' : 'Tienda o asesor'}
-          placeholderTextColor={colors.ink3}
-          autoCorrect={false}
-          returnKeyType="search"
-        />
-      </View>
-      <Text style={styles.resumen}>
-        {num(tiendas.length)} {tiendas.length === 1 ? 'tienda' : 'tiendas'}
-        {soloMisTiendas ? ' a tu cargo' : ''}
-        {tiendas.length > MAX_TIENDAS ? ` · se muestran ${MAX_TIENDAS}, usa la búsqueda` : ''}
-      </Text>
-    </View>
-  );
+  // Ring of the four puestos with the most withheld, the rest together.
+  const COLORES = [colors.oxRed, colors.oxBlue, colors.oxGold, colors.ok, colors.ink3];
+  const anillo = [...porPuesto.slice(0, 4), ...(porPuesto.length > 4 ? [{ ...porPuesto[4], nombre: 'Otros', importe: porPuesto.slice(4).reduce((x, g) => x + g.importe, 0) }] : [])];
+  const pct = (v: number) => (importe ? `${Math.round((v / importe) * 100)}%` : '0%');
+  const delta = previo ? ((importe - previo) / previo) * 100 : null;
 
   return (
     <View style={styles.screen}>
@@ -182,60 +135,109 @@ export function CuotaSindicalScreen({ onBack, soloMisTiendas = false }: { onBack
           <Aviso titulo="No encontramos tiendas a tu nombre" texto="Tus tiendas salen del catálogo de asesores de RH. Si te falta alguna, avisa a RH." />
         </View>
       ) : (
-        <FlatList
-          data={tiendas.slice(0, MAX_TIENDAS)}
-          keyExtractor={(t) => t.nombre}
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={cabecera}
-          ListEmptyComponent={<Text style={styles.nota}>Ninguna tienda coincide con la búsqueda.</Text>}
-          ListFooterComponent={
-            <Text style={styles.nota}>Por privacidad no se publican nombres: para saber quiénes son, revisa el reporte de nómina.</Text>
-          }
-          renderItem={({ item }) => (
-            <View style={styles.tienda}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.tiendaNombre} numberOfLines={1}>
-                  {item.nombre}
-                </Text>
-                <Text style={styles.tiendaMeta} numberOfLines={1}>
-                  {!soloMisTiendas ? `${item.asesor} · ` : ''}
-                  {num(item.personas)} {item.personas === 1 ? 'persona' : 'personas'}
-                  {item.personas ? ` · ${dinero(item.importe / item.personas)} c/u` : ''}
-                </Text>
-              </View>
-              <Text style={styles.tiendaImporte}>{dinero(item.importe)}</Text>
-            </View>
-          )}
-        />
-      )}
-    </View>
-  );
-}
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <LinearGradient colors={gradients.oxGrad.colors} start={gradients.oxGrad.start} end={gradients.oxGrad.end} style={styles.hero}>
+            <Text style={styles.heroKicker}>
+              Descontado · {mesLargo(mes)}
+              {soloMisTiendas ? ' · tus tiendas' : ''}
+            </Text>
+            <Text style={styles.heroNumero}>{dinero(importe)}</Text>
+            {delta !== null ? (
+              <Delta valor={delta} texto={`${Math.abs(delta).toLocaleString('es-MX', { maximumFractionDigits: 1 })}% vs ${mesCorto(meses[iMes - 1])}`} />
+            ) : (
+              <Text style={styles.heroBody}>Primer mes con datos</Text>
+            )}
+          </LinearGradient>
 
-function Barras({ titulo, grupos, detalle }: { titulo: string; grupos: Grupo[]; detalle: (g: Grupo) => string }) {
-  const max = Math.max(1, ...grupos.map((g) => g.importe));
-  return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>{titulo}</Text>
-      {grupos.length ? (
-        grupos.map((g) => (
-          <View key={g.nombre} style={styles.grupo}>
-            <View style={styles.grupoTop}>
-              <Text style={styles.grupoNombre} numberOfLines={1}>
-                {g.nombre}
-              </Text>
-              <Text style={styles.grupoValor}>{compacto(g.importe)}</Text>
+          <View style={styles.card}>
+            <View style={styles.cardHead}>
+              <Text style={styles.cardTitle}>Por mes</Text>
+              <Text style={styles.cardHint}>Toca un mes</Text>
             </View>
-            <View style={styles.barraFondo}>
-              <View style={[styles.barraLlena, { width: `${Math.max(2, (g.importe / max) * 100)}%` }]} />
-            </View>
-            <Text style={styles.grupoDetalle}>{detalle(g)}</Text>
+            <Columnas
+              datos={tendencia.map((t) => ({ clave: t.mes, etiqueta: CORTOS[+t.mes.slice(5) - 1], valor: t.importe }))}
+              seleccion={mes}
+              onSelect={setMes}
+              formato={(v) => `${mesCorto(mes)}: ${compacto(v)}`}
+            />
           </View>
-        ))
-      ) : (
-        <Text style={styles.nota}>Sin datos en este mes.</Text>
+
+          <View style={styles.fila}>
+            <Dato titulo="Personas" valor={num(personas)} nota={res ? 'con descuento' : 'por tienda y puesto'} />
+            <Dato titulo="Promedio" valor={personas ? dinero(importe / personas) : '—'} nota="por persona" />
+            <Dato titulo="Ajustes" valor={num(ajustes)} nota="devol. y reversos" />
+          </View>
+
+          {porPuesto.length ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Por puesto</Text>
+              <View style={styles.anilloFila}>
+                <Anillo
+                  segmentos={anillo.map((g, i) => ({ valor: g.importe, color: COLORES[i] }))}
+                  centro={
+                    <View style={{ alignItems: 'center' }}>
+                      <Text style={styles.anilloNum}>{compacto(importe)}</Text>
+                      <Text style={styles.anilloTxt}>{mesCorto(mes)}</Text>
+                    </View>
+                  }
+                />
+                <View style={{ flex: 1 }}>
+                  <Leyenda items={anillo.map((g, i) => ({ etiqueta: titulo(g.nombre), valor: pct(g.importe), color: COLORES[i] }))} />
+                </View>
+              </View>
+            </View>
+          ) : null}
+
+          {!soloMisTiendas && porAsesor.length ? (
+            <Desplegable titulo="Por asesor" icono="user" resumen={`${titulo(porAsesor[0].nombre)} encabeza con ${compacto(porAsesor[0].importe)} · ${porAsesor.length} asesores`}>
+              <Barras
+                filas={porAsesor.map((g) => ({ etiqueta: titulo(g.nombre), valor: g.importe, detalle: `${g.tiendas} tiendas · ${num(g.personas)} personas` }))}
+                formato={compacto}
+                maxFilas={5}
+              />
+            </Desplegable>
+          ) : null}
+
+          <Desplegable
+            titulo={soloMisTiendas ? 'Tus tiendas' : 'Por tienda'}
+            icono="pin"
+            resumen={tiendas.length ? `${num(tiendas.length)} tiendas · la mayor, ${titulo(tiendas[0].nombre)} (${compacto(tiendas[0].importe)})` : 'Sin tiendas en este mes'}
+          >
+            <View style={styles.buscador}>
+              <Icon name="search" size={18} color={colors.ink3} />
+              <TextInput
+                style={styles.buscadorInput}
+                value={texto}
+                onChangeText={setTexto}
+                placeholder={soloMisTiendas ? 'Buscar tienda' : 'Tienda o asesor'}
+                placeholderTextColor={colors.ink3}
+                autoCorrect={false}
+                returnKeyType="search"
+              />
+            </View>
+            {tiendas.length ? (
+              tiendas.slice(0, MAX_TIENDAS).map((t, i, arr) => (
+                <View key={t.nombre} style={[styles.tienda, i < arr.length - 1 && styles.linea]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.tiendaNombre} numberOfLines={1}>
+                      {titulo(t.nombre)}
+                    </Text>
+                    <Text style={styles.tiendaMeta} numberOfLines={1}>
+                      {!soloMisTiendas ? `${titulo(t.asesor)} · ` : ''}
+                      {num(t.personas)} {t.personas === 1 ? 'persona' : 'personas'}
+                    </Text>
+                  </View>
+                  <Text style={styles.tiendaImporte}>{dinero(t.importe)}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.nota}>Ninguna tienda coincide con la búsqueda.</Text>
+            )}
+            {tiendas.length > MAX_TIENDAS ? <Text style={styles.nota}>Se muestran {MAX_TIENDAS}; usa la búsqueda para ver las demás.</Text> : null}
+          </Desplegable>
+
+          <Text style={styles.nota}>Por privacidad no se publican nombres: para saber quiénes son, revisa el reporte de nómina.</Text>
+        </ScrollView>
       )}
     </View>
   );
@@ -268,13 +270,6 @@ function Aviso({ titulo, texto, accion }: { titulo: string; texto: string; accio
   );
 }
 
-function Chip({ texto, activo, onPress }: { texto: string; activo: boolean; onPress: () => void }) {
-  return (
-    <Pressable style={[styles.chip, activo && styles.chipActivo]} onPress={onPress} accessibilityState={{ selected: activo }}>
-      <Text style={[styles.chipText, activo && styles.chipTextActivo]}>{texto}</Text>
-    </Pressable>
-  );
-}
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg, paddingBottom: 108 },
@@ -306,6 +301,12 @@ const styles = StyleSheet.create({
   heroNumero: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 40, lineHeight: 48, color: colors.white, marginTop: 4 },
   heroBody: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13.5, color: 'rgba(255,255,255,.92)', marginTop: 2 },
   fila: { flexDirection: 'row', gap: 10 },
+  cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  cardHint: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11.5, color: colors.ink3 },
+  anilloFila: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  anilloNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink },
+  anilloTxt: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11, color: colors.ink3 },
+  linea: { borderBottomWidth: 1, borderBottomColor: colors.line },
   card: {
     borderRadius: radii.xl,
     backgroundColor: colors.white,
@@ -344,17 +345,7 @@ const styles = StyleSheet.create({
   },
   buscadorInput: { flex: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 15, color: colors.ink, paddingVertical: 12 },
   resumen: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink3 },
-  tienda: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderRadius: radii.xl,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
+  tienda: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   tiendaNombre: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14.5, color: colors.ink },
   tiendaMeta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink2, marginTop: 2 },
   tiendaImporte: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 15, color: colors.oxRed },
