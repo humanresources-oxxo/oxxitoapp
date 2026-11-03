@@ -1,7 +1,7 @@
 // src/services/cct.ts
 // Contratos colectivos (CCT): app-only data, not in any dashboard. RH uploads
-// the CCT Excel from the admin panel (admin/cct.js normalizes it, migration 32
-// stores it) and the app reads it with the list_cct RPC. It covers every OXXO
+// the CCT Excel from DashboardsOxxo's admin panel (js/cct-conoxxo.js there
+// normalizes it; migration 32 stores it) and the app reads it with the list_cct RPC. It covers every OXXO
 // plaza in the country: the screen shows Plaza Oaxaca's contract and how it
 // compares with the rest. Indicators only: no names of responsables or links.
 import { clave } from './gviz';

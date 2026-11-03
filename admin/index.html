@@ -53,7 +53,6 @@
     <button class="active" onclick="showTab('empleados')">Empleados</button>
     <button onclick="showTab('avisos')">Avisos</button>
     <button onclick="showTab('directorio')">Directorio</button>
-    <button onclick="showTab('cct')">Contratos colectivos</button>
   </div>
 
   <!-- EMPLEADOS -->
@@ -148,27 +147,8 @@
       </table>
     </div>
   </div>
-
-  <!-- CONTRATOS COLECTIVOS (CCT) -->
-  <div id="tab-cct" class="panel">
-    <div class="card">
-      <h3>Contratos colectivos (CCT)</h3>
-      <p class="msg">Sube el Excel de contratos colectivos ("Data colectiva Tiendas OXXO") con sus hojas
-        <b>CCTs Tiendas</b> y <b>CCT ejercicio …</b>. Reemplaza todo lo cargado antes. Solo se guardan
-        indicadores: los nombres de responsables y las ligas a SharePoint no se envían. Lo ve la pantalla
-        "Contratos colectivos" de la app.</p>
-      <div class="row">
-        <input id="cctFile" type="file" accept=".xlsx,.xlsm,.xls" />
-      </div>
-      <button id="cctButton" onclick="uploadCct()">Subir Excel</button>
-      <div id="cctMsg" class="msg"></div>
-      <div id="cctLast" class="msg"></div>
-    </div>
-  </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="cct.js"></script>
 <script>
 const SUPABASE_URL = 'https://gceuazxrqdbfahtdieod.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_59I8XugqRxE-LUhMSqmiEQ_HNzD7CRK';
@@ -202,7 +182,6 @@ async function unlock() {
     listEmployees();
     listNotices();
     listContacts();
-    lastCct();
   } catch (e) {
     gateMsg.textContent = 'No se pudo conectar. Intenta de nuevo.';
   }
@@ -372,42 +351,6 @@ async function deleteContact(id) {
   if (!confirm('¿Borrar este contacto?')) return;
   await rpc('admin_delete_contact', { p_passcode: passcode, p_id: id }).catch(() => {});
   listContacts();
-}
-
-// --- Contratos colectivos (CCT) ---
-async function lastCct() {
-  const el = document.getElementById('cctLast');
-  const rows = await rpc('list_cct', {}).catch(() => null);
-  if (!rows) { el.textContent = 'Falta correr la migración 32 en Supabase.'; return; }
-  if (!rows.length) { el.textContent = 'Todavía no hay contratos cargados.'; return; }
-  const n = (h) => rows.filter((r) => r.hoja === h).length;
-  el.textContent = `Cargado: ${new Date(rows[0].cargado_el).toLocaleString('es-MX')}${rows[0].archivo ? ' · ' + rows[0].archivo : ''} · ${n('historico')} filas históricas y ${n('ejercicio')} del ejercicio.`;
-}
-
-async function uploadCct() {
-  const file = document.getElementById('cctFile').files[0];
-  const msg = document.getElementById('cctMsg');
-  const button = document.getElementById('cctButton');
-  msg.className = 'msg';
-  if (!file) { msg.className = 'msg error'; msg.textContent = 'Elige el Excel primero.'; return; }
-  if (typeof XLSX === 'undefined' || !window.OXXO_CCT) { msg.className = 'msg error'; msg.textContent = 'No cargó el lector de Excel (revisa tu conexión y recarga la página).'; return; }
-  button.disabled = true;
-  msg.textContent = 'Leyendo el Excel…';
-  try {
-    const wb = XLSX.read(await file.arrayBuffer(), { cellDates: true });
-    const hojas = Object.fromEntries(wb.SheetNames.map((n) => [n, XLSX.utils.sheet_to_json(wb.Sheets[n], { defval: null, raw: true })]));
-    const { filas, resumen } = window.OXXO_CCT.normalizarCct(hojas);
-    msg.textContent = 'Subiendo…';
-    const total = await rpc('admin_replace_cct', { p_passcode: passcode, p_filas: filas, p_archivo: file.name });
-    msg.className = 'msg ok';
-    msg.textContent = `Listo: ${total} filas (${resumen.historico || 0} históricas y ${resumen.ejercicio || 0} del ejercicio).`;
-    lastCct();
-  } catch (e) {
-    msg.className = 'msg error';
-    msg.textContent = 'No se pudo subir: ' + (e.message || 'error') + '.';
-  } finally {
-    button.disabled = false;
-  }
 }
 </script>
 </body>
