@@ -1,14 +1,15 @@
 // src/screens/VacacionesScreen.tsx
-// Vacaciones: the employee's own balance (days left, previous and current
-// period, when they expire) from DashboardsOxxo's Dashboard 5. Puestos with
-// team access (same as Actas) also get a "Mi equipo" view: look up anyone in
-// Plaza Oaxaca by name, number or store, or just the stores of the logged-in AT.
+// Vacaciones: the employee's own balance (a ring with the previous and current
+// period and when they expire) from DashboardsOxxo's Dashboard 5. Puestos with
+// team access (same as Actas) also get "Mi equipo": days pending, who must take
+// them first and, folded, by store and the whole team (an AT: only their stores).
 // Plaza Oaxaca only (see services/gviz.ts).
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
+import { Anillo, BarraApilada, Barras, Desplegable, Leyenda } from '../components/Visual';
 import { getJson, storageKeys } from '../services/appStorage';
 import {
   buscarVacaciones,
@@ -166,30 +167,44 @@ function Saldo({ v, compacto }: { v: Vacacion; compacto?: boolean }) {
         </View>
       ) : null}
 
-      <View style={styles.fila}>
-        <Periodo titulo="Periodo anterior" valor={v.periodoAnterior} vence={vence(v.venceAnterior)} />
-        <Periodo titulo="Periodo actual" valor={v.periodoActual} vence={vence(v.venceActual)} />
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>{compacto ? 'Sus días' : 'Tus días'}</Text>
+        <View style={styles.anilloFila}>
+          <Anillo
+            segmentos={[
+              { valor: v.periodoAnterior, color: colors.oxGold },
+              { valor: v.periodoActual, color: colors.oxBlue },
+            ]}
+            centro={
+              <View style={{ alignItems: 'center' }}>
+                <Text style={styles.anilloNum}>{Number.isInteger(v.diasRestantes) ? v.diasRestantes : v.diasRestantes.toFixed(1)}</Text>
+                <Text style={styles.anilloTxt}>días</Text>
+              </View>
+            }
+          />
+          <View style={{ flex: 1, gap: 12 }}>
+            <View>
+              <Leyenda items={[{ etiqueta: 'Periodo anterior', valor: dias(v.periodoAnterior), color: colors.oxGold }]} />
+              <Text style={styles.venceTxt}>Vence: {vence(v.venceAnterior)}</Text>
+            </View>
+            <View>
+              <Leyenda items={[{ etiqueta: 'Periodo actual', valor: dias(v.periodoActual), color: colors.oxBlue }]} />
+              <Text style={styles.venceTxt}>Vence: {vence(v.venceActual)}</Text>
+            </View>
+          </View>
+        </View>
       </View>
 
-      <View style={styles.card}>
+      <Desplegable titulo="Detalles" icono="badge" resumen={`${fechaCorta(v.fechaInicio)} – ${fechaCorta(v.fechaFin)}${v.asesor ? ` · ${v.asesor}` : ''}`}>
         <Dato etq="Periodo del reporte" valor={`${fechaCorta(v.fechaInicio)} – ${fechaCorta(v.fechaFin)}`} />
         <Dato etq="Número de empleado" valor={v.numEmpleado} />
         <Dato etq="Asesor de tienda" valor={v.asesor || '—'} />
         <Dato etq="Plaza" valor={v.plaza || '—'} ultimo />
-      </View>
+      </Desplegable>
     </View>
   );
 }
 
-function Periodo({ titulo, valor, vence }: { titulo: string; valor: number; vence: string }) {
-  return (
-    <View style={[styles.card, styles.periodo]}>
-      <Text style={styles.periodoTitulo}>{titulo}</Text>
-      <Text style={styles.periodoValor}>{dias(valor)}</Text>
-      <Text style={styles.periodoVence}>Vence: {vence}</Text>
-    </View>
-  );
-}
 
 function Dato({ etq, valor, ultimo }: { etq: string; valor: string; ultimo?: boolean }) {
   return (
@@ -221,6 +236,7 @@ function Equipo({ sesion, soloMisTiendas }: { sesion: Sesion; soloMisTiendas: bo
   const [texto, setTexto] = useState('');
   const [soloMias, setSoloMias] = useState(true);
   const [urgentes, setUrgentes] = useState(false);
+  const [todosUrgentes, setTodosUrgentes] = useState(false);
   const [detalle, setDetalle] = useState<Vacacion | null>(null);
   const [intento, setIntento] = useState(0);
 
@@ -247,89 +263,129 @@ function Equipo({ sesion, soloMisTiendas }: { sesion: Sesion; soloMisTiendas: bo
     return urgentes ? base.filter((v) => urgencia(v)) : base;
   }, [filas, texto, tengoTiendas, soloMias, soloMisTiendas, yo, urgentes, sesion?.nombre]);
   const sinTiendas = soloMisTiendas && !!filas && !tengoTiendas;
-  const total = resultado.reduce((s, v) => s + v.diasRestantes, 0);
+  // The team the summary talks about: the AT's stores (or "Mis tiendas"), before search and filters.
+  const equipo = useMemo(() => {
+    if (soloMisTiendas && !yo) return [];
+    const filtro = soloMisTiendas || (tengoTiendas && soloMias) ? sesion?.nombre : undefined;
+    return buscarVacaciones(filas || [], '', filtro);
+  }, [filas, tengoTiendas, soloMias, soloMisTiendas, yo, sesion?.nombre]);
+  const totalDias = equipo.reduce((x, v) => x + v.diasRestantes, 0);
+  const vencidos = equipo.filter((v) => urgencia(v) === 'vencido');
+  const pronto = equipo.filter((v) => urgencia(v) === 'pronto');
+  const atender = [...vencidos, ...pronto].sort((a, b) => b.periodoAnterior - a.periodoAnterior);
+  const porTienda = useMemo(() => {
+    const m = new Map<string, { dias: number; personas: number }>();
+    equipo.forEach((v) => {
+      const t = m.get(v.tienda) || { dias: 0, personas: 0 };
+      t.dias += v.diasRestantes;
+      t.personas += 1;
+      m.set(v.tienda, t);
+    });
+    return [...m].map(([tienda, t]) => ({ etiqueta: tienda, valor: t.dias, detalle: `${t.personas} ${t.personas === 1 ? 'persona' : 'personas'}` })).sort((a, b) => b.valor - a.valor);
+  }, [equipo]);
+  const fila = (item: Vacacion, i: number, arr: Vacacion[]) => {
+    const u = urgencia(item);
+    return (
+      <Pressable key={item.numEmpleado} style={[styles.persona, i < arr.length - 1 && styles.linea]} onPress={() => setDetalle(item)}>
+        <View style={[styles.personaBarra, { backgroundColor: u === 'vencido' ? colors.oxRed : u === 'pronto' ? colors.oxGold : colors.ok }]} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.personaNombre} numberOfLines={1}>
+            {item.nombre}
+          </Text>
+          <Text style={styles.personaMeta} numberOfLines={1}>
+            {u === 'vencido' ? 'Periodo anterior vencido · ' : u === 'pronto' ? `Vence en ${item.venceAnterior.toLowerCase()} · ` : ''}
+            {item.tienda}
+          </Text>
+        </View>
+        <Text style={styles.personaNumero}>{Number.isInteger(item.diasRestantes) ? item.diasRestantes : item.diasRestantes.toFixed(1)} d</Text>
+      </Pressable>
+    );
+  };
 
   return (
     <>
-      <FlatList
-        data={resultado.slice(0, MAX_LISTA)}
-        keyExtractor={(v) => v.numEmpleado}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <View style={{ gap: 10 }}>
-            <View style={styles.buscador}>
-              <Icon name="search" size={18} color={colors.ink3} />
-              <TextInput
-                style={styles.buscadorInput}
-                value={texto}
-                onChangeText={setTexto}
-                placeholder="Nombre, número o tienda"
-                placeholderTextColor={colors.ink3}
-                autoCorrect={false}
-                returnKeyType="search"
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        {error ? (
+          <Aviso
+            icono="alert"
+            titulo="No se pudo cargar el equipo"
+            texto="Revisa tu conexión e intenta de nuevo."
+            accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }}
+          />
+        ) : !filas ? (
+          <View style={styles.cargando}>
+            <ActivityIndicator color={colors.oxRed} />
+          </View>
+        ) : sinTiendas ? (
+          <Aviso icono="pin" titulo="No encontramos tiendas a tu nombre" texto="Tus tiendas salen del catálogo de asesores de RH. Si te falta alguna, avisa a RH." />
+        ) : (
+          <>
+            {tengoTiendas && !soloMisTiendas ? (
+              <View style={styles.chips}>
+                <Chip texto="Mis tiendas" activo={soloMias} onPress={() => setSoloMias(true)} />
+                <Chip texto="Toda la plaza" activo={!soloMias} onPress={() => setSoloMias(false)} />
+              </View>
+            ) : null}
+            <LinearGradient colors={gradients.oxGrad.colors} start={gradients.oxGrad.start} end={gradients.oxGrad.end} style={styles.hero}>
+              <Text style={styles.heroKicker}>{soloMisTiendas || (tengoTiendas && soloMias) ? 'Tus tiendas' : 'Plaza Oaxaca'}</Text>
+              <Text style={styles.heroNumero}>{Math.round(totalDias).toLocaleString('es-MX')}</Text>
+              <Text style={styles.heroBody}>días de vacaciones pendientes</Text>
+              <Text style={styles.heroMeta}>
+                {equipo.length.toLocaleString('es-MX')} colaboradores · {equipo.length ? (totalDias / equipo.length).toLocaleString('es-MX', { maximumFractionDigits: 1 }) : 0} días en promedio
+              </Text>
+            </LinearGradient>
+
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Periodo anterior</Text>
+              <BarraApilada
+                segmentos={[
+                  { etiqueta: 'Ya vencido', valor: vencidos.length, color: colors.oxRed, texto: `${vencidos.length} personas` },
+                  { etiqueta: 'Vence en 0 a 50 días', valor: pronto.length, color: colors.oxGold, texto: `${pronto.length} personas` },
+                  { etiqueta: 'Sin urgencia', valor: equipo.length - vencidos.length - pronto.length, color: colors.ok, texto: `${equipo.length - vencidos.length - pronto.length} personas` },
+                ]}
               />
             </View>
-            <View style={styles.chips}>
-              {tengoTiendas && !soloMisTiendas ? <Chip texto="Mis tiendas" activo={soloMias} onPress={() => setSoloMias((x) => !x)} /> : null}
-              <Chip texto="Por vencer o vencidos" activo={urgentes} onPress={() => setUrgentes((x) => !x)} />
-            </View>
-            {filas ? (
-              <Text style={styles.resumen}>
-                {resultado.length} colaboradores{soloMisTiendas ? ' de tus tiendas' : ''} · {dias(total)} pendientes
-                {resultado.length > MAX_LISTA ? ` · se muestran ${MAX_LISTA}, usa la búsqueda` : ''}
-              </Text>
-            ) : null}
-          </View>
-        }
-        ListEmptyComponent={
-          error ? (
-            <Aviso
-              icono="alert"
-              titulo="No se pudo cargar el equipo"
-              texto="Revisa tu conexión e intenta de nuevo."
-              accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }}
-            />
-          ) : !filas ? (
-            <View style={styles.cargando}>
-              <ActivityIndicator color={colors.oxRed} />
-            </View>
-          ) : sinTiendas ? (
-            <Aviso
-              icono="pin"
-              titulo="No encontramos tiendas a tu nombre"
-              texto="Tus tiendas salen del catálogo de asesores de RH. Si te falta alguna, avisa a RH."
-            />
-          ) : (
-            <Text style={styles.nota}>Nadie coincide con la búsqueda.</Text>
-          )
-        }
-        renderItem={({ item }) => {
-          const u = urgencia(item);
-          return (
-            <Pressable style={styles.persona} onPress={() => setDetalle(item)}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.personaNombre} numberOfLines={1}>
-                  {item.nombre}
-                </Text>
-                <Text style={styles.personaMeta} numberOfLines={1}>
-                  {item.tienda} · {item.puesto}
-                </Text>
-                {u ? (
-                  <Text style={[styles.personaAlerta, u === 'vencido' && { color: colors.oxRed }]}>
-                    {u === 'vencido' ? 'Periodo anterior vencido' : `Anterior vence en ${item.venceAnterior.toLowerCase()}`}
-                  </Text>
+
+            {atender.length ? (
+              <Desplegable titulo="Atender primero" icono="alert" inicial resumen={`${vencidos.length} vencidos · ${pronto.length} vencen pronto`}>
+                {(todosUrgentes ? atender : atender.slice(0, 6)).map(fila)}
+                {atender.length > 6 ? (
+                  <Pressable onPress={() => setTodosUrgentes((x) => !x)} accessibilityRole="button">
+                    <Text style={styles.verMas}>{todosUrgentes ? 'Ver menos' : `Ver los ${atender.length}`}</Text>
+                  </Pressable>
                 ) : null}
+              </Desplegable>
+            ) : null}
+
+            {porTienda.length > 1 ? (
+              <Desplegable titulo="Por tienda" icono="pin" resumen={`${porTienda.length} tiendas · ${porTienda[0].etiqueta} tiene más días (${Math.round(porTienda[0].valor)})`}>
+                <Barras filas={porTienda} formato={(v) => dias(Math.round(v))} maxFilas={5} />
+              </Desplegable>
+            ) : null}
+
+            <Desplegable titulo="Todo el equipo" icono="user" resumen={`${equipo.length} colaboradores · busca por nombre, número o tienda`}>
+              <View style={styles.buscador}>
+                <Icon name="search" size={18} color={colors.ink3} />
+                <TextInput
+                  style={styles.buscadorInput}
+                  value={texto}
+                  onChangeText={setTexto}
+                  placeholder="Nombre, número o tienda"
+                  placeholderTextColor={colors.ink3}
+                  autoCorrect={false}
+                  returnKeyType="search"
+                />
               </View>
-              <View style={styles.personaDias}>
-                <Text style={styles.personaNumero}>{Number.isInteger(item.diasRestantes) ? item.diasRestantes : item.diasRestantes.toFixed(1)}</Text>
-                <Text style={styles.personaUnidad}>días</Text>
+              <View style={styles.chips}>
+                <Chip texto="Todos" activo={!urgentes} onPress={() => setUrgentes(false)} />
+                <Chip texto="Por vencer o vencidos" activo={urgentes} onPress={() => setUrgentes(true)} />
               </View>
-            </Pressable>
-          );
-        }}
-      />
+              {resultado.length ? resultado.slice(0, MAX_LISTA).map(fila) : <Text style={styles.nota}>Nadie coincide con la búsqueda.</Text>}
+              {resultado.length > MAX_LISTA ? <Text style={styles.nota}>Se muestran {MAX_LISTA}; usa la búsqueda para ver los demás.</Text> : null}
+            </Desplegable>
+          </>
+        )}
+      </ScrollView>
       <Modal visible={!!detalle} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setDetalle(null)} transparent={false}>
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
           <View style={styles.header}>
@@ -359,6 +415,14 @@ function Chip({ texto, activo, onPress }: { texto: string; activo: boolean; onPr
 }
 
 const styles = StyleSheet.create({
+  anilloFila: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  anilloNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 28, color: colors.ink },
+  anilloTxt: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11, color: colors.ink3, marginTop: -2 },
+  venceTxt: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11.5, color: colors.ink3, marginTop: 3, marginLeft: 18 },
+  cardTitle: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink, marginBottom: 10 },
+  linea: { borderBottomWidth: 1, borderBottomColor: colors.line },
+  personaBarra: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
+  verMas: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: colors.oxRed, paddingVertical: 6 },
   screen: { flex: 1, backgroundColor: colors.bg, paddingBottom: 108 },
   safeTop: { backgroundColor: 'rgba(255,255,255,.56)' },
   header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -449,21 +513,11 @@ const styles = StyleSheet.create({
   },
   buscadorInput: { flex: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 15, color: colors.ink, paddingVertical: 12 },
   resumen: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink3 },
-  persona: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderRadius: radii.xl,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
+  persona: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   personaNombre: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14.5, color: colors.ink },
   personaMeta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink2, marginTop: 2 },
   personaAlerta: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11.5, color: '#B7791F', marginTop: 4 },
   personaDias: { alignItems: 'center', minWidth: 48 },
-  personaNumero: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 22, color: colors.oxRed },
+  personaNumero: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 15, color: colors.ink },
   personaUnidad: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11, color: colors.ink3 },
 });
