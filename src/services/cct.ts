@@ -1,11 +1,17 @@
 // src/services/cct.ts
 // Contratos colectivos (CCT): app-only data, not in any dashboard. RH uploads
-// the CCT Excel from DashboardsOxxo's admin panel (js/cct-conoxxo.js there
-// normalizes it; migration 32 stores it) and the app reads it with the list_cct RPC. It covers every OXXO
-// plaza in the country: the screen shows Plaza Oaxaca's contract and how it
-// compares with the rest. Indicators only: no names of responsables or links.
+// the CCT Excel from DashboardsOxxo's admin panel (Administrativo, with the
+// panel's own session; js/cct-conoxxo.js there normalizes it) and its Apps
+// Script keeps it in a private workbook (publicarCct, v63). The app reads it
+// with the public action consultarCct. It covers every OXXO plaza in the
+// country: the screen shows Plaza Oaxaca's contract and how it compares with
+// the rest. Indicators only: no names of responsables or links.
+// If DashboardsOxxo changes that action or the row keys, update this file too.
 import { clave } from './gviz';
-import { supabase } from './supabaseClient';
+
+// DashboardsOxxo js/config.js -> ADMIN_UPLOAD_URL (same Apps Script as Actas and Cuota sindical).
+const URL =
+  'https://script.google.com/macros/s/AKfycbwe_RcnVRkZy9x1YcRuum4qdLucIWLTVsnTZcMvQDyobo6f3ot-YG0Lv00hYS-1XEg/exec';
 
 export type CctDatos = {
   anio?: number;
@@ -68,14 +74,29 @@ export const aumento = (d: CctDatos, hoja: 'historico' | 'ejercicio') => (hoja =
 let enMemoria: Promise<Cct> | null = null;
 export function cargarCct(): Promise<Cct> {
   enMemoria ??= (async () => {
-    const { data, error } = await supabase.rpc('list_cct');
-    if (error) throw error;
-    const filas = (data ?? []) as Array<{ hoja: string; datos: CctDatos; archivo: string | null; cargado_el: string }>;
+    const control = new AbortController();
+    const t = setTimeout(() => control.abort(), 30000);
+    let datos: any;
+    try {
+      // text/plain avoids the CORS preflight Apps Script does not answer (web).
+      const r = await fetch(URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'consultarCct' }),
+        signal: control.signal,
+      });
+      datos = await r.json();
+    } finally {
+      clearTimeout(t);
+    }
+    if (!datos || datos.ok === false) throw new Error((datos && datos.error) || 'el servidor no respondió');
+    const filas = (datos.filas ?? []) as Array<{ hoja: string; datos: CctDatos }>;
     return {
       historico: filas.filter((f) => f.hoja === 'historico').map((f) => f.datos),
       ejercicio: filas.filter((f) => f.hoja === 'ejercicio').map((f) => f.datos),
-      cargadoEl: filas[0]?.cargado_el ?? '',
-      archivo: filas[0]?.archivo ?? '',
+      // "AAAA-MM-DD HH:mm"
+      cargadoEl: String(datos.carga?.fecha ?? ''),
+      archivo: String(datos.carga?.archivo ?? ''),
     };
   })().catch((e) => {
     enMemoria = null;
