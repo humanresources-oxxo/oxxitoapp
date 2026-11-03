@@ -1,3 +1,6 @@
+-- NOTE (later): no longer used. Contratos colectivos now live in DashboardsOxxo's
+-- Apps Script (publicarCct / consultarCct, v63) so the admin panel needs no
+-- extra passcode; see src/services/cct.ts. The table can be dropped.
 -- Migration 32: contratos colectivos (CCT) for the app-only "Contratos
 -- colectivos" screen. RH uploads the CCT Excel ("Data colectiva Tiendas OXXO")
 -- from DashboardsOxxo's admin panel (Administrativo, js/cct-conoxxo.js), which
