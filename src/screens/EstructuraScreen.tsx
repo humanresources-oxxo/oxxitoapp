@@ -1,14 +1,16 @@
 // src/screens/EstructuraScreen.tsx
 // Estructura: each store's positions from DashboardsOxxo's Dashboard 1, who
-// holds each one and which are vacant (and since when). Plaza Oaxaca only,
-// with search by store, CR or employee and "Mis tiendas" for the logged-in AT,
-// and an Excel download of every position in view.
+// holds each one and which are vacant (and since when). Plaza Oaxaca only:
+// vacancies, a coverage ring, vacancies by puesto, the stores with vacancies
+// and, folded, every store (search by store, CR or employee), plus an Excel
+// download of every position in view.
 // Only for the same puestos as Actas (see services/actas.ts).
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
+import { Anillo, Barras, Desplegable, Leyenda } from '../components/Visual';
 import { getJson, storageKeys } from '../services/appStorage';
 import {
   buscarTiendas,
@@ -37,6 +39,8 @@ function fechaCorta(iso: string) {
 const num = (n: number) => n.toLocaleString('es-MX');
 const pct = (x: number) => `${(x * 100).toLocaleString('es-MX', { maximumFractionDigits: 1 })}%`;
 const plural = (n: number, uno: string, varios: string) => `${num(n)} ${n === 1 ? uno : varios}`;
+// "AYUDANTE TIENDA" -> "Ayudante tienda"
+const titulo = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 
 // soloMisTiendas: Asesores de Tienda only see their own stores.
 export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: () => void; soloMisTiendas?: boolean }) {
@@ -79,6 +83,24 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
   }, [corte, texto, tengoTiendas, soloMias, soloMisTiendas, yo, conVacantes, sesion?.nombre]);
   const sinTiendas = soloMisTiendas && !!corte && !tengoTiendas;
   const t = totales(resultado);
+  // What the summary talks about: the AT's stores (or "Mis tiendas"), before search and filters.
+  const misTiendas = soloMisTiendas || (tengoTiendas && soloMias);
+  const alcance = useMemo(() => {
+    if (soloMisTiendas && !yo) return [];
+    return buscarTiendas(corte?.tiendas || [], '', misTiendas ? sesion?.nombre : undefined);
+  }, [corte, soloMisTiendas, yo, misTiendas, sesion?.nombre]);
+  const ta = totales(alcance);
+  const conHuecos = alcance.filter((x) => x.vacantes > 0);
+  const vacantesPorPuesto = useMemo(() => {
+    const m = new Map<string, number>();
+    alcance.forEach((x) => x.posiciones.forEach((p) => { if (!p.empleado) m.set(p.puesto, (m.get(p.puesto) || 0) + 1); }));
+    return [...m].map(([etiqueta, valor]) => ({ etiqueta: titulo(etiqueta), valor })).sort((a, b) => b.valor - a.valor);
+  }, [alcance]);
+  const masAntigua = useMemo(() => {
+    let max = -1;
+    alcance.forEach((x) => x.posiciones.forEach((p) => { if (!p.empleado) { const d = diasVacante(p.vacanteDesde); if (d !== null && d > max) max = d; } }));
+    return max;
+  }, [alcance]);
 
   // Excel with every position of the stores in view (an AT: only theirs).
   const [descargando, setDescargando] = useState(false);
@@ -113,30 +135,113 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
         </View>
       </SafeAreaView>
 
-      <FlatList
-        data={resultado.slice(0, MAX_LISTA)}
-        keyExtractor={(x) => x.cr || x.tienda}
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <View style={{ gap: 10 }}>
-            {corte ? (
-              <LinearGradient colors={gradients.oxGrad.colors} start={gradients.oxGrad.start} end={gradients.oxGrad.end} style={styles.hero}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.heroKicker}>Cobertura{corte.mes ? ` · ${mesTexto(corte.mes)}` : ''}</Text>
-                  <Text style={styles.heroNumero}>{pct(t.cobertura)}</Text>
-                  <Text style={styles.heroBody}>
-                    {plural(t.ocupadas, 'posición ocupada', 'posiciones ocupadas')} de {num(t.total)}
-                  </Text>
-                </View>
-                <View style={styles.heroVacantes}>
-                  <Text style={styles.heroVacNum}>{num(t.vacantes)}</Text>
-                  <Text style={styles.heroVacTxt}>{t.vacantes === 1 ? 'vacante' : 'vacantes'}</Text>
-                </View>
-              </LinearGradient>
-            ) : null}
+      {error ? (
+        <View style={styles.content}>
+          <View style={[styles.card, styles.aviso]}>
+            <Icon name="alert" size={26} color={colors.oxRed} />
+            <Text style={styles.avisoTitulo}>No se pudo cargar la estructura</Text>
+            <Text style={styles.avisoTexto}>Revisa tu conexión e intenta de nuevo.</Text>
+            <Pressable style={styles.avisoBoton} onPress={() => setIntento((i) => i + 1)}>
+              <Text style={styles.avisoBotonTexto}>Reintentar</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : !corte ? (
+        <View style={styles.cargando}>
+          <ActivityIndicator color={colors.oxRed} />
+        </View>
+      ) : sinTiendas ? (
+        <View style={styles.content}>
+          <View style={[styles.card, styles.aviso]}>
+            <Icon name="pin" size={26} color={colors.oxRed} />
+            <Text style={styles.avisoTitulo}>No encontramos tiendas a tu nombre</Text>
+            <Text style={styles.avisoTexto}>Tus tiendas salen del catálogo de asesores de RH. Si te falta alguna, avisa a RH.</Text>
+          </View>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          {tengoTiendas && !soloMisTiendas ? (
+            <View style={styles.chips}>
+              <Chip texto="Mis tiendas" activo={soloMias} onPress={() => setSoloMias(true)} />
+              <Chip texto="Toda la plaza" activo={!soloMias} onPress={() => setSoloMias(false)} />
+            </View>
+          ) : null}
 
+          <LinearGradient colors={gradients.oxGrad.colors} start={gradients.oxGrad.start} end={gradients.oxGrad.end} style={styles.hero}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.heroKicker}>
+                Vacantes{misTiendas ? ' · tus tiendas' : ''} · {mesTexto(corte.mes)}
+              </Text>
+              <Text style={styles.heroNumero}>{num(ta.vacantes)}</Text>
+              <Text style={styles.heroBody}>
+                en {plural(conHuecos.length, 'tienda', 'tiendas')} de {num(ta.tiendas)}
+              </Text>
+            </View>
+            {masAntigua >= 0 ? (
+              <View style={styles.heroVacantes}>
+                <Text style={styles.heroVacNum}>{masAntigua}</Text>
+                <Text style={styles.heroVacTxt}>días la más antigua</Text>
+              </View>
+            ) : null}
+          </LinearGradient>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Cobertura</Text>
+            <View style={styles.anilloFila}>
+              <Anillo
+                segmentos={[
+                  { valor: ta.ocupadas, color: colors.ok },
+                  { valor: ta.vacantes, color: colors.oxRed },
+                ]}
+                centro={<Text style={styles.anilloNum}>{pct(ta.cobertura)}</Text>}
+              />
+              <View style={{ flex: 1 }}>
+                <Leyenda
+                  items={[
+                    { etiqueta: 'Ocupadas', valor: num(ta.ocupadas), color: colors.ok },
+                    { etiqueta: 'Vacantes', valor: num(ta.vacantes), color: colors.oxRed },
+                  ]}
+                />
+                <Text style={styles.coberturaNota}>{plural(ta.total, 'posición', 'posiciones')} en total</Text>
+              </View>
+            </View>
+          </View>
+
+          {vacantesPorPuesto.length ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Vacantes por puesto</Text>
+              <Barras filas={vacantesPorPuesto} formato={(v) => String(v)} />
+            </View>
+          ) : null}
+
+          <Pressable style={[styles.descargar, descargando && { opacity: 0.6 }]} onPress={descargar} disabled={descargando || !resultado.length} accessibilityRole="button">
+            <Icon name="doc" size={18} color={colors.oxRed} />
+            <Text style={styles.descargarTexto}>
+              {descargando ? 'Generando Excel…' : `Descargar Excel · ${plural(t.total, 'posición', 'posiciones')}`}
+            </Text>
+          </Pressable>
+
+          {conHuecos.length ? (
+            <Desplegable titulo="Tiendas con vacantes" icono="alert" inicial resumen={`${plural(conHuecos.length, 'tienda', 'tiendas')} · toca una para ver sus posiciones`}>
+              {conHuecos.map((x, i) => (
+                <Pressable key={x.cr || x.tienda} style={[styles.tiendaFila, i < conHuecos.length - 1 && styles.posLinea]} onPress={() => setDetalle(x)}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.tiendaNombre} numberOfLines={1}>
+                      {x.tienda}
+                    </Text>
+                    <Text style={styles.tiendaMeta} numberOfLines={1}>
+                      {x.cr} · {x.ocupadas} de {x.ocupadas + x.vacantes} ocupadas
+                    </Text>
+                  </View>
+                  <View style={styles.vacPill}>
+                    <Text style={styles.vacPillTxt}>{plural(x.vacantes, 'vacante', 'vacantes')}</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </Desplegable>
+          ) : null}
+
+          <Desplegable titulo="Todas las tiendas" icono="pin" resumen={`${plural(alcance.length, 'tienda', 'tiendas')} · busca por tienda, CR o colaborador`}>
             <View style={styles.buscador}>
               <Icon name="search" size={18} color={colors.ink3} />
               <TextInput
@@ -150,77 +255,33 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
               />
             </View>
             <View style={styles.chips}>
-              {tengoTiendas && !soloMisTiendas ? <Chip texto="Mis tiendas" activo={soloMias} onPress={() => setSoloMias((x) => !x)} /> : null}
-              <Chip texto="Con vacantes" activo={conVacantes} onPress={() => setConVacantes((x) => !x)} />
+              <Chip texto="Todas" activo={!conVacantes} onPress={() => setConVacantes(false)} />
+              <Chip texto="Con vacantes" activo={conVacantes} onPress={() => setConVacantes(true)} />
             </View>
-            {corte ? (
-              <Text style={styles.resumen}>
-                {plural(t.tiendas, 'tienda', 'tiendas')}
-                {soloMisTiendas ? ' a tu cargo' : ''}
-                {resultado.length > MAX_LISTA ? ` · se muestran ${MAX_LISTA}, usa la búsqueda` : ''}
-              </Text>
-            ) : null}
-            {corte && resultado.length ? (
-              <Pressable style={[styles.descargar, descargando && { opacity: 0.6 }]} onPress={descargar} disabled={descargando} accessibilityRole="button">
-                <Icon name="doc" size={18} color={colors.oxRed} />
-                <Text style={styles.descargarTexto}>
-                  {descargando ? 'Generando Excel…' : `Descargar Excel · ${plural(t.total, 'posición', 'posiciones')}`}
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-        }
-        ListEmptyComponent={
-          error ? (
-            <View style={[styles.card, styles.aviso]}>
-              <Icon name="alert" size={26} color={colors.oxRed} />
-              <Text style={styles.avisoTitulo}>No se pudo cargar la estructura</Text>
-              <Text style={styles.avisoTexto}>Revisa tu conexión e intenta de nuevo.</Text>
-              <Pressable style={styles.avisoBoton} onPress={() => setIntento((i) => i + 1)}>
-                <Text style={styles.avisoBotonTexto}>Reintentar</Text>
-              </Pressable>
-            </View>
-          ) : !corte ? (
-            <View style={styles.cargando}>
-              <ActivityIndicator color={colors.oxRed} />
-            </View>
-          ) : sinTiendas ? (
-            <View style={[styles.card, styles.aviso]}>
-              <Icon name="pin" size={26} color={colors.oxRed} />
-              <Text style={styles.avisoTitulo}>No encontramos tiendas a tu nombre</Text>
-              <Text style={styles.avisoTexto}>Tus tiendas salen del catálogo de asesores de RH. Si te falta alguna, avisa a RH.</Text>
-            </View>
-          ) : (
-            <Text style={styles.nota}>Ninguna tienda coincide con la búsqueda.</Text>
-          )
-        }
-        renderItem={({ item }) => {
-          const total = item.ocupadas + item.vacantes;
-          return (
-            <Pressable style={styles.tienda} onPress={() => setDetalle(item)}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.tiendaNombre} numberOfLines={1}>
-                  {item.tienda}
-                </Text>
-                <Text style={styles.tiendaMeta} numberOfLines={1}>
-                  {item.cr || 'Sin CR'} · {item.asesor || 'Sin asesor'}
-                </Text>
-                <View style={styles.barra}>
-                  <View style={[styles.barraLlena, { flex: item.ocupadas }]} />
-                  <View style={{ flex: item.vacantes }} />
-                </View>
-                <Text style={styles.tiendaOcup}>
-                  {num(item.ocupadas)} de {num(total)} ocupadas
-                </Text>
-              </View>
-              <View style={[styles.vacBadge, item.vacantes === 0 && styles.vacBadgeOk]}>
-                <Text style={[styles.vacNum, item.vacantes === 0 && { color: colors.ok }]}>{item.vacantes}</Text>
-                <Text style={styles.vacTxt}>{item.vacantes === 1 ? 'vacante' : 'vacantes'}</Text>
-              </View>
-            </Pressable>
-          );
-        }}
-      />
+            {resultado.length ? (
+              resultado.slice(0, MAX_LISTA).map((x, i, arr) => (
+                <Pressable key={x.cr || x.tienda} style={[styles.tiendaFila, i < arr.length - 1 && styles.posLinea]} onPress={() => setDetalle(x)}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.tiendaNombre} numberOfLines={1}>
+                      {x.tienda}
+                    </Text>
+                    <View style={styles.barra}>
+                      <View style={[styles.barraLlena, { flex: x.ocupadas }]} />
+                      <View style={{ flex: x.vacantes }} />
+                    </View>
+                  </View>
+                  <Text style={[styles.tiendaCuenta, x.vacantes > 0 && { color: colors.oxRed }]}>
+                    {x.ocupadas}/{x.ocupadas + x.vacantes}
+                  </Text>
+                </Pressable>
+              ))
+            ) : (
+              <Text style={styles.nota}>Ninguna tienda coincide con la búsqueda.</Text>
+            )}
+            {resultado.length > MAX_LISTA ? <Text style={styles.nota}>Se muestran {MAX_LISTA}; usa la búsqueda para ver las demás.</Text> : null}
+          </Desplegable>
+        </ScrollView>
+      )}
 
       <Modal visible={!!detalle} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setDetalle(null)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -247,23 +308,39 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
 function DetalleTienda({ t }: { t: TiendaEstructura }) {
   const vacantes = t.posiciones.filter((p) => !p.empleado);
   const ocupadas = t.posiciones.filter((p) => p.empleado);
+  const total = t.posiciones.length;
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <View style={styles.fila}>
-        <Dato titulo="Posiciones" valor={num(t.posiciones.length)} />
-        <Dato titulo="Ocupadas" valor={num(t.ocupadas)} />
-        <Dato titulo="Vacantes" valor={num(t.vacantes)} rojo={t.vacantes > 0} />
+      <View style={styles.card}>
+        <View style={styles.anilloFila}>
+          <Anillo
+            segmentos={[
+              { valor: t.ocupadas, color: colors.ok },
+              { valor: t.vacantes, color: colors.oxRed },
+            ]}
+            tamano={96}
+            grosor={12}
+            centro={<Text style={styles.anilloNum}>{t.ocupadas}/{total}</Text>}
+          />
+          <View style={{ flex: 1 }}>
+            <Leyenda
+              items={[
+                { etiqueta: 'Ocupadas', valor: num(t.ocupadas), color: colors.ok },
+                { etiqueta: 'Vacantes', valor: num(t.vacantes), color: colors.oxRed },
+              ]}
+            />
+          </View>
+        </View>
       </View>
       {vacantes.length ? (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Vacantes</Text>
+        <Desplegable titulo="Vacantes" icono="alert" inicial resumen={plural(vacantes.length, 'posición por cubrir', 'posiciones por cubrir')}>
           {vacantes.map((p, i) => {
             const d = diasVacante(p.vacanteDesde);
             return (
               <View key={p.id || i} style={[styles.pos, i < vacantes.length - 1 && styles.posLinea]}>
                 <View style={[styles.punto, { backgroundColor: colors.oxRed }]} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.posPuesto}>{p.puesto}</Text>
+                  <Text style={styles.posPuesto}>{titulo(p.puesto)}</Text>
                   <Text style={styles.posMeta}>
                     Desde {fechaCorta(p.vacanteDesde)}
                     {d === 0 ? ' · hoy' : d !== null ? ` · ${plural(d, 'día', 'días')}` : ''}
@@ -272,36 +349,27 @@ function DetalleTienda({ t }: { t: TiendaEstructura }) {
               </View>
             );
           })}
-        </View>
+        </Desplegable>
       ) : null}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Ocupadas</Text>
+      <Desplegable titulo="Ocupadas" icono="user" inicial={!vacantes.length} resumen={plural(ocupadas.length, 'colaborador', 'colaboradores')}>
         {ocupadas.length ? (
           ocupadas.map((p, i) => (
             <View key={p.id || i} style={[styles.pos, i < ocupadas.length - 1 && styles.posLinea]}>
               <View style={[styles.punto, { backgroundColor: colors.ok }]} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.posPuesto}>{p.empleado}</Text>
-                <Text style={styles.posMeta}>{p.puesto}</Text>
+                <Text style={styles.posMeta}>{titulo(p.puesto)}</Text>
               </View>
             </View>
           ))
         ) : (
           <Text style={styles.nota}>Sin posiciones ocupadas.</Text>
         )}
-      </View>
+      </Desplegable>
     </ScrollView>
   );
 }
 
-function Dato({ titulo, valor, rojo }: { titulo: string; valor: string; rojo?: boolean }) {
-  return (
-    <View style={[styles.card, styles.dato]}>
-      <Text style={styles.datoTitulo}>{titulo}</Text>
-      <Text style={[styles.datoValor, rojo && { color: colors.oxRed }]}>{valor}</Text>
-    </View>
-  );
-}
 
 function Chip({ texto, activo, onPress }: { texto: string; activo: boolean; onPress: () => void }) {
   return (
@@ -312,6 +380,13 @@ function Chip({ texto, activo, onPress }: { texto: string; activo: boolean; onPr
 }
 
 const styles = StyleSheet.create({
+  anilloFila: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  anilloNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 20, color: colors.ink },
+  coberturaNota: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink3, marginTop: 10 },
+  tiendaFila: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
+  tiendaCuenta: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14, color: colors.ok, minWidth: 40, textAlign: 'right' },
+  vacPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: '#FFF0EC' },
+  vacPillTxt: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: colors.oxRed },
   screen: { flex: 1, backgroundColor: colors.bg, paddingBottom: 108 },
   safeTop: { backgroundColor: 'rgba(255,255,255,.56)' },
   header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
