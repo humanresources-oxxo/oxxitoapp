@@ -1,13 +1,14 @@
 // src/screens/CctScreen.tsx
-// Contratos colectivos (CCT), app only: Plaza Oaxaca's contract (current
-// revision, consulta, legitimación, prestaciones, document compliance and its
-// history) and how its raise compares with the other OXXO plazas of the year.
+// Contratos colectivos (CCT), app only: Plaza Oaxaca's raise, a scale against
+// the national and cluster averages, a compliance ring and, folded, the
+// contract, legitimación and consulta, prestaciones, history and all plazas.
 // Data uploaded by RH from the admin panel (services/cct.ts).
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
+import { Anillo, BarraApilada, Barras, Desplegable } from '../components/Visual';
 import { aumento, cargarCct, Cct, CctDatos, esOaxaca, promedio } from '../services/cct';
 import { normalizarNombre } from '../services/gviz';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
@@ -86,6 +87,18 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
   }, [ordenadas, texto]);
 
   const cargado = cct?.cargadoEl ? fecha(cct.cargadoEl.slice(0, 10)) : '';
+  const maximo = ordenadas.length ? (ordenadas[0].pctSalarioNominal as number) : 0;
+  const docs: Array<[string, string | undefined]> = ficha
+    ? [
+        ['Constancia de legitimación', ficha.d.docConstancia],
+        ['CCT', ficha.d.docCct],
+        ['Resolución positiva integral', ficha.d.docResolucionIntegral],
+        ['Resolución positiva salarial', ficha.d.docResolucionSalarial],
+        ['Convenio salarial', ficha.d.docConvenioSalarial],
+      ]
+    : [];
+  const docsSi = docs.filter(([, v]) => v === 'SI').length;
+  const SIND_COLORES = [colors.oxRed, colors.oxBlue, colors.oxGold, colors.ok, colors.ink3];
 
   return (
     <View style={styles.screen}>
@@ -122,26 +135,78 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
             </Text>
             <Text style={styles.heroNumero}>+{pct(aumento(ficha.d, ficha.hoja))}</Text>
             <Text style={styles.heroBody}>aumento salarial nominal</Text>
-            <Text style={styles.heroMeta}>
-              {ficha.d.estatusRevision || 'Sin estatus'}
-              {ficha.d.fechaRevision ? ` el ${fecha(ficha.d.fechaRevision)}` : ''}
-              {ficha.d.diasRevision !== undefined ? ` · ${diasVsVencimiento(ficha.d.diasRevision)} (${fecha(ficha.d.vencimiento)})` : ''}
-            </Text>
+            <View style={styles.heroPills}>
+              <View style={styles.heroPill}>
+                <Icon name="check" size={13} color={colors.white} />
+                <Text style={styles.heroPillTxt}>
+                  {ficha.d.estatusRevision || 'Sin estatus'} {ficha.d.fechaRevision ? fecha(ficha.d.fechaRevision) : ''}
+                </Text>
+              </View>
+              {ficha.d.diasRevision !== undefined ? (
+                <View style={styles.heroPill}>
+                  <Icon name="clock" size={13} color={colors.white} />
+                  <Text style={styles.heroPillTxt}>{diasVsVencimiento(ficha.d.diasRevision)}</Text>
+                </View>
+              ) : null}
+            </View>
           </LinearGradient>
 
           {typeof subidaOax === 'number' && promNacional !== null ? (
-            <View style={styles.fila}>
-              <Dato titulo="Promedio nacional" valor={pct(promNacional, 2)} nota={`${plazas.length} plazas`} />
-              <Dato titulo={`Promedio ${actual?.cluster || 'cluster'}`} valor={pct(promCluster, 2)} nota={`${delCluster.length} plazas`} />
-              <Dato
-                titulo="Lugar"
-                valor={`${mayores + 1}º de ${ordenadas.length}`}
-                nota={empates ? `empata con ${empates} plazas` : mayores ? `${mayores} subieron más` : 'el aumento más alto'}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Oaxaca contra el país</Text>
+              <Text style={styles.lugar}>
+                Lugar <Text style={styles.lugarFuerte}>{mayores + 1}º de {ordenadas.length}</Text>
+                {empates ? ` · empata con ${empates} plazas` : ''}
+              </Text>
+              <Barras
+                filas={[
+                  { etiqueta: 'Oaxaca', valor: subidaOax },
+                  { etiqueta: `Promedio ${actual?.cluster || 'cluster'}`, valor: promCluster ?? 0 },
+                  { etiqueta: 'Promedio nacional', valor: promNacional },
+                  { etiqueta: 'El más alto del país', valor: maximo },
+                ]}
+                formato={(v) => pct(v, 2)}
+                destacar="Oaxaca"
               />
             </View>
           ) : null}
 
-          <Tarjeta titulo="Contrato">
+          {ficha.hoja === 'ejercicio' ? (
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Cumplimiento documental</Text>
+              <View style={styles.anilloFila}>
+                <Anillo
+                  segmentos={[
+                    { valor: docsSi, color: colors.ok },
+                    { valor: docs.length - docsSi, color: '#F6C4BE' },
+                  ]}
+                  tamano={96}
+                  grosor={12}
+                  centro={
+                    <Text style={styles.anilloNum}>
+                      {ficha.d.nivelCompliance ?? docsSi}/5
+                    </Text>
+                  }
+                />
+                <View style={{ flex: 1, gap: 7 }}>
+                  {docs.map(([etq, v]) => (
+                    <View key={etq} style={styles.doc}>
+                      <Icon name={v === 'SI' ? 'check' : 'alert'} size={14} color={v === 'SI' ? colors.ok : v === 'NO' ? colors.oxRed : colors.oxGold} />
+                      <Text style={styles.docEtq} numberOfLines={1}>
+                        {etq}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+          ) : null}
+
+          <Desplegable
+            titulo="Contrato"
+            icono="doc"
+            resumen={`${ficha.d.sindicato || 'Sin sindicato'} · ${num(ficha.d.hc)} personas · vence ${fecha(ficha.d.vencimiento)}`}
+          >
             <Fila etq="Sindicato" valor={ficha.d.sindicato} />
             <Fila etq="Expediente" valor={ficha.d.expediente} />
             <Fila etq="Plantilla (HC)" valor={num(ficha.d.hc)} />
@@ -150,118 +215,88 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
             <Fila etq="Vencimiento" valor={fecha(ficha.d.vencimiento)} />
             {ficha.hoja === 'ejercicio' ? <Fila etq="% Salario (columna del Excel)" valor={pct(ficha.d.pctSalario)} /> : null}
             <Fila etq="% Prestaciones" valor={pct(ficha.d.pctPrestaciones)} ultimo />
-          </Tarjeta>
+          </Desplegable>
 
-          <Tarjeta titulo="Legitimación y consulta">
+          <Desplegable
+            titulo="Legitimación y consulta"
+            icono="shieldCheck"
+            resumen={`Legitimado en ${ficha.d.anioLegitimacion ?? '—'} · ${pct(ficha.d.aprobacionLeg, 0)} de aprobación`}
+          >
             <Fila etq="Forma de creación" valor={ficha.d.formaCreacion} />
             <Fila etq="Año de legitimación" valor={ficha.d.anioLegitimacion ? `${ficha.d.anioLegitimacion}${ficha.d.antiguedad ? ` (${ficha.d.antiguedad} años)` : ''}` : '—'} />
             <Fila etq="Participación / aprobación (leg.)" valor={`${pct(ficha.d.participacionLeg)} / ${pct(ficha.d.aprobacionLeg)}`} />
-            <Fila etq="Consulta" valor={ficha.d.estatusConsulta ? `${ficha.d.estatusConsulta}${ficha.d.fechaConsulta ? ` · ${fecha(ficha.d.fechaConsulta)}` : ''}` : 'No aplica este año'} />
-            {ficha.d.participacion !== undefined ? <Fila etq="Participación / aprobación (consulta)" valor={`${pct(ficha.d.participacion)} / ${pct(ficha.d.aprobacion)}`} /> : null}
-            <View style={{ height: 1 }} />
-          </Tarjeta>
+            <Fila etq="Consulta" valor={ficha.d.estatusConsulta ? `${ficha.d.estatusConsulta}${ficha.d.fechaConsulta ? ` · ${fecha(ficha.d.fechaConsulta)}` : ''}` : 'No aplica este año'} ultimo={ficha.d.participacion === undefined} />
+            {ficha.d.participacion !== undefined ? <Fila etq="Participación / aprobación (consulta)" valor={`${pct(ficha.d.participacion)} / ${pct(ficha.d.aprobacion)}`} ultimo /> : null}
+          </Desplegable>
 
-          <Tarjeta titulo="Prestaciones">
+          <Desplegable titulo="Prestaciones" icono="gift" resumen={`Salario base ${dinero(ficha.d.salarioBase)} · vales ${dinero(ficha.d.valesMin)} · aguinaldo ${ficha.d.aguinaldoDias ?? '—'} días`}>
             <Fila etq="Salario base / promedio" valor={`${dinero(ficha.d.salarioBase)} / ${dinero(ficha.d.salarioPromedio)}`} />
             <Fila etq="Vales de despensa" valor={ficha.d.valesMax && ficha.d.valesMax !== ficha.d.valesMin ? `${dinero(ficha.d.valesMin)} – ${dinero(ficha.d.valesMax)}` : dinero(ficha.d.valesMin)} />
             <Fila etq="Aguinaldo" valor={ficha.d.aguinaldoDias ? `${ficha.d.aguinaldoDias} días` : '—'} />
             <Fila etq="Prima vacacional / dominical" valor={`${pct(ficha.d.primaVacacional, 0)} / ${pct(ficha.d.primaDominical, 0)}`} />
             <Fila etq="Fondo de ahorro" valor={ficha.d.fondoAhorro && ficha.d.fondoAhorro !== '0' ? ficha.d.fondoAhorro : 'No'} ultimo />
-          </Tarjeta>
-
-          {ficha.hoja === 'ejercicio' ? (
-            <Tarjeta titulo={`Cumplimiento documental${ficha.d.nivelCompliance ? ` · ${ficha.d.nivelCompliance}/5` : ''}`}>
-              {(
-                [
-                  ['Constancia de legitimación', ficha.d.docConstancia],
-                  ['CCT', ficha.d.docCct],
-                  ['Resolución positiva integral', ficha.d.docResolucionIntegral],
-                  ['Resolución positiva salarial', ficha.d.docResolucionSalarial],
-                  ['Convenio salarial', ficha.d.docConvenioSalarial],
-                ] as Array<[string, string | undefined]>
-              ).map(([etq, v], i, arr) => (
-                <View key={etq} style={[styles.doc, i < arr.length - 1 && styles.linea]}>
-                  <View style={[styles.punto, { backgroundColor: v === 'SI' ? colors.ok : v === 'NO' ? colors.oxRed : colors.oxGold }]} />
-                  <Text style={styles.docEtq}>{etq}</Text>
-                  <Text style={styles.docValor}>{v === 'SI' ? 'Sí' : v === 'NO' ? 'No' : v || '—'}</Text>
-                </View>
-              ))}
-            </Tarjeta>
-          ) : null}
+          </Desplegable>
 
           {historial.length ? (
-            <Tarjeta titulo="Historial de Oaxaca">
+            <Desplegable titulo="Historial de Oaxaca" icono="history" resumen={historial.map((h) => `${h.anio} +${pct(h.pctSalario)}`).join(' · ')}>
               {historial.map((h, i) => (
-                <View key={`${h.anio}-${i}`} style={[styles.hist, i < historial.length - 1 && styles.linea]}>
-                  <Text style={styles.histAnio}>{h.anio}</Text>
-                  <View style={{ flex: 1 }}>
+                <View key={`${h.anio}-${i}`} style={styles.hist}>
+                  <View style={styles.histLinea}>
+                    <View style={styles.histPunto} />
+                    {i < historial.length - 1 ? <View style={styles.histRiel} /> : null}
+                  </View>
+                  <View style={{ flex: 1, paddingBottom: 12 }}>
                     <Text style={styles.histTitulo}>
-                      {h.tipoRevision || 'Revisión'} · +{pct(h.pctSalario)}
-                      {typeof h.pctPrestaciones === 'number' ? ` · prestaciones +${pct(h.pctPrestaciones)}` : ''}
+                      {h.anio} · {h.tipoRevision || 'Revisión'} · +{pct(h.pctSalario)}
                     </Text>
                     <Text style={styles.histMeta}>
                       {h.estatusRevision || ''} {h.fechaRevision ? `el ${fecha(h.fechaRevision)}` : ''}
+                      {typeof h.pctPrestaciones === 'number' ? ` · prestaciones +${pct(h.pctPrestaciones)}` : ''}
                       {h.estatusConsulta ? ` · consulta ${h.estatusConsulta.toLowerCase()}` : ''}
                     </Text>
                   </View>
                 </View>
               ))}
-            </Tarjeta>
+            </Desplegable>
           ) : null}
 
           {plazas.length ? (
-            <>
-              <Tarjeta titulo={`Aumento nominal ${anio}: cuántas plazas`}>
-                {distribucion.map(([k, n]) => (
-                  <View key={k} style={styles.barraFila}>
-                    <Text style={[styles.barraEtq, k === pct(subidaOax) && styles.barraEtqOax]}>{k}</Text>
-                    <View style={styles.barraFondo}>
-                      <View style={[styles.barraLlena, k === pct(subidaOax) && styles.barraOax, { width: `${Math.max(3, (n / maxDist) * 100)}%` }]} />
-                    </View>
-                    <Text style={styles.barraValor}>{n}</Text>
-                  </View>
-                ))}
-                <Text style={styles.nota}>En rojo, el aumento de Oaxaca.</Text>
-              </Tarjeta>
-
-              <Tarjeta titulo="Sindicatos">
-                {sindicatos.map(([s, n], i) => (
-                  <Fila key={s} etq={s} valor={`${n} ${n === 1 ? 'plaza' : 'plazas'}`} ultimo={i === sindicatos.length - 1} />
-                ))}
-              </Tarjeta>
-
+            <Desplegable titulo={`Todas las plazas ${anio}`} icono="globe" resumen={`${plazas.length} plazas · el aumento más común es ${[...distribucion].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '—'}`}>
+              <Text style={styles.subTitulo}>Cuántas plazas dieron cada aumento</Text>
+              <Barras
+                filas={distribucion.map(([k, n]) => ({ etiqueta: k, valor: n }))}
+                formato={(v) => `${v} ${v === 1 ? 'plaza' : 'plazas'}`}
+                destacar={pct(subidaOax)}
+              />
+              <Text style={[styles.subTitulo, { marginTop: 6 }]}>Sindicatos</Text>
+              <BarraApilada segmentos={sindicatos.map(([s, n], i) => ({ etiqueta: s, valor: n, color: SIND_COLORES[Math.min(i, SIND_COLORES.length - 1)], texto: `${n} ${n === 1 ? 'plaza' : 'plazas'}` }))} />
+              <Text style={[styles.subTitulo, { marginTop: 6 }]}>Buscar una plaza</Text>
               <View style={styles.buscador}>
                 <Icon name="search" size={18} color={colors.ink3} />
                 <TextInput
                   style={styles.buscadorInput}
                   value={texto}
                   onChangeText={setTexto}
-                  placeholder="Buscar plaza, estado o sindicato"
+                  placeholder="Plaza, estado o sindicato"
                   placeholderTextColor={colors.ink3}
                   autoCorrect={false}
                 />
               </View>
-              <Text style={styles.resumen}>
-                {lista.length} {lista.length === 1 ? 'plaza' : 'plazas'} · de mayor a menor aumento
-              </Text>
-              {lista.map((d, i) => (
+              {(texto ? lista : lista.slice(0, 8)).map((d, i) => (
                 <View key={`${d.plaza}-${i}`} style={[styles.plaza, esOaxaca(d) && styles.plazaOax]}>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.plazaNombre} numberOfLines={2}>
+                    <Text style={styles.plazaNombre} numberOfLines={1}>
                       {d.plaza}
                     </Text>
                     <Text style={styles.plazaMeta} numberOfLines={1}>
-                      {d.entidad} · {d.sindicato} · {d.tipoRevision}
-                    </Text>
-                    <Text style={styles.plazaMeta} numberOfLines={1}>
-                      Vence {fecha(d.vencimiento)}
-                      {typeof d.pctCompliance === 'number' ? ` · cumplimiento ${pct(d.pctCompliance, 0)}` : ''}
+                      {d.entidad} · {d.sindicato}
                     </Text>
                   </View>
                   <Text style={styles.plazaPct}>+{pct(d.pctSalarioNominal)}</Text>
                 </View>
               ))}
-            </>
+              {!texto && lista.length > 8 ? <Text style={styles.nota}>Las 8 con mayor aumento; busca para ver las demás.</Text> : null}
+            </Desplegable>
           ) : null}
           <Text style={styles.nota}>Datos del Excel de contratos colectivos que carga RH. No incluye responsables ni expedientes de SharePoint.</Text>
         </ScrollView>
@@ -270,14 +305,7 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
   );
 }
 
-function Tarjeta({ titulo, children }: { titulo: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>{titulo}</Text>
-      {children}
-    </View>
-  );
-}
+
 
 function Fila({ etq, valor, ultimo }: { etq: string; valor?: string; ultimo?: boolean }) {
   return (
@@ -288,19 +316,6 @@ function Fila({ etq, valor, ultimo }: { etq: string; valor?: string; ultimo?: bo
   );
 }
 
-function Dato({ titulo, valor, nota }: { titulo: string; valor: string; nota: string }) {
-  return (
-    <View style={[styles.card, styles.kpi]}>
-      <Text style={styles.kpiTitulo} numberOfLines={2}>
-        {titulo}
-      </Text>
-      <Text style={styles.kpiValor} numberOfLines={1} adjustsFontSizeToFit>
-        {valor}
-      </Text>
-      <Text style={styles.kpiNota}>{nota}</Text>
-    </View>
-  );
-}
 
 function Aviso({ titulo, texto, accion }: { titulo: string; texto: string; accion?: { texto: string; onPress: () => void } }) {
   return (
@@ -343,6 +358,17 @@ const styles = StyleSheet.create({
   heroBody: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 15, color: colors.white, marginTop: -2 },
   heroMeta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12.5, lineHeight: 18, color: 'rgba(255,255,255,.88)', marginTop: 10 },
   fila: { flexDirection: 'row', gap: 10 },
+  heroPills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
+  heroPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: 'rgba(255,255,255,.2)' },
+  heroPillTxt: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.white },
+  lugar: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13, color: colors.ink2, marginBottom: 14 },
+  lugarFuerte: { fontFamily: 'PlusJakartaSans_800ExtraBold', color: colors.ink },
+  anilloFila: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  anilloNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 20, color: colors.ink },
+  subTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: colors.ink3, textTransform: 'uppercase', letterSpacing: 0.8 },
+  histLinea: { width: 16, alignItems: 'center' },
+  histPunto: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.oxRed, marginTop: 3 },
+  histRiel: { flex: 1, width: 2, backgroundColor: colors.line, marginTop: 2 },
   card: {
     borderRadius: radii.xl,
     backgroundColor: colors.white,
@@ -360,11 +386,11 @@ const styles = StyleSheet.create({
   linea: { borderBottomWidth: 1, borderBottomColor: colors.line },
   datoEtq: { flexShrink: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13, color: colors.ink2 },
   datoValor: { flexShrink: 1, textAlign: 'right', fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink },
-  doc: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
+  doc: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   punto: { width: 9, height: 9, borderRadius: 5 },
   docEtq: { flex: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13, color: colors.ink },
   docValor: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink },
-  hist: { flexDirection: 'row', gap: 12, paddingVertical: 10, alignItems: 'center' },
+  hist: { flexDirection: 'row', gap: 12 },
   histAnio: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 17, color: colors.oxRed, width: 48 },
   histTitulo: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13.5, color: colors.ink },
   histMeta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink2, marginTop: 2 },
