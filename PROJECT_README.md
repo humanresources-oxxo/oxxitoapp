@@ -40,6 +40,22 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   editar el Directorio. Se corre local con `npx serve admin` o similar — no está
   desplegada en ningún lado público.
 
+✅ **Contratos colectivos (`src/screens/CctScreen.tsx`):** dashboard **solo de la app** (no
+  existe en DashboardsOxxo). Los datos salen del Excel de CCT de RH ("Data colectiva Tiendas
+  OXXO", hojas `CCTs Tiendas` y `CCT ejercicio <año>`), que es de todas las plazas de OXXO.
+  Solo para los puestos de `PUESTOS_ACTAS`; se abre desde Inicio.
+  - **Carga:** panel admin → pestaña "Contratos colectivos" → Subir Excel. `admin/cct.js`
+    normaliza las hojas en el navegador (porcentajes a fracción, fechas `AAAA-MM-DD`,
+    "NA" → vacío) y **no envía** nombres de responsables ni ligas a SharePoint; la RPC
+    `admin_replace_cct` (passcode de RH) reemplaza todo en la tabla `cct_contratos`
+    (migración 32). La app lee con `list_cct` (`src/services/cct.ts`).
+  - **Pantalla:** el contrato de Plaza Oaxaca (revisión del año con su aumento nominal y días
+    contra el vencimiento, contrato, legitimación y consulta, prestaciones, cumplimiento
+    documental e historial) y el comparativo con las demás plazas del ejercicio: promedio
+    nacional y del cluster, lugar, distribución del aumento, sindicatos y lista buscable.
+  - Como las demás tablas de la app, se lee con la llave publicable: no está en el Sheet
+    público de los dashboards, pero tampoco tiene un candado por usuario.
+
 ✅ **Cuota sindical (`src/screens/CuotaSindicalScreen.tsx`):** lo descontado de cuota
   sindical por mes en Plaza Oaxaca, desde el dashboard Cuota Sindical de DashboardsOxxo
   (`src/services/cuotaSindical.ts`). Solo para los puestos de `PUESTOS_ACTAS`; los Asesores
@@ -188,6 +204,7 @@ src/
     ActasScreen.tsx         — Actas y Formatos (solo ciertos puestos)
     VacacionesScreen.tsx    — saldo de vacaciones (propio y, para ciertos puestos, del equipo)
     CuotaSindicalScreen.tsx — cuota sindical por mes, asesor, puesto y tienda (solo ciertos puestos)
+    CctScreen.tsx           — contratos colectivos: Oaxaca y comparativo nacional (solo ciertos puestos)
     EstructuraScreen.tsx    — posiciones ocupadas y vacantes por tienda (solo ciertos puestos)
   services/actas.ts         — quién puede levantar actas, envío a RH, compartir Word
   services/tiendas.ts       — catálogo de tiendas (nombre, CR, AT) para las actas
@@ -195,6 +212,7 @@ src/
   services/estructura.ts    — estructura por tienda del Dashboard 1 (Dashboard_1_Diario)
   services/gviz.ts          — lectura de pestañas del Sheet de los dashboards (GViz CSV)
   services/cuotaSindical.ts — totales de cuota sindical (Apps Script consultarCuotaSindical)
+  services/cct.ts           — contratos colectivos (Supabase list_cct; carga en admin/cct.js)
   utils/
     actaDocx.ts             — texto de cada formato + generador del .docx
     firmaPng.ts             — firma (trazos) → PNG

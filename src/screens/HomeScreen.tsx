@@ -8,7 +8,7 @@ import { BearAvatar } from '../components/Bear';
 import { Icon } from '../components/Icon';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-type HomeTarget = 'chat' | 'directory' | 'notifications' | 'profile' | 'actas' | 'vacaciones' | 'estructura' | 'cuota';
+type HomeTarget = 'chat' | 'directory' | 'notifications' | 'profile' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct';
 
 export type ChatHistoryItem = {
   id: string;
@@ -21,7 +21,7 @@ type HomeScreenProps = {
   history: ChatHistoryItem[];
   firstName?: string;
   unreadNotices?: number;
-  // Actas y Formatos, Estructura and Cuota sindical are only for some puestos (see services/actas.ts).
+  // Actas y Formatos, Estructura, Cuota sindical and Contratos colectivos are only for some puestos (see services/actas.ts).
   showActas?: boolean;
 };
 
@@ -55,6 +55,14 @@ const CUOTA_ACTION: QuickAction = {
   icon: 'shield',
   target: 'cuota',
   accent: 'purple',
+};
+
+const CCT_ACTION: QuickAction = {
+  title: 'Contratos colectivos',
+  desc: 'Revisión, aumento y comparativo nacional.',
+  icon: 'book',
+  target: 'cct',
+  accent: 'blue',
 };
 
 const VACACIONES_ACTION: QuickAction = {
@@ -98,7 +106,7 @@ const QUICK_ACTIONS: QuickAction[] = [
 
 
 export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, showActas = false }: HomeScreenProps) {
-  const actions = [...(showActas ? [ACTAS_ACTION, ESTRUCTURA_ACTION, CUOTA_ACTION] : []), VACACIONES_ACTION, ...QUICK_ACTIONS];
+  const actions = [...(showActas ? [ACTAS_ACTION, ESTRUCTURA_ACTION, CUOTA_ACTION, CCT_ACTION] : []), VACACIONES_ACTION, ...QUICK_ACTIONS];
   return (
     <View style={styles.screen}>
       <LinearGradient

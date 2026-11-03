@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
 import { ActasScreen } from '../screens/ActasScreen';
 import { ChatHistoryItem, HomeScreen } from '../screens/HomeScreen';
+import { CctScreen } from '../screens/CctScreen';
 import { ChatHomeScreen } from '../screens/ChatHomeScreen';
 import { CuotaSindicalScreen } from '../screens/CuotaSindicalScreen';
 import { DirectoryScreen } from '../screens/DirectoryScreen';
@@ -21,10 +22,10 @@ import { lookupEmployee } from '../services/auth';
 import { fetchNotices } from '../services/notices';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-// 'actas', 'vacaciones', 'estructura' and 'cuota' are not in the tab bar: they open
-// from Inicio. Actas, Estructura, Cuota sindical and the team view of Vacaciones are
-// only for some puestos.
-type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas' | 'vacaciones' | 'estructura' | 'cuota';
+// 'actas', 'vacaciones', 'estructura', 'cuota' and 'cct' are not in the tab bar: they
+// open from Inicio. Actas, Estructura, Cuota sindical, Contratos colectivos and the
+// team view of Vacaciones are only for some puestos.
+type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct';
 
 type Sesion = { numeroEmpleado?: string; nombre?: string; tienda?: string; plaza?: string; puesto?: string; createdAt?: string };
 
@@ -143,6 +144,8 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
         return canUseActas ? <EstructuraScreen onBack={() => setActiveTab('home')} soloMisTiendas={onlyOwnStores} /> : null;
       case 'cuota':
         return canUseActas ? <CuotaSindicalScreen onBack={() => setActiveTab('home')} soloMisTiendas={onlyOwnStores} /> : null;
+      case 'cct':
+        return canUseActas ? <CctScreen onBack={() => setActiveTab('home')} /> : null;
       case 'vacaciones':
         return <VacacionesScreen onBack={() => setActiveTab('home')} conEquipo={canUseActas} soloMisTiendas={onlyOwnStores} />;
       default:
