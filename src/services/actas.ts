@@ -22,6 +22,8 @@ export const PUESTOS_ACTAS = [
   'PRACTICANTE',
   // Test account with full access (employee 1599067's puesto in Supabase).
   'ACCES TEST',
+  // David, the union's representative (90000001, migration 31): full access.
+  'SINDICATO',
 ];
 
 const normalizar = (s?: string) =>
