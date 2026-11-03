@@ -1,6 +1,7 @@
 -- Migration 32: contratos colectivos (CCT) for the app-only "Contratos
 -- colectivos" screen. RH uploads the CCT Excel ("Data colectiva Tiendas OXXO")
--- from the admin panel; the panel turns each row into indicators only (no
+-- from DashboardsOxxo's admin panel (Administrativo, js/cct-conoxxo.js), which
+-- shows it in no dashboard; the panel turns each row into indicators only (no
 -- names of responsables, no SharePoint links) and replaces the whole table.
 --   hoja 'historico' = sheet "CCTs Tiendas" (one row per plaza and year)
 --   hoja 'ejercicio' = sheet "CCT ejercicio <año>" (current year, with compliance)
