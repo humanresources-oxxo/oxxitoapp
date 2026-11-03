@@ -52,8 +52,8 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     SharePoint. El Apps Script (`publicarCct`, v63) lo guarda en un libro privado aparte y
     la app lo lee con la acción pública `consultarCct` (`src/services/cct.ts`). Si cambian
     las llaves que lee la app, hay que actualizar `CAMPOS` en `js/cct-conoxxo.js`.
-  - La migración 32 (tabla `cct_contratos` en Supabase) quedó sin uso: la primera versión
-    guardaba ahí los contratos y pedía el passcode de RH de Conoxxo.
+  - La migración 32 (tabla `cct_contratos` en Supabase) fue la primera versión, que pedía el
+    passcode de RH de Conoxxo; la migración 33 la borra.
   - **Pantalla:** el contrato de Plaza Oaxaca (revisión del año con su aumento nominal y días
     contra el vencimiento, contrato, legitimación y consulta, prestaciones, cumplimiento
     documental e historial) y el comparativo con las demás plazas del ejercicio: promedio
