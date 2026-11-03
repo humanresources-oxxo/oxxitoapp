@@ -8,7 +8,7 @@ import { BearAvatar } from '../components/Bear';
 import { Icon } from '../components/Icon';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-type HomeTarget = 'chat' | 'directory' | 'notifications' | 'profile' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct';
+type HomeTarget = 'chat' | 'directory' | 'notifications' | 'profile' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct' | 'dilos';
 
 export type ChatHistoryItem = {
   id: string;
@@ -65,6 +65,14 @@ const CCT_ACTION: QuickAction = {
   accent: 'blue',
 };
 
+const DILOS_ACTION: QuickAction = {
+  title: 'Casos DILOS',
+  desc: 'Casos abiertos de la Zona Centro Sur.',
+  icon: 'message',
+  target: 'dilos',
+  accent: 'purple',
+};
+
 const VACACIONES_ACTION: QuickAction = {
   title: 'Mis vacaciones',
   desc: 'Días que te quedan y cuándo vencen.',
@@ -106,7 +114,7 @@ const QUICK_ACTIONS: QuickAction[] = [
 
 
 export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, showActas = false }: HomeScreenProps) {
-  const actions = [...(showActas ? [ACTAS_ACTION, ESTRUCTURA_ACTION, CUOTA_ACTION, CCT_ACTION] : []), VACACIONES_ACTION, ...QUICK_ACTIONS];
+  const actions = [...(showActas ? [ACTAS_ACTION, ESTRUCTURA_ACTION, CUOTA_ACTION, CCT_ACTION, DILOS_ACTION] : []), VACACIONES_ACTION, ...QUICK_ACTIONS];
   return (
     <View style={styles.screen}>
       <LinearGradient

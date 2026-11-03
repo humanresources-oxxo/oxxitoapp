@@ -11,6 +11,7 @@ import { ChatHistoryItem, HomeScreen } from '../screens/HomeScreen';
 import { CctScreen } from '../screens/CctScreen';
 import { ChatHomeScreen } from '../screens/ChatHomeScreen';
 import { CuotaSindicalScreen } from '../screens/CuotaSindicalScreen';
+import { DilosScreen } from '../screens/DilosScreen';
 import { DirectoryScreen } from '../screens/DirectoryScreen';
 import { EstructuraScreen } from '../screens/EstructuraScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
@@ -22,10 +23,10 @@ import { lookupEmployee } from '../services/auth';
 import { fetchNotices } from '../services/notices';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-// 'actas', 'vacaciones', 'estructura', 'cuota' and 'cct' are not in the tab bar: they
-// open from Inicio. Actas, Estructura, Cuota sindical, Contratos colectivos and the
-// team view of Vacaciones are only for some puestos.
-type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct';
+// 'actas', 'vacaciones', 'estructura', 'cuota', 'cct' and 'dilos' are not in the tab
+// bar: they open from Inicio. Actas, Estructura, Cuota sindical, Contratos colectivos,
+// Casos DILOS and the team view of Vacaciones are only for some puestos.
+type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct' | 'dilos';
 
 type Sesion = { numeroEmpleado?: string; nombre?: string; tienda?: string; plaza?: string; puesto?: string; createdAt?: string };
 
@@ -144,6 +145,8 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
         return canUseActas ? <EstructuraScreen onBack={() => setActiveTab('home')} soloMisTiendas={onlyOwnStores} /> : null;
       case 'cuota':
         return canUseActas ? <CuotaSindicalScreen onBack={() => setActiveTab('home')} soloMisTiendas={onlyOwnStores} /> : null;
+      case 'dilos':
+        return canUseActas ? <DilosScreen onBack={() => setActiveTab('home')} /> : null;
       case 'cct':
         return canUseActas ? <CctScreen onBack={() => setActiveTab('home')} /> : null;
       case 'vacaciones':

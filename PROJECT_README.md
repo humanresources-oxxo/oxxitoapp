@@ -40,6 +40,18 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   editar el Directorio. Se corre local con `npx serve admin` o similar — no está
   desplegada en ningún lado público.
 
+✅ **Casos DILOS (`src/screens/DilosScreen.tsx`):** dashboard **solo de la app**: casos
+  abiertos de la **Zona Centro Sur** del "Reporte DILOS" que manda RH (hoja `ZCS`: caso,
+  región, plaza, facilitador, estatus, días abiertos). Solo para los puestos de
+  `PUESTOS_ACTAS`; se abre desde Inicio.
+  - **Carga:** panel admin de DashboardsOxxo → Administrativo → tarjeta "Casos DILOS"
+    (`js/dilos-conoxxo.js`), con la sesión del panel. **El nombre del facilitador no se
+    envía.** El Apps Script (`publicarDilos`, v64) lo guarda en un libro privado; la app lee
+    `consultarDilos` (`src/services/dilos.ts`). La fecha del corte sale del nombre del archivo.
+  - **Pantalla:** casos abiertos, promedio y el más antiguo, cuántos llevan más de 15 días,
+    en atención de RH / Administración, región Tabasco, por plaza, y la lista del más antiguo
+    al más reciente con filtros por región, área y atraso.
+
 ✅ **Contratos colectivos (`src/screens/CctScreen.tsx`):** dashboard **solo de la app** (no
   existe en DashboardsOxxo). Los datos salen del Excel de CCT de RH ("Data colectiva Tiendas
   OXXO", hojas `CCTs Tiendas` y `CCT ejercicio <año>`), que es de todas las plazas de OXXO.
@@ -210,6 +222,7 @@ src/
     VacacionesScreen.tsx    — saldo de vacaciones (propio y, para ciertos puestos, del equipo)
     CuotaSindicalScreen.tsx — cuota sindical por mes, asesor, puesto y tienda (solo ciertos puestos)
     CctScreen.tsx           — contratos colectivos: Oaxaca y comparativo nacional (solo ciertos puestos)
+    DilosScreen.tsx         — casos DILOS abiertos de la Zona Centro Sur (solo ciertos puestos)
     EstructuraScreen.tsx    — posiciones ocupadas y vacantes por tienda (solo ciertos puestos)
   services/actas.ts         — quién puede levantar actas, envío a RH, compartir Word
   services/tiendas.ts       — catálogo de tiendas (nombre, CR, AT) para las actas
@@ -218,6 +231,7 @@ src/
   services/gviz.ts          — lectura de pestañas del Sheet de los dashboards (GViz CSV)
   services/cuotaSindical.ts — totales de cuota sindical (Apps Script consultarCuotaSindical)
   services/cct.ts           — contratos colectivos (Apps Script consultarCct; carga en el panel de DashboardsOxxo)
+  services/dilos.ts         — casos DILOS (Apps Script consultarDilos; carga en el panel de DashboardsOxxo)
   utils/
     actaDocx.ts             — texto de cada formato + generador del .docx
     firmaPng.ts             — firma (trazos) → PNG
