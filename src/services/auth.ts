@@ -39,12 +39,15 @@ export async function setInitialPin(numeroEmpleado: string, pin: string): Promis
 }
 
 export type VerifyPinResult =
-  | { status: 'ok'; numeroEmpleado: string; nombre: string }
+  // pinIsTemporary: RH gave this PIN (reset or new employee); the app makes
+  // the employee replace it before going in.
+  | { status: 'ok'; numeroEmpleado: string; nombre: string; pinIsTemporary: boolean }
   | { status: 'wrong_pin' }
   | { status: 'locked'; lockedUntil: string }
   | { status: 'not_found' };
 
-export type ChangePinResult = 'ok' | 'wrong_pin' | 'locked' | 'not_found';
+// weak_pin: 1234, 0000 and the like are refused (migration 37).
+export type ChangePinResult = 'ok' | 'wrong_pin' | 'locked' | 'not_found' | 'weak_pin';
 
 export async function changePin(numeroEmpleado: string, oldPin: string, newPin: string): Promise<ChangePinResult> {
   const { data, error } = await supabase.rpc('change_pin', {
@@ -63,6 +66,6 @@ export async function verifyPin(numeroEmpleado: string, pin: string): Promise<Ve
   if (!row || row.status === 'not_found') return { status: 'not_found' };
   if (row.status === 'locked') return { status: 'locked', lockedUntil: row.locked_until };
   if (row.status === 'ok')
-    return { status: 'ok', numeroEmpleado: row.numero_empleado, nombre: row.nombre };
+    return { status: 'ok', numeroEmpleado: row.numero_empleado, nombre: row.nombre, pinIsTemporary: !!row.pin_is_temporary };
   return { status: 'wrong_pin' };
 }

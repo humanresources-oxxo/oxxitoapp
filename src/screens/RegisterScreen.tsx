@@ -46,8 +46,15 @@ export function RegisterScreen({
       setError(
         message.includes('pin_already_set')
           ? 'Este número ya tiene un PIN. Usa "Inicia sesión".'
-          : 'No pudimos crear tu PIN. Intenta de nuevo.'
+          : message.includes('weak_pin')
+            ? 'Ese PIN es muy fácil de adivinar (como 1234 o 0000). Elige otro.'
+            : message.includes('rh_asigna_pin')
+              ? 'Por tu puesto, Recursos Humanos te asigna tu primer PIN. Pídeselo a RH.'
+              : message.includes('rate_limited')
+                ? 'Hay muchos registros en este momento. Intenta de nuevo en unos minutos.'
+                : 'No pudimos crear tu PIN. Intenta de nuevo.'
       );
+      setRegPin('');
     } finally {
       setLoading(false);
     }

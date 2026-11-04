@@ -391,6 +391,8 @@ function ChangePinModal({
         setError('Tu PIN actual no es correcto.');
       } else if (status === 'locked') {
         setError('Cuenta bloqueada por varios intentos fallidos. Intenta más tarde.');
+      } else if (status === 'weak_pin') {
+        setError('Ese PIN es muy fácil de adivinar (como 1234 o 0000). Elige otro.');
       } else {
         setError('No pudimos actualizar tu PIN.');
       }

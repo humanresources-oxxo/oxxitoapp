@@ -46,10 +46,23 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   de la llave pide el PIN una sola vez. Dura 180 días desde el último uso.
 
 ✅ **Panel admin (`admin/index.html`):** página web aparte (no dentro del app de React
-  Native), protegida por el mismo passcode de RH. Sirve para: agregar empleados nuevos
-  (genera su PIN temporal), reiniciar el PIN de alguien, publicar/borrar avisos, y
-  editar el Directorio. Se corre local con `npx serve admin` o similar — no está
-  desplegada en ningún lado público.
+  Native). Desde la migración 37 se entra con **número de empleado y PIN** (llave de sesión);
+  el passcode compartido de RH ya no existe. RH (Responsable RH, Analista EC, cuenta de prueba)
+  ve Empleados: agregar empleados y "Dar PIN temporal" (4 dígitos que se muestran una vez; al
+  entrar, la app obliga a crear uno propio). RH y Gerente de plaza ven Avisos y Directorio.
+  Todo lo que viene de la base se pinta como texto (`textContent`). Se corre local con
+  `npx serve admin` o similar — no está desplegada en ningún lado público.
+
+✅ **Seguridad de acceso (migración 37):**
+  - Bloqueo de PIN que crece y no depende de la dirección: 5 fallos → 15 min por intento,
+    10 → 1 h, 20 → 24 h (lo limpia un PIN correcto o RH). Lo comparten `verify_pin` y
+    `change_pin`. Además, máximo 30 fallos por hora por dirección cuando se conoce (`cliente_ip()`).
+  - PINs triviales (1234, 0000, 1111…) rechazados al crear o cambiar.
+  - Primer registro: los puestos con permisos (`puesto_con_permisos`, mismos que
+    `PUESTOS_ACTAS`) no pueden crear su primer PIN; RH les da uno temporal. Tope de 60 registros
+    por hora en total (10 por dirección).
+  - `mi_red()` es un diagnóstico temporal para revisar qué dirección llega a la base; se borra
+    cuando se confirme.
 
 ✅ **Votaciones (`src/screens/VotacionesScreen.tsx`):** votaciones secretas para lugares,
   fechas y decisiones del equipo (no sindicales). Supabase, migración 34
