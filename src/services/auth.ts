@@ -37,6 +37,8 @@ export async function lookupEmployee(numeroEmpleado: string): Promise<EmployeeLo
 // First PIN (migration 38): needs the birth date RH loaded ('YYYY-MM-DD').
 export type RegisterPinResult =
   | 'ok'
+  // Registered; the account waits for its asesor / RH (migration 39).
+  | 'pendiente'
   | 'not_found'
   | 'pin_already_set'
   | 'weak_pin'
@@ -57,6 +59,8 @@ export type VerifyPinResult =
   | { status: 'ok'; numeroEmpleado: string; nombre: string; pinIsTemporary: boolean }
   | { status: 'wrong_pin' }
   | { status: 'locked'; lockedUntil: string }
+  // Self-registered, waiting for its asesor / RH to approve it (migration 39).
+  | { status: 'pendiente' }
   | { status: 'not_found' };
 
 // weak_pin: 1234, 0000 and the like are refused (migration 37).
@@ -78,6 +82,7 @@ export async function verifyPin(numeroEmpleado: string, pin: string): Promise<Ve
   const row = data?.[0];
   if (!row || row.status === 'not_found') return { status: 'not_found' };
   if (row.status === 'locked') return { status: 'locked', lockedUntil: row.locked_until };
+  if (row.status === 'pendiente') return { status: 'pendiente' };
   if (row.status === 'ok')
     return { status: 'ok', numeroEmpleado: row.numero_empleado, nombre: row.nombre, pinIsTemporary: !!row.pin_is_temporary };
   return { status: 'wrong_pin' };

@@ -8,7 +8,7 @@ import { BearAvatar } from '../components/Bear';
 import { Icon } from '../components/Icon';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-type HomeTarget = 'chat' | 'directory' | 'notifications' | 'profile' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct' | 'dilos' | 'votaciones';
+type HomeTarget = 'chat' | 'directory' | 'notifications' | 'profile' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct' | 'dilos' | 'votaciones' | 'altas';
 
 export type ChatHistoryItem = {
   id: string;
@@ -26,6 +26,9 @@ type HomeScreenProps = {
   // Open votaciones the employee hasn't voted in yet (badge on the card);
   // null hides the card (backend not reachable, e.g. offline).
   pendingVotes?: number | null;
+  // Approvers (asesor, RH, Gerente): the card, with how many are waiting.
+  showAltas?: boolean;
+  pendingAltas?: number;
 };
 
 type QuickAction = {
@@ -76,6 +79,14 @@ const DILOS_ACTION: QuickAction = {
   accent: 'purple',
 };
 
+const ALTAS_ACTION: QuickAction = {
+  title: 'Altas por aprobar',
+  desc: 'Cuentas nuevas de tu gente.',
+  icon: 'user',
+  target: 'altas',
+  accent: 'green',
+};
+
 const VOTACIONES_ACTION: QuickAction = {
   title: 'Votaciones',
   desc: 'Vota por lugares, fechas y más.',
@@ -94,8 +105,8 @@ const VACACIONES_ACTION: QuickAction = {
 
 
 
-export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, showActas = false, pendingVotes = null }: HomeScreenProps) {
-  const actions = [...(showActas ? [ACTAS_ACTION, ESTRUCTURA_ACTION, CUOTA_ACTION, CCT_ACTION, DILOS_ACTION] : []), ...(pendingVotes !== null ? [VOTACIONES_ACTION] : []), VACACIONES_ACTION];
+export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, showActas = false, pendingVotes = null, showAltas = false, pendingAltas = 0 }: HomeScreenProps) {
+  const actions = [...(showAltas ? [ALTAS_ACTION] : []), ...(showActas ? [ACTAS_ACTION, ESTRUCTURA_ACTION, CUOTA_ACTION, CCT_ACTION, DILOS_ACTION] : []), ...(pendingVotes !== null ? [VOTACIONES_ACTION] : []), VACACIONES_ACTION];
   return (
     <View style={styles.screen}>
       <LinearGradient
@@ -158,9 +169,9 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, s
             <LinearGradient colors={gradients[item.accent].colors} style={styles.actionIcon}>
               <Icon name={item.icon} size={22} color="#fff" />
             </LinearGradient>
-            {item.target === 'votaciones' && !!pendingVotes ? (
+            {(item.target === 'votaciones' && !!pendingVotes) || (item.target === 'altas' && !!pendingAltas) ? (
               <View style={styles.actionBadge}>
-                <Text style={styles.actionBadgeText}>{pendingVotes}</Text>
+                <Text style={styles.actionBadgeText}>{item.target === 'altas' ? pendingAltas : pendingVotes}</Text>
               </View>
             ) : null}
             <Text style={styles.actionTitle}>{item.title}</Text>

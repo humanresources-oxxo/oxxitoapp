@@ -18,17 +18,20 @@ import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { VacacionesScreen } from '../screens/VacacionesScreen';
 import { VotacionesScreen } from '../screens/VotacionesScreen';
+import { AltasScreen } from '../screens/AltasScreen';
 import { getJson, setJson, storageKeys } from '../services/appStorage';
 import { puedeLevantarActas, soloSusTiendas } from '../services/actas';
 import { lookupEmployee } from '../services/auth';
 import { fetchNotices } from '../services/notices';
 import { contarPendientes } from '../services/votaciones';
+import { listarAltas, puedeAprobarAltas } from '../services/altas';
+import { leerLlave } from '../services/sesion';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
 // 'actas', 'vacaciones', 'estructura', 'cuota', 'cct', 'dilos' and 'votaciones' are not in the tab
 // bar: they open from Inicio. Actas, Estructura, Cuota sindical, Contratos colectivos,
 // Casos DILOS and the team view of Vacaciones are only for some puestos.
-type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct' | 'dilos' | 'votaciones';
+type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct' | 'dilos' | 'votaciones' | 'altas';
 
 type Sesion = { numeroEmpleado?: string; nombre?: string; tienda?: string; plaza?: string; puesto?: string; createdAt?: string };
 
@@ -60,6 +63,16 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
   const [pendingVotes, setPendingVotes] = useState<number | null>(null);
   const [numeroEmpleado, setNumeroEmpleado] = useState('');
 
+  // Approvers: how many new accounts wait for them (needs the session key).
+  const [canApprove, setCanApprove] = useState(false);
+  const [pendingAltas, setPendingAltas] = useState(0);
+  const refreshAltas = () => {
+    leerLlave()
+      .then((llave) => (llave ? listarAltas(llave) : null))
+      .then((lista) => setPendingAltas(lista?.length ?? 0))
+      .catch(() => {});
+  };
+
   const refreshPendingVotes = (numero = numeroEmpleado) => {
     if (!numero) return;
     contarPendientes(numero).then(setPendingVotes).catch(() => {});
@@ -85,6 +98,8 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       setOnlyOwnStores(soloSusTiendas(session?.puesto));
       setNumeroEmpleado(session?.numeroEmpleado ?? '');
       refreshPendingVotes(session?.numeroEmpleado ?? '');
+      setCanApprove(puedeAprobarAltas(session?.puesto));
+      if (puedeAprobarAltas(session?.puesto)) refreshAltas();
       revalidarSesion(session);
     });
     refreshUnreadNotices();
@@ -106,6 +121,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
         setFirstName(nueva.nombre?.split(' ')[0] ?? '');
         setCanUseActas(puedeLevantarActas(nueva.puesto));
         setOnlyOwnStores(soloSusTiendas(nueva.puesto));
+        setCanApprove(puedeAprobarAltas(nueva.puesto));
       })
       .catch(() => {});
   };
@@ -113,7 +129,10 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
   // Recompute after leaving Avisos, since that's where read-state changes.
   useEffect(() => {
     if (activeTab !== 'notifications') refreshUnreadNotices();
-    if (activeTab === 'home') refreshPendingVotes();
+    if (activeTab === 'home') {
+      refreshPendingVotes();
+      if (canApprove) refreshAltas();
+    }
   }, [activeTab]);
 
   const saveChatQuestion = (question: string) => {
@@ -142,6 +161,8 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
             unreadNotices={unreadNotices}
             showActas={canUseActas}
             pendingVotes={pendingVotes}
+            showAltas={canApprove}
+            pendingAltas={pendingAltas}
           />
         );
       case 'chat':
@@ -162,6 +183,8 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
         return canUseActas ? <DilosScreen onBack={() => setActiveTab('home')} /> : null;
       case 'cct':
         return canUseActas ? <CctScreen onBack={() => setActiveTab('home')} /> : null;
+      case 'altas':
+        return canApprove ? <AltasScreen onBack={() => setActiveTab('home')} onCambio={refreshAltas} /> : null;
       case 'votaciones':
         return <VotacionesScreen onBack={() => setActiveTab('home')} onCambio={() => refreshPendingVotes()} />;
       case 'vacaciones':
@@ -169,7 +192,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       default:
         return null;
     }
-  }, [activeTab, chatHistory, firstName, unreadNotices, canUseActas, onlyOwnStores, pendingVotes, numeroEmpleado]);
+  }, [activeTab, chatHistory, firstName, unreadNotices, canUseActas, onlyOwnStores, pendingVotes, numeroEmpleado, canApprove, pendingAltas]);
 
   return (
     <View style={styles.shell}>

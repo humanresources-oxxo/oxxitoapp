@@ -54,6 +54,8 @@ export function RegisterScreen({
   const [fecha, setFecha] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Registered: the account now waits for its asesor / RH (migration 39).
+  const [enEspera, setEnEspera] = useState(false);
   const len = regPin.length;
   const iso = fechaIso(fecha);
   const ready = paso === 'fecha' ? !!iso : len === 4;
@@ -84,6 +86,11 @@ export function RegisterScreen({
     setError('');
     try {
       const st = await registerPin(empNum, iso ?? '', regPin);
+      if (st === 'pendiente') {
+        setRegPin('');
+        setEnEspera(true);
+        return;
+      }
       if (st === 'ok') {
         obtenerLlave(empNum, regPin).catch(() => {});
         onContinue();
@@ -102,6 +109,33 @@ export function RegisterScreen({
       setLoading(false);
     }
   };
+
+  if (enEspera) {
+    return (
+      <View style={styles.screen}>
+        <View style={[styles.body, { paddingTop: Platform.OS === 'ios' ? 8 : 4 }]}>
+          <StepsHeader active={2} onBack={onBack} />
+          <View style={styles.head}>
+            <Text style={styles.kicker}>Primer ingreso</Text>
+            <Text style={styles.title}>¡Listo! Falta un paso</Text>
+            <Text style={styles.sub}>
+              Tu PIN quedó guardado. Para cuidar tu cuenta, tu asesor o Recursos Humanos tiene que aprobarla. Cuando la
+              aprueben, entra con tu número de empleado y tu PIN.
+            </Text>
+          </View>
+          <View style={styles.fields}>
+            <OxField icon="badge" label="Número de empleado" value={empNum} locked tail="En revisión" />
+            <OxHint>Si tarda, avísale a tu asesor que ya te registraste.</OxHint>
+          </View>
+        </View>
+        <SafeAreaView edges={['bottom']} style={styles.cta}>
+          <OxButton onPress={onBack} icon={<Icon name="check" size={19} color="#fff" />}>
+            Entendido
+          </OxButton>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>

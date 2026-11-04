@@ -86,7 +86,9 @@ export function VerifyScreen({
             onContinue();
             return;
           }
-          if (result.status === 'locked') {
+          if (result.status === 'pendiente') {
+            setLockedMessage('Tu cuenta está esperando que tu asesor o RH la apruebe. Cuando la aprueben, entra con tu número y tu PIN.');
+          } else if (result.status === 'locked') {
             setLockedMessage(lockText(result.lockedUntil));
           } else {
             setError(true);
