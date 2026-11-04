@@ -3,8 +3,10 @@
 // dashboard). RH uploads the "Reporte DILOS" from DashboardsOxxo's admin panel
 // (Administrativo, with the panel's session; js/dilos-conoxxo.js there drops
 // the facilitator's name) and its Apps Script keeps it in a private workbook
-// (publicarDilos, v64). The app reads it with the public action consultarDilos.
+// (publicarDilos, v64). The app reads it with consultarDilos, which since v65
+// needs the session key of a puesto with permissions (migration 41).
 // If DashboardsOxxo changes that action or its fields, update this file too.
+import { leerLlave, olvidarLlave, SIN_SESION } from './sesion';
 
 // DashboardsOxxo js/config.js -> ADMIN_UPLOAD_URL (same Apps Script as Actas, Cuota and CCT).
 const URL =
@@ -34,14 +36,19 @@ export function cargarDilos(): Promise<Dilos> {
       const r = await fetch(URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'consultarDilos' }),
+        // The session key: v65 of the Apps Script only answers puestos with permissions.
+        body: JSON.stringify({ action: 'consultarDilos', llave: (await leerLlave()) ?? '' }),
         signal: control.signal,
       });
       datos = await r.json();
     } finally {
       clearTimeout(t);
     }
-    if (!datos || datos.ok === false) throw new Error((datos && datos.error) || 'el servidor no respondió');
+    if (!datos || datos.ok === false) {
+      const motivo = String((datos && datos.error) || 'el servidor no respondió');
+      if (motivo.includes(SIN_SESION)) await olvidarLlave();
+      throw new Error(motivo);
+    }
     const casos: CasoDilos[] = (datos.casos ?? [])
       .map((c: any) => ({
         caso: String(c.caso ?? ''),

@@ -4,6 +4,7 @@
 // web form uses ("enviarActa"): it always mails RH's fixed recipients and logs
 // the acta in RH's private register, so app and web actas land in one place.
 import { ACTA_LOGO_BASE64 } from '../data/actaLogo';
+import { leerLlave } from './sesion';
 import { aBase64, ActaDatos, deBase64, docx, FirmaDoc, limpio, modelo, nombreArchivo, TIPOS, tipoDe } from '../utils/actaDocx';
 import { compartirArchivo, MIME } from '../utils/compartir';
 
@@ -59,8 +60,11 @@ export type EnvioActa = { enviadoA: string; registro: RegistroActa | null };
 
 export async function enviarActa(d: ActaDatos, firmas: FirmaDoc[], { crTienda = '' } = {}): Promise<EnvioActa> {
   const tipo = TIPOS[tipoDe(d)];
+  // With the session key the Apps Script (v65) signs the acta with who sends it.
+  const llave = (await leerLlave()) ?? '';
   const cuerpo = JSON.stringify({
     action: 'enviarActa',
+    llave,
     archivo: nombreArchivo(d),
     docx: aBase64(generarWord(d, firmas)),
     copia: limpio(d.copia),

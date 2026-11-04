@@ -31,6 +31,11 @@ export async function obtenerLlave(numero: string, pin: string): Promise<string>
 
 export const olvidarLlave = () => removeItem(storageKeys.sessionKey);
 
+// The DashboardsOxxo Apps Script (v65) answers this when the key is missing,
+// expired or can't be checked: the screen asks for the PIN once and retries.
+export const SIN_SESION = 'sesion_conoxxo';
+export const esSinSesion = (e: unknown) => String((e as any)?.message ?? e).includes(SIN_SESION);
+
 // Logout: ends the key on the server too (best effort) and forgets it.
 export async function cerrarSesion() {
   const llave = await leerLlave();
