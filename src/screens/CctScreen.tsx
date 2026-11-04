@@ -68,6 +68,9 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
   // The Apps Script didn't accept the session key: confirm the PIN once.
   const [sinSesion, setSinSesion] = useState(false);
   const [pedirPin, setPedirPin] = useState(false);
+  // PIN already confirmed in this screen: if the server still rejects the
+  // session, the problem is on its side (it couldn't check it), not the PIN.
+  const [pinConfirmado, setPinConfirmado] = useState(false);
   const [numero, setNumero] = useState('');
   const [intento, setIntento] = useState(0);
   const [anio, setAnio] = useState(0);
@@ -195,7 +198,13 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
 
       {error ? (
         <View style={styles.content}>
-          {sinSesion ? (
+          {sinSesion && pinConfirmado ? (
+            <Aviso
+              titulo="No pudimos verificar tu sesión"
+              texto="Tu PIN es correcto, pero el servidor no pudo confirmar tu sesión. Avisa a RH o a Soporte de la App e intenta más tarde."
+              accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }}
+            />
+          ) : sinSesion ? (
             <Aviso titulo="Confirma tu PIN" texto="Para ver esta información, confirma tu PIN una vez." accion={{ texto: 'Confirmar PIN', onPress: () => setPedirPin(true) }} />
           ) : (
             <Aviso titulo="No se pudieron cargar los contratos" texto="Revisa tu conexión e intenta de nuevo." accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }} />
@@ -413,6 +422,7 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
           onCerrar={() => setPedirPin(false)}
           onListo={() => {
             setPedirPin(false);
+            setPinConfirmado(true);
             setIntento((n) => n + 1);
           }}
         />
