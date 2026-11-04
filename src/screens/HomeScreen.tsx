@@ -81,40 +81,10 @@ const VACACIONES_ACTION: QuickAction = {
   accent: 'blue',
 };
 
-const QUICK_ACTIONS: QuickAction[] = [
-  {
-    title: 'Preguntar al asistente',
-    desc: 'Consulta reglamento, permisos y asistencia.',
-    icon: 'chat',
-    target: 'chat',
-    accent: 'oxGrad',
-  },
-  {
-    title: 'Llamar a un área',
-    desc: 'Encuentra contactos internos por tema.',
-    icon: 'headset',
-    target: 'directory',
-    accent: 'green',
-  },
-  {
-    title: 'Ver avisos',
-    desc: 'Cambios, recordatorios y comunicados.',
-    icon: 'bell',
-    target: 'notifications',
-    accent: 'blue',
-  },
-  {
-    title: 'Mi perfil',
-    desc: 'Datos de empleado y preferencias.',
-    icon: 'user',
-    target: 'profile',
-    accent: 'purple',
-  },
-];
 
 
 export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, showActas = false }: HomeScreenProps) {
-  const actions = [...(showActas ? [ACTAS_ACTION, ESTRUCTURA_ACTION, CUOTA_ACTION, CCT_ACTION, DILOS_ACTION] : []), VACACIONES_ACTION, ...QUICK_ACTIONS];
+  const actions = [...(showActas ? [ACTAS_ACTION, ESTRUCTURA_ACTION, CUOTA_ACTION, CCT_ACTION, DILOS_ACTION] : []), VACACIONES_ACTION];
   return (
     <View style={styles.screen}>
       <LinearGradient
@@ -168,7 +138,7 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, s
 
             <View style={styles.sectionHead}>
               <Text style={styles.sectionTitle}>Accesos rápidos</Text>
-              <Text style={styles.sectionMeta}>{actions.length} opciones</Text>
+              <Text style={styles.sectionMeta}>{actions.length} {actions.length === 1 ? 'opción' : 'opciones'}</Text>
             </View>
           </>
         }
