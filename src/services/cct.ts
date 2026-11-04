@@ -15,6 +15,7 @@ const URL =
 
 export type CctDatos = {
   anio?: number;
+  udn?: string; // business unit: Tiendas, Distribución, CEDIS, Smart
   cluster?: string;
   base?: string;
   plaza?: string;
