@@ -1,10 +1,11 @@
 // src/screens/VotacionesScreen.tsx
 // Votaciones: secret ballots for places, dates and similar team decisions.
 // Everyone sees the open ones meant for them (all, or their store), votes once
-// confirming with their PIN, and sees results when it closes (or right after
-// voting when the votación shows live results). RH puestos also create,
-// close and delete them here. Data: services/votaciones.ts.
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+// and sees results when it closes (or right after voting when the votación
+// shows live results). RH and Gerente de plaza also create, close and delete
+// them here. Actions go with the session key (services/sesion.ts); a session
+// from before the key existed asks for the PIN once. Data: services/votaciones.ts.
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
 import { Desplegable } from '../components/Visual';
 import { getJson, storageKeys } from '../services/appStorage';
+import { leerLlave, obtenerLlave, olvidarLlave, puedePublicar } from '../services/sesion';
 import { cargarTiendas, normalizarTienda, sugerirTiendas, Tienda } from '../services/tiendas';
 import {
   borrarVotacion,
@@ -22,7 +24,6 @@ import {
   ListaVotaciones,
   MENSAJE_VOTO,
   NuevaVotacion,
-  puedeAdministrarVotaciones,
   votar,
   Votacion,
 } from '../services/votaciones';
@@ -55,10 +56,9 @@ function finDelDia(dias: number) {
   return d;
 }
 
-type PedirPin = {
-  titulo: string;
-  texto: string;
-  accion: (pin: string) => Promise<EstadoVoto>;
+// An action that needs the session key, and what to say when it's done.
+type Accion = {
+  hacer: (llave: string) => Promise<EstadoVoto>;
   listo: string;
 };
 
@@ -69,16 +69,14 @@ export function VotacionesScreen({ onBack, onCambio }: { onBack: () => void; onC
   const [error, setError] = useState(false);
   const [intento, setIntento] = useState(0);
   const [eleccion, setEleccion] = useState<Record<string, string>>({});
-  const [pedirPin, setPedirPin] = useState<PedirPin | null>(null);
+  // Action waiting for the one-time PIN (no session key yet).
+  const [pedirPin, setPedirPin] = useState<Accion | null>(null);
   const [nueva, setNueva] = useState(false);
-  // The PIN that last worked, kept only while the screen is open so voting in
-  // several votaciones (or RH closing one) doesn't ask for it every time.
-  const pinBueno = useRef<string | null>(null);
 
   useEffect(() => {
     getJson<{ numeroEmpleado?: string; puesto?: string } | null>(storageKeys.session, null).then((s) => {
       setNumero(s?.numeroEmpleado ?? '');
-      setEsRh(puedeAdministrarVotaciones(s?.puesto));
+      setEsRh(puedePublicar(s?.puesto));
     });
   }, []);
 
@@ -99,21 +97,23 @@ export function VotacionesScreen({ onBack, onCambio }: { onBack: () => void; onC
     onCambio?.();
   }, [onCambio]);
 
-  // Runs a PIN-confirmed action: with the PIN that already worked, else asks.
-  const conPin = async (p: PedirPin) => {
-    if (pinBueno.current) {
+  // Runs an action with the session key; without one (or with one the server
+  // no longer accepts) asks for the PIN once and then runs it.
+  const conLlave = async (a: Accion) => {
+    const llave = await leerLlave();
+    if (llave) {
       try {
-        const r = await p.accion(pinBueno.current);
-        if (r !== 'wrong_pin') return terminar(p, r);
+        const r = await a.hacer(llave);
+        if (r !== 'no_session') return terminar(a, r);
       } catch {
         return showAlert('Sin conexión', 'No pudimos conectar. Intenta de nuevo.');
       }
-      pinBueno.current = null;
+      await olvidarLlave();
     }
-    setPedirPin(p);
+    setPedirPin(a);
   };
 
-  const terminar = (p: PedirPin, r: EstadoVoto) => {
+  const terminar = (p: Accion, r: EstadoVoto) => {
     if (r === 'ok') {
       if (p.listo) showAlert('Listo', p.listo);
     } else {
@@ -128,25 +128,24 @@ export function VotacionesScreen({ onBack, onCambio }: { onBack: () => void; onC
   const cerradas = votaciones.filter((v) => !v.abierta);
   const pendientes = abiertas.filter((v) => v.puedeVotar && !v.yaVoto).length;
 
-  const onVotar = (v: Votacion) => {
+  const onVotar = async (v: Votacion) => {
     const opcion = v.opciones.find((o) => o.id === eleccion[v.id]);
     if (!opcion) return;
-    conPin({
-      titulo: 'Confirma tu voto',
-      texto: `Vas a votar por "${opcion.texto}". Tu voto es secreto y no se puede cambiar.`,
-      accion: (pin) => votar(numero, pin, v.id, opcion.id),
+    if (!(await confirmAlert('Confirma tu voto', `Vas a votar por "${opcion.texto}". Tu voto es secreto y no se puede cambiar.`, 'Votar'))) return;
+    conLlave({
+      hacer: (llave) => votar(llave, v.id, opcion.id),
       listo: v.resultadosEnVivo ? 'Tu voto quedó registrado. Ya puedes ver cómo va.' : 'Tu voto quedó registrado. Verás el resultado cuando cierre.',
     });
   };
 
   const onCerrar = async (v: Votacion) => {
     if (!(await confirmAlert('Cerrar votación', `"${v.titulo}" deja de recibir votos y todos ven el resultado.`, 'Cerrar'))) return;
-    conPin({ titulo: 'Cerrar votación', texto: 'Confirma con tu PIN.', accion: (pin) => cerrarVotacion(numero, pin, v.id), listo: '' });
+    conLlave({ hacer: (llave) => cerrarVotacion(llave, v.id), listo: '' });
   };
 
   const onBorrar = async (v: Votacion) => {
     if (!(await confirmAlert('Borrar votación', `"${v.titulo}" y sus votos se borran para todos. No se puede deshacer.`, 'Borrar'))) return;
-    conPin({ titulo: 'Borrar votación', texto: 'Confirma con tu PIN.', accion: (pin) => borrarVotacion(numero, pin, v.id), listo: '' });
+    conLlave({ hacer: (llave) => borrarVotacion(llave, v.id), listo: '' });
   };
 
   return (
@@ -243,7 +242,7 @@ export function VotacionesScreen({ onBack, onCambio }: { onBack: () => void; onC
           ) : null}
 
           <Text style={styles.nota}>
-            Tu voto es secreto: se guarda que ya votaste, pero no por quién, y nadie puede ver quién votó qué. Cada voto se confirma con tu PIN. Votaciones para
+            Tu voto es secreto: se guarda que ya votaste, pero no por quién, y nadie puede ver quién votó qué. Solo puedes votar una vez. Votaciones para
             lugares, fechas y decisiones del equipo; no son votaciones sindicales.
           </Text>
         </ScrollView>
@@ -251,10 +250,10 @@ export function VotacionesScreen({ onBack, onCambio }: { onBack: () => void; onC
 
       {pedirPin ? (
         <PinModal
-          pedir={pedirPin}
+          numero={numero}
+          accion={pedirPin}
           onCerrar={() => setPedirPin(null)}
-          onListo={(pin, r) => {
-            pinBueno.current = pin;
+          onListo={(r) => {
             const p = pedirPin;
             setPedirPin(null);
             terminar(p, r);
@@ -264,21 +263,17 @@ export function VotacionesScreen({ onBack, onCambio }: { onBack: () => void; onC
 
       <NuevaVotacionModal
         visible={nueva}
-        pinConocido={!!pinBueno.current}
+        numero={numero}
         onClose={() => setNueva(false)}
-        onPublicar={async (datos, pin) => {
-          const usado = pin || pinBueno.current || '';
-          const r = await crearVotacion(numero, usado, datos);
+        onPublicar={async (llave, datos) => {
+          const r = await crearVotacion(llave, datos);
           if (r === 'ok') {
-            pinBueno.current = usado;
             setNueva(false);
             showAlert(
               'Votación publicada',
               datos.tiendas.length ? 'Ya la ven las tiendas que elegiste.' : 'Ya la ve toda la plaza y se publicó un aviso.'
             );
             recargar();
-          } else if (r === 'wrong_pin') {
-            pinBueno.current = null;
           }
           return r;
         }}
@@ -415,7 +410,9 @@ function Resultados({ v }: { v: Votacion }) {
   );
 }
 
-function PinModal({ pedir, onCerrar, onListo }: { pedir: PedirPin; onCerrar: () => void; onListo: (pin: string, r: EstadoVoto) => void }) {
+// One-time PIN for a session from before session keys: trades it for a key
+// and runs the waiting action.
+function PinModal({ numero, accion, onCerrar, onListo }: { numero: string; accion: Accion; onCerrar: () => void; onListo: (r: EstadoVoto) => void }) {
   const [pin, setPin] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
@@ -424,14 +421,12 @@ function PinModal({ pedir, onCerrar, onListo }: { pedir: PedirPin; onCerrar: () 
     setEnviando(true);
     setError('');
     try {
-      const r = await pedir.accion(pin);
-      if (r === 'wrong_pin') {
-        setError(MENSAJE_VOTO.wrong_pin);
-        setPin('');
-      } else if (r === 'locked') {
-        setError(MENSAJE_VOTO.locked);
+      const st = await obtenerLlave(numero, pin);
+      if (st === 'ok') {
+        onListo(await accion.hacer((await leerLlave()) ?? ''));
       } else {
-        onListo(pin, r);
+        setError(MENSAJE_VOTO[st as EstadoVoto] || MENSAJE_VOTO.wrong_pin);
+        setPin('');
       }
     } catch {
       setError('No pudimos conectar. Intenta de nuevo.');
@@ -445,8 +440,8 @@ function PinModal({ pedir, onCerrar, onListo }: { pedir: PedirPin; onCerrar: () 
         <Pressable style={StyleSheet.absoluteFill} onPress={onCerrar} />
         <BlurView intensity={36} tint="light" style={styles.hoja}>
           <View style={styles.asa} />
-          <Text style={styles.hojaTitulo}>{pedir.titulo}</Text>
-          <Text style={styles.descripcion}>{pedir.texto}</Text>
+          <Text style={styles.hojaTitulo}>Confirma tu PIN</Text>
+          <Text style={styles.descripcion}>Solo esta vez: con tu PIN la app queda lista y no te lo vuelve a pedir.</Text>
           <Text style={styles.etiqueta}>Tu PIN</Text>
           <TextInput
             style={[styles.input, styles.inputPin]}
@@ -473,14 +468,14 @@ function PinModal({ pedir, onCerrar, onListo }: { pedir: PedirPin; onCerrar: () 
 
 function NuevaVotacionModal({
   visible,
-  pinConocido,
+  numero,
   onClose,
   onPublicar,
 }: {
   visible: boolean;
-  pinConocido: boolean;
+  numero: string;
   onClose: () => void;
-  onPublicar: (v: NuevaVotacion, pin: string) => Promise<EstadoVoto>;
+  onPublicar: (llave: string, v: NuevaVotacion) => Promise<EstadoVoto>;
 }) {
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -494,6 +489,12 @@ function NuevaVotacionModal({
   const [pin, setPin] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState('');
+  // Without a session key the form asks for the PIN (only this once).
+  const [sinLlave, setSinLlave] = useState(false);
+
+  useEffect(() => {
+    if (visible) leerLlave().then((l) => setSinLlave(!l));
+  }, [visible]);
 
   useEffect(() => {
     if (soloTiendas && !catalogo.length) cargarTiendas().then(setCatalogo).catch(() => {});
@@ -505,7 +506,7 @@ function NuevaVotacionModal({
   );
   const llenas = opciones.map((o) => o.trim()).filter(Boolean);
   const listo =
-    titulo.trim().length >= 3 && llenas.length >= 2 && (!soloTiendas || tiendas.length > 0) && (pinConocido || pin.length === 4);
+    titulo.trim().length >= 3 && llenas.length >= 2 && (!soloTiendas || tiendas.length > 0) && (!sinLlave || pin.length === 4);
   const cierre = finDelDia(dias);
 
   const limpiar = () => {
@@ -526,15 +527,29 @@ function NuevaVotacionModal({
     setEnviando(true);
     setError('');
     try {
-      const r = await onPublicar(
-        { titulo: titulo.trim(), descripcion: descripcion.trim(), opciones: llenas, tiendas: soloTiendas ? tiendas : [], cierraEn: cierre, enVivo },
-        pin
-      );
-      if (r === 'ok') limpiar();
-      else {
-        setError(MENSAJE_VOTO[r] || 'No se pudo publicar.');
-        if (r === 'wrong_pin') setPin('');
+      if (sinLlave) {
+        const st = await obtenerLlave(numero, pin);
+        if (st !== 'ok') {
+          setError(MENSAJE_VOTO[st as EstadoVoto] || MENSAJE_VOTO.wrong_pin);
+          setPin('');
+          return;
+        }
+        setSinLlave(false);
       }
+      const r = await onPublicar((await leerLlave()) ?? '', {
+        titulo: titulo.trim(),
+        descripcion: descripcion.trim(),
+        opciones: llenas,
+        tiendas: soloTiendas ? tiendas : [],
+        cierraEn: cierre,
+        enVivo,
+      });
+      if (r === 'ok') limpiar();
+      else if (r === 'no_session') {
+        await olvidarLlave();
+        setSinLlave(true);
+        setError(MENSAJE_VOTO.no_session);
+      } else setError(MENSAJE_VOTO[r] || 'No se pudo publicar.');
     } catch {
       setError('No pudimos conectar. Intenta de nuevo.');
     } finally {
@@ -661,9 +676,9 @@ function NuevaVotacionModal({
               </View>
             </Pressable>
 
-            {!pinConocido ? (
+            {sinLlave ? (
               <>
-                <Text style={styles.etiqueta}>Tu PIN</Text>
+                <Text style={styles.etiqueta}>Tu PIN (solo esta vez)</Text>
                 <TextInput
                   style={[styles.input, styles.inputPin]}
                   value={pin}

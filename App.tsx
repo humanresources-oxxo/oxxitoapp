@@ -13,6 +13,7 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { OnboardingNavigator, DonePlaceholder } from './src/navigation/OnboardingNavigator';
 import { getBoolean, removeItem, setBoolean, storageKeys } from './src/services/appStorage';
+import { cerrarSesion } from './src/services/sesion';
 import { colors } from './src/theme/tokens';
 
 export default function App() {
@@ -49,6 +50,8 @@ export default function App() {
     removeItem(storageKeys.onboardingDone);
     removeItem(storageKeys.chatHistory);
     removeItem(storageKeys.session);
+    // Ends the session key on the server too (avisos, votaciones).
+    cerrarSesion();
     // An unsent acta draft has a worker's data: it must not outlive the session.
     removeItem(storageKeys.actaDraft);
     // The saved vacation balance belongs to this employee too.

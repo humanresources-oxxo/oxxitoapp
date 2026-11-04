@@ -11,6 +11,7 @@ import { OxButton, GhostAccent } from '../components/OxButton';
 import { Icon } from '../components/Icon';
 import { useOnboarding } from '../context/OnboardingContext';
 import { verifyPin } from '../services/auth';
+import { obtenerLlave } from '../services/sesion';
 import { fetchContacts } from '../services/directory';
 import { showAlert } from '../utils/alert';
 import { colors, type } from '../theme/tokens';
@@ -42,6 +43,9 @@ export function VerifyScreen({
       verifyPin(empNum, next)
         .then((result) => {
           if (result.status === 'ok') {
+            // Session key for avisos and votaciones (migration 35). If it
+            // fails, those screens ask for the PIN once later.
+            obtenerLlave(empNum, next).catch(() => {});
             onContinue();
             return;
           }

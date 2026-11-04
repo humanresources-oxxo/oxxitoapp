@@ -9,7 +9,8 @@ import { BearAvatar } from '../components/Bear';
 import { Icon } from '../components/Icon';
 import { PreferenceKey, employeeProfile, profileSettings } from '../data/employee';
 import { NoticeKind, noticeKindMeta } from '../data/notices';
-import { createNotice } from '../services/notices';
+import { publishNotice } from '../services/notices';
+import { leerLlave, obtenerLlave, olvidarLlave, puedePublicar } from '../services/sesion';
 import { changePin } from '../services/auth';
 import { fetchContacts } from '../services/directory';
 import { getJson, setJson, storageKeys } from '../services/appStorage';
@@ -117,7 +118,11 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         onPrivacyNotice={showPrivacy}
         onHelp={showHelp}
       />
-      <NoticeComposer visible={noticeModal} onClose={() => setNoticeModal(false)} />
+      <NoticeComposer
+        visible={noticeModal}
+        numeroEmpleado={session?.numeroEmpleado ?? ''}
+        onClose={() => setNoticeModal(false)}
+      />
       <ChangePinModal
         visible={pinModal}
         numeroEmpleado={session?.numeroEmpleado ?? ''}
@@ -247,13 +252,18 @@ function ProfileBody({
           />
           <View style={styles.divider} />
           <ActionRow title="Ayuda y soporte" desc="Contacta al equipo interno" icon="help" onPress={onHelp} />
-          <View style={styles.divider} />
-          <ActionRow
-            title="Publicar aviso"
-            desc="Escribe un comunicado para todos los colaboradores"
-            icon="bell"
-            onPress={onPublishNotice}
-          />
+          {/* RH and Gerente de plaza only (services/sesion.ts). */}
+          {puedePublicar(session?.puesto) ? (
+            <>
+              <View style={styles.divider} />
+              <ActionRow
+                title="Publicar aviso"
+                desc="Escribe un comunicado para todos los colaboradores"
+                icon="bell"
+                onPress={onPublishNotice}
+              />
+            </>
+          ) : null}
         </View>
 
         <Pressable style={styles.logoutButton} onPress={logout}>
@@ -373,6 +383,8 @@ function ChangePinModal({
     try {
       const status = await changePin(numeroEmpleado, oldPin, newPin);
       if (status === 'ok') {
+        // A PIN change ends the session key (migration 35); get a new one.
+        obtenerLlave(numeroEmpleado, newPin).catch(() => {});
         reset();
         onClose();
         showAlert('PIN actualizado', 'Tu nuevo PIN ya está activo.');
@@ -438,23 +450,30 @@ function ChangePinModal({
 
 const NOTICE_KINDS: NoticeKind[] = ['policy', 'training', 'schedule', 'benefit'];
 
-function NoticeComposer({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+// Avisos go with the session key, no passcode. A session from before the key
+// existed asks for the PIN once.
+function NoticeComposer({ visible, numeroEmpleado, onClose }: { visible: boolean; numeroEmpleado: string; onClose: () => void }) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [kind, setKind] = useState<NoticeKind>('policy');
   const [priority, setPriority] = useState(false);
-  const [passcode, setPasscode] = useState('');
+  const [pin, setPin] = useState('');
+  const [sinLlave, setSinLlave] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const ready = title.trim().length > 2 && body.trim().length > 2 && passcode.length > 0;
+  useEffect(() => {
+    if (visible) leerLlave().then((l) => setSinLlave(!l));
+  }, [visible]);
+
+  const ready = title.trim().length > 2 && body.trim().length > 2 && (!sinLlave || pin.length === 4);
 
   const reset = () => {
     setTitle('');
     setBody('');
     setKind('policy');
     setPriority(false);
-    setPasscode('');
+    setPin('');
     setError('');
   };
 
@@ -463,13 +482,31 @@ function NoticeComposer({ visible, onClose }: { visible: boolean; onClose: () =>
     setSubmitting(true);
     setError('');
     try {
-      await createNotice(passcode, title.trim(), body.trim(), kind, priority);
-      reset();
-      onClose();
-      showAlert('Aviso publicado', 'Ya está visible para todos los colaboradores.');
-    } catch (e: any) {
-      const message = typeof e?.message === 'string' ? e.message : '';
-      setError(message.includes('invalid_passcode') ? 'Passcode incorrecto.' : 'No pudimos publicar el aviso.');
+      if (sinLlave) {
+        const st = await obtenerLlave(numeroEmpleado, pin);
+        if (st !== 'ok') {
+          setPin('');
+          setError(st === 'locked' ? 'Cuenta bloqueada por varios intentos fallidos. Intenta más tarde.' : 'El PIN no es correcto.');
+          return;
+        }
+        setSinLlave(false);
+      }
+      const r = await publishNotice((await leerLlave()) ?? '', title.trim(), body.trim(), kind, priority);
+      if (r === 'ok') {
+        reset();
+        onClose();
+        showAlert('Aviso publicado', 'Ya está visible para todos los colaboradores.');
+      } else if (r === 'no_session') {
+        await olvidarLlave();
+        setSinLlave(true);
+        setError('Confirma tu PIN para publicar.');
+      } else if (r === 'not_allowed') {
+        setError('Tu puesto no puede publicar avisos.');
+      } else {
+        setError('Revisa el título y el mensaje.');
+      }
+    } catch {
+      setError('No pudimos publicar el aviso.');
     } finally {
       setSubmitting(false);
     }
@@ -525,17 +562,22 @@ function NoticeComposer({ visible, onClose }: { visible: boolean; onClose: () =>
               <Text style={styles.composerLabel}>Marcar como prioritario</Text>
             </Pressable>
 
-            <Text style={styles.composerLabel}>Passcode</Text>
-            <TextInput
-              style={styles.composerInput}
-              value={passcode}
-              onChangeText={setPasscode}
-              placeholder="Passcode de RH"
-              placeholderTextColor={colors.ink3}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            {sinLlave ? (
+              <>
+                <Text style={styles.composerLabel}>Tu PIN (solo esta vez)</Text>
+                <TextInput
+                  style={styles.composerInput}
+                  value={pin}
+                  onChangeText={(v) => setPin(v.replace(/\D/g, '').slice(0, 4))}
+                  placeholder="••••"
+                  placeholderTextColor={colors.ink3}
+                  keyboardType="number-pad"
+                  secureTextEntry
+                  maxLength={4}
+                  autoComplete="off"
+                />
+              </>
+            ) : null}
             {error ? <Text style={styles.composerError}>{error}</Text> : null}
 
             <Pressable
