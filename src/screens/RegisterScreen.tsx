@@ -1,6 +1,7 @@
 // src/screens/RegisterScreen.tsx
 // First-login PIN creation for an employee already in the real roster
-// (no free-text name entry — the name comes from the roster lookup).
+// (no free-text name entry — the name comes from the roster lookup). Asks
+// the birth date first so nobody else can claim the account.
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,10 +12,36 @@ import { OxKeypad } from '../components/OxKeypad';
 import { OxButton } from '../components/OxButton';
 import { Icon } from '../components/Icon';
 import { useOnboarding } from '../context/OnboardingContext';
-import { setInitialPin } from '../services/auth';
+import { registerPin } from '../services/auth';
 import { obtenerLlave } from '../services/sesion';
 import { colors, type } from '../theme/tokens';
 
+const MENSAJES: Record<string, string> = {
+  pin_already_set: 'Este número ya tiene un PIN. Usa "Inicia sesión".',
+  weak_pin: 'Ese PIN es muy fácil de adivinar (como 1234 o 0000). Elige otro.',
+  rh_asigna_pin: 'Por tu puesto, Recursos Humanos te asigna tu primer PIN. Pídeselo a RH.',
+  sin_fecha: 'RH todavía no tiene registrada tu fecha de nacimiento. Pídele a RH tu primer PIN.',
+  fecha_incorrecta: 'La fecha no coincide con la que tiene RH. Revísala e intenta de nuevo.',
+  rate_limited: 'Demasiados intentos. Espera un rato o pide a RH tu primer PIN.',
+  not_found: 'No encontramos tu número de empleado.',
+};
+
+// 8 typed digits -> "DD/MM/AAAA" while typing, and 'AAAA-MM-DD' when valid.
+function mostrarFecha(d: string) {
+  const s = d.padEnd(8, '_');
+  return `${s.slice(0, 2)}/${s.slice(2, 4)}/${s.slice(4, 8)}`;
+}
+function fechaIso(d: string): string | null {
+  if (d.length !== 8) return null;
+  const dia = +d.slice(0, 2), mes = +d.slice(2, 4), anio = +d.slice(4, 8);
+  const f = new Date(Date.UTC(anio, mes - 1, dia));
+  const hoy = new Date().getUTCFullYear();
+  if (f.getUTCDate() !== dia || f.getUTCMonth() !== mes - 1 || anio < 1930 || anio > hoy - 14) return null;
+  return `${d.slice(4, 8)}-${d.slice(2, 4)}-${d.slice(0, 2)}`;
+}
+
+// First login: the birth date (checked against the one RH loaded, migration
+// 38) and then the new PIN. Both are sent together at the end.
 export function RegisterScreen({
   onBack,
   onContinue,
@@ -23,37 +50,53 @@ export function RegisterScreen({
   onContinue: () => void;
 }) {
   const { empNum, verifiedName, regPin, setRegPin } = useOnboarding();
-  const len = regPin.length;
-  const ready = len === 4;
+  const [paso, setPaso] = useState<'fecha' | 'pin'>('fecha');
+  const [fecha, setFecha] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const len = regPin.length;
+  const iso = fechaIso(fecha);
+  const ready = paso === 'fecha' ? !!iso : len === 4;
 
   const onKey = (k: string) => {
-    if (len < 4) setRegPin(regPin + k);
+    setError('');
+    if (paso === 'fecha') {
+      if (fecha.length < 8) setFecha(fecha + k);
+    } else if (len < 4) setRegPin(regPin + k);
   };
-  const onDel = () => setRegPin(regPin.slice(0, -1));
+  const onDel = () => (paso === 'fecha' ? setFecha(fecha.slice(0, -1)) : setRegPin(regPin.slice(0, -1)));
 
-  const handleCreate = async () => {
+  const back = () => {
+    if (paso === 'pin') {
+      setPaso('fecha');
+      setRegPin('');
+      setError('');
+    } else onBack();
+  };
+
+  const handleContinue = async () => {
     if (!ready || loading) return;
+    if (paso === 'fecha') {
+      setPaso('pin');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
-      await setInitialPin(empNum, regPin);
-      obtenerLlave(empNum, regPin).catch(() => {});
-      onContinue();
-    } catch (e: any) {
-      const message = typeof e?.message === 'string' ? e.message : '';
-      setError(
-        message.includes('pin_already_set')
-          ? 'Este número ya tiene un PIN. Usa "Inicia sesión".'
-          : message.includes('weak_pin')
-            ? 'Ese PIN es muy fácil de adivinar (como 1234 o 0000). Elige otro.'
-            : message.includes('rh_asigna_pin')
-              ? 'Por tu puesto, Recursos Humanos te asigna tu primer PIN. Pídeselo a RH.'
-              : message.includes('rate_limited')
-                ? 'Hay muchos registros en este momento. Intenta de nuevo en unos minutos.'
-                : 'No pudimos crear tu PIN. Intenta de nuevo.'
-      );
+      const st = await registerPin(empNum, iso ?? '', regPin);
+      if (st === 'ok') {
+        obtenerLlave(empNum, regPin).catch(() => {});
+        onContinue();
+        return;
+      }
+      setError(MENSAJES[st] || 'No pudimos crear tu PIN. Intenta de nuevo.');
+      setRegPin('');
+      if (st === 'fecha_incorrecta') {
+        setFecha('');
+        setPaso('fecha');
+      }
+    } catch {
+      setError('No pudimos crear tu PIN. Intenta de nuevo.');
       setRegPin('');
     } finally {
       setLoading(false);
@@ -63,28 +106,37 @@ export function RegisterScreen({
   return (
     <View style={styles.screen}>
       <View style={[styles.body, { paddingTop: Platform.OS === 'ios' ? 8 : 4 }]}>
-        <StepsHeader active={2} onBack={onBack} />
+        <StepsHeader active={2} onBack={back} />
 
         <View style={styles.head}>
           <Text style={styles.kicker}>Primer ingreso</Text>
-          <Text style={styles.title}>Crea tu PIN</Text>
+          <Text style={styles.title}>{paso === 'fecha' ? 'Confirma que eres tú' : 'Crea tu PIN'}</Text>
           <Text style={styles.sub}>
-            {verifiedName ? `Hola, ${verifiedName}. ` : ''}Este es tu primer ingreso a Conoxxo, crea un PIN de 4
-            dígitos para proteger tu cuenta.
+            {verifiedName ? `Hola, ${verifiedName}. ` : ''}
+            {paso === 'fecha'
+              ? 'Para proteger tu cuenta, escribe tu fecha de nacimiento.'
+              : 'Crea un PIN de 4 dígitos para entrar a Conoxxo.'}
           </Text>
         </View>
 
         <View style={styles.fields}>
-          <OxField icon="user" label="Nombre" value={verifiedName} locked />
           <OxField icon="badge" label="Número de empleado" value={empNum} locked tail="Verificado" />
-          <View>
-            <OxLabel>Crea tu PIN de acceso</OxLabel>
-            <View style={{ paddingVertical: 6, paddingHorizontal: 2 }}>
-              <PinDots length={len} total={4} />
+          {paso === 'fecha' ? (
+            <View>
+              <OxField icon="calendar" label="Fecha de nacimiento" value={mostrarFecha(fecha)} focused tail="DD/MM/AAAA" />
+              {fecha.length === 8 && !iso ? <OxHint>Revisa la fecha: día, mes y año completos.</OxHint> : null}
+              {error ? <OxHint>{error}</OxHint> : null}
             </View>
-            <OxHint>Usarás este PIN cada vez que ingreses a Conoxxo.</OxHint>
-            {error ? <OxHint>{error}</OxHint> : null}
-          </View>
+          ) : (
+            <View>
+              <OxLabel>Crea tu PIN de acceso</OxLabel>
+              <View style={{ paddingVertical: 6, paddingHorizontal: 2 }}>
+                <PinDots length={len} total={4} />
+              </View>
+              <OxHint>Usarás este PIN cada vez que ingreses a Conoxxo. Evita 1234, 0000 y similares.</OxHint>
+              {error ? <OxHint>{error}</OxHint> : null}
+            </View>
+          )}
         </View>
 
         <View style={{ flex: 1, minHeight: 8 }} />
@@ -95,10 +147,10 @@ export function RegisterScreen({
       <SafeAreaView edges={['bottom']} style={styles.cta}>
         <OxButton
           disabled={!ready || loading}
-          onPress={handleCreate}
+          onPress={handleContinue}
           icon={loading ? <ActivityIndicator color="#fff" /> : <Icon name="arrowR" size={19} color="#fff" />}
         >
-          Crear PIN
+          {paso === 'fecha' ? 'Continuar' : 'Crear PIN'}
         </OxButton>
       </SafeAreaView>
     </View>

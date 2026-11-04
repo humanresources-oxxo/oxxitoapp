@@ -10,6 +10,8 @@
   RH and Gerente de plaza see Avisos and Directorio; only RH puestos
   (Responsable RH, Analista EC, test account) see Empleados and give PINs.
   Everything from the database is shown as text (textContent), never as HTML.
+  Empleados also loads birth dates (migration 38), needed for the first
+  registration in the app; they are never shown back.
 -->
 <style>
   :root { --red: #E4002B; --ink: #1c1c1c; --line: #e3e3e3; --bg: #FAF7F3; }
@@ -89,6 +91,16 @@
     </div>
 
     <div class="card">
+      <h3>Fechas de nacimiento</h3>
+      <p class="muted">El primer registro en la app pide la fecha de nacimiento, así nadie más puede tomar la cuenta. Copia dos columnas de Excel (número de empleado y fecha de nacimiento) y pégalas aquí. Las fechas no se muestran en ningún lado: solo sirven para comparar.</p>
+      <div id="fechasResumen" class="muted"></div>
+      <div class="row"><textarea id="fechasTexto" rows="6" placeholder="1599067&#9;15/03/1990&#10;1600123&#9;01/12/1988"></textarea></div>
+      <button class="secondary" onclick="revisarFechas()">Revisar</button>
+      <button id="fechasCargar" onclick="cargarFechas()" disabled>Cargar</button>
+      <div id="fechasMsg" class="msg"></div>
+    </div>
+
+    <div class="card">
       <h3>Buscar empleados</h3>
       <div class="row">
         <input id="empSearch" placeholder="Buscar por número o nombre..." oninput="listEmployees()" />
@@ -96,7 +108,7 @@
       <p class="muted">"Dar PIN temporal" crea un PIN de 4 dígitos que solo se muestra aquí una vez: dáselo a la persona. Al entrar, la app le pide crear el suyo. Los puestos con permisos (asesores, RH, gerente, sindicato) ya no pueden crear su primer PIN solos.</p>
       <div id="pinBox"></div>
       <table>
-        <thead><tr><th>Número</th><th>Nombre</th><th>Tienda</th><th>Puesto</th><th>PIN</th><th></th></tr></thead>
+        <thead><tr><th>Número</th><th>Nombre</th><th>Tienda</th><th>Puesto</th><th>PIN</th><th>Fecha nac.</th><th></th></tr></thead>
         <tbody id="empTableBody"></tbody>
       </table>
     </div>
@@ -293,10 +305,15 @@ async function listEmployees() {
       el('td', { text: e.tienda || '-' }),
       el('td', { text: e.puesto || '-' }),
       el('td', {}, pinPill(e)),
+      el('td', {}, e.tiene_fecha ? el('span', { class: 'pill set', text: 'Cargada' }) : el('span', { class: 'pill none', text: 'Falta' })),
       el('td', {}, el('button', { class: 'secondary', text: 'Dar PIN temporal', onclick: () => resetPin(e.numero, e.nombre) })),
     ])
   );
-  fill(document.getElementById('empTableBody'), rows, r ? 'Sin resultados.' : 'No se pudo cargar.', 6);
+  fill(document.getElementById('empTableBody'), rows, r ? 'Sin resultados.' : 'No se pudo cargar.', 7);
+  if (r?.estado === 'ok') {
+    document.getElementById('fechasResumen').textContent =
+      `${r.total - r.sin_fecha} de ${r.total} empleados tienen fecha de nacimiento cargada.` + (r.sin_fecha ? ` Faltan ${r.sin_fecha}: sin fecha no pueden registrarse solos.` : '');
+  }
 }
 
 async function addEmployee() {
@@ -331,6 +348,71 @@ async function resetPin(numero, nombre) {
   } catch (e) {
     alert('No se pudo reiniciar el PIN.');
   }
+}
+
+// --- Fechas de nacimiento ---
+const MESES = { ene: 1, feb: 2, mar: 3, abr: 4, may: 5, jun: 6, jul: 7, ago: 8, sep: 9, set: 9, oct: 10, nov: 11, dic: 12 };
+const dos = (n) => String(n).padStart(2, '0');
+// Accepts 15/03/1990, 15-03-1990, 15.03.1990, 1990-03-15, 15-mar-1990,
+// 15/03/90 and Excel's serial numbers. Returns 'YYYY-MM-DD' or null.
+function leerFecha(t) {
+  t = String(t || '').trim().toLowerCase();
+  let d, m, a, x;
+  if ((x = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) [a, m, d] = [+x[1], +x[2], +x[3]];
+  else if ((x = t.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/))) [d, m, a] = [+x[1], +x[2], +x[3]];
+  else if ((x = t.match(/^(\d{1,2})[\/.\-\s]([a-z]{3})[a-z]*\.?[\/.\-\s](\d{2}|\d{4})$/)) && MESES[x[2]]) [d, m, a] = [+x[1], MESES[x[2]], +x[3]];
+  else if ((x = t.match(/^\d{4,5}$/))) {
+    const f = new Date(Date.UTC(1899, 11, 30) + Number(t) * 86400000);
+    [a, m, d] = [f.getUTCFullYear(), f.getUTCMonth() + 1, f.getUTCDate()];
+  } else return null;
+  if (a < 100) a += a > new Date().getFullYear() % 100 ? 1900 : 2000;
+  const f = new Date(Date.UTC(a, m - 1, d));
+  if (f.getUTCDate() !== d || f.getUTCMonth() !== m - 1) return null;
+  const edad = new Date().getFullYear() - a;
+  if (edad < 14 || edad > 95) return null;
+  return `${a}-${dos(m)}-${dos(d)}`;
+}
+
+let fechasListas = [];
+function revisarFechas() {
+  const lineas = document.getElementById('fechasTexto').value.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const malas = [];
+  fechasListas = [];
+  for (const l of lineas) {
+    let partes = l.split(/\t|;|,/).map((c) => c.trim()).filter(Boolean);
+    if (partes.length < 2) partes = l.split(/\s+/);
+    const [num, ...resto] = partes;
+    if (!num || !/^\d{3,10}$/.test(num)) { if (fechasListas.length || malas.length) malas.push(l); continue; } // first line can be the header
+    const fecha = leerFecha(resto.join(' '));
+    if (fecha) fechasListas.push({ numero: num, fecha });
+    else malas.push(l);
+  }
+  document.getElementById('fechasCargar').disabled = !fechasListas.length;
+  setMsg('fechasMsg', !malas.length, `${fechasListas.length} fechas listas para cargar.` + (malas.length ? ` ${malas.length} renglones no se entendieron: ${malas.slice(0, 5).join(' | ')}${malas.length > 5 ? '…' : ''}` : ''));
+}
+
+async function cargarFechas() {
+  if (!fechasListas.length) return;
+  let actualizados = 0, noEncontrados = [], invalidas = [];
+  try {
+    for (let i = 0; i < fechasListas.length; i += 500) {
+      const r = await rpc('sesion_cargar_fechas', { p_token: token, p_filas: fechasListas.slice(i, i + 500) });
+      if (r.estado === 'no_session') return sessionGone();
+      if (r.estado !== 'ok') return setMsg('fechasMsg', false, 'No se pudieron cargar las fechas.');
+      actualizados += r.actualizados;
+      noEncontrados = noEncontrados.concat(r.no_encontrados || []);
+      invalidas = invalidas.concat(r.invalidas || []);
+    }
+  } catch (e) {
+    return setMsg('fechasMsg', false, 'No se pudieron cargar las fechas. Revisa tu conexión.');
+  }
+  setMsg('fechasMsg', true, `Listo: ${actualizados} fechas cargadas.`
+    + (noEncontrados.length ? ` No están en la app: ${noEncontrados.slice(0, 10).join(', ')}${noEncontrados.length > 10 ? '…' : ''}.` : '')
+    + (invalidas.length ? ` Fechas fuera de rango: ${invalidas.slice(0, 10).join(', ')}.` : ''));
+  document.getElementById('fechasTexto').value = '';
+  document.getElementById('fechasCargar').disabled = true;
+  fechasListas = [];
+  listEmployees();
 }
 
 // --- Avisos ---

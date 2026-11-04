@@ -61,8 +61,12 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   - Primer registro: los puestos con permisos (`puesto_con_permisos`, mismos que
     `PUESTOS_ACTAS`) no pueden crear su primer PIN; RH les da uno temporal. Tope de 60 registros
     por hora en total (10 por dirección).
-  - `mi_red()` es un diagnóstico temporal para revisar qué dirección llega a la base; se borra
-    cuando se confirme.
+  - Desde la migración 38 el primer registro (`registrar_pin`) pide además la **fecha de
+    nacimiento** (`employees.fecha_nacimiento`), que RH carga en el panel (Empleados → Fechas de
+    nacimiento, pegando dos columnas de Excel) y que ninguna función devuelve. 5 fechas
+    equivocadas bloquean el registro de esa cuenta 24 h. Sin fecha cargada, RH da PIN temporal.
+  - La dirección del cliente sale de `cf-connecting-ip` (la pone Cloudflare; un encabezado falso
+    se rechaza con 403). El diagnóstico `mi_red()` se borró en la migración 38.
 
 ✅ **Votaciones (`src/screens/VotacionesScreen.tsx`):** votaciones secretas para lugares,
   fechas y decisiones del equipo (no sindicales). Supabase, migración 34
