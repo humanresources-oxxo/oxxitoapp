@@ -1,4 +1,4 @@
-export type NoticeKind = 'policy' | 'training' | 'schedule' | 'benefit';
+export type NoticeKind = 'policy' | 'training' | 'schedule' | 'benefit' | 'vote';
 export type NoticeFilter = 'all' | 'unread' | NoticeKind;
 
 export type Notice = {
@@ -19,6 +19,8 @@ export const noticeKindMeta: Record<
   training: { label: 'Capacitación', icon: 'book', accent: 'blue' },
   schedule: { label: 'Turnos', icon: 'calendar', accent: 'green' },
   benefit: { label: 'Beneficio', icon: 'gift', accent: 'purple' },
+  // Published automatically when RH opens a votación for everyone.
+  vote: { label: 'Votación', icon: 'check', accent: 'green' },
 };
 
 export const noticeFilters: Array<{ key: NoticeFilter; label: string }> = [

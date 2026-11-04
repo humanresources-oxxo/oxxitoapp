@@ -8,7 +8,7 @@ import { BearAvatar } from '../components/Bear';
 import { Icon } from '../components/Icon';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-type HomeTarget = 'chat' | 'directory' | 'notifications' | 'profile' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct' | 'dilos';
+type HomeTarget = 'chat' | 'directory' | 'notifications' | 'profile' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct' | 'dilos' | 'votaciones';
 
 export type ChatHistoryItem = {
   id: string;
@@ -23,6 +23,9 @@ type HomeScreenProps = {
   unreadNotices?: number;
   // Actas y Formatos, Estructura, Cuota sindical and Contratos colectivos are only for some puestos (see services/actas.ts).
   showActas?: boolean;
+  // Open votaciones the employee hasn't voted in yet (badge on the card);
+  // null hides the card (backend not reachable, e.g. offline).
+  pendingVotes?: number | null;
 };
 
 type QuickAction = {
@@ -73,6 +76,14 @@ const DILOS_ACTION: QuickAction = {
   accent: 'purple',
 };
 
+const VOTACIONES_ACTION: QuickAction = {
+  title: 'Votaciones',
+  desc: 'Vota por lugares, fechas y más.',
+  icon: 'check',
+  target: 'votaciones',
+  accent: 'green',
+};
+
 const VACACIONES_ACTION: QuickAction = {
   title: 'Mis vacaciones',
   desc: 'Días que te quedan y cuándo vencen.',
@@ -83,8 +94,8 @@ const VACACIONES_ACTION: QuickAction = {
 
 
 
-export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, showActas = false }: HomeScreenProps) {
-  const actions = [...(showActas ? [ACTAS_ACTION, ESTRUCTURA_ACTION, CUOTA_ACTION, CCT_ACTION, DILOS_ACTION] : []), VACACIONES_ACTION];
+export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, showActas = false, pendingVotes = null }: HomeScreenProps) {
+  const actions = [...(showActas ? [ACTAS_ACTION, ESTRUCTURA_ACTION, CUOTA_ACTION, CCT_ACTION, DILOS_ACTION] : []), ...(pendingVotes !== null ? [VOTACIONES_ACTION] : []), VACACIONES_ACTION];
   return (
     <View style={styles.screen}>
       <LinearGradient
@@ -147,6 +158,11 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, s
             <LinearGradient colors={gradients[item.accent].colors} style={styles.actionIcon}>
               <Icon name={item.icon} size={22} color="#fff" />
             </LinearGradient>
+            {item.target === 'votaciones' && !!pendingVotes ? (
+              <View style={styles.actionBadge}>
+                <Text style={styles.actionBadgeText}>{pendingVotes}</Text>
+              </View>
+            ) : null}
             <Text style={styles.actionTitle}>{item.title}</Text>
             <Text style={styles.actionDesc}>{item.desc}</Text>
           </Pressable>
@@ -325,6 +341,19 @@ const styles = StyleSheet.create({
     padding: 14,
     ...shadows.card,
   },
+  actionBadge: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    minWidth: 24,
+    height: 24,
+    borderRadius: 12,
+    paddingHorizontal: 7,
+    backgroundColor: colors.oxRed,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionBadgeText: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: colors.white },
   actionIcon: {
     width: 44,
     height: 44,

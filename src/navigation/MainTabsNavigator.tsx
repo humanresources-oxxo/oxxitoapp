@@ -17,16 +17,18 @@ import { EstructuraScreen } from '../screens/EstructuraScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { VacacionesScreen } from '../screens/VacacionesScreen';
+import { VotacionesScreen } from '../screens/VotacionesScreen';
 import { getJson, setJson, storageKeys } from '../services/appStorage';
 import { puedeLevantarActas, soloSusTiendas } from '../services/actas';
 import { lookupEmployee } from '../services/auth';
 import { fetchNotices } from '../services/notices';
+import { contarPendientes } from '../services/votaciones';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-// 'actas', 'vacaciones', 'estructura', 'cuota', 'cct' and 'dilos' are not in the tab
+// 'actas', 'vacaciones', 'estructura', 'cuota', 'cct', 'dilos' and 'votaciones' are not in the tab
 // bar: they open from Inicio. Actas, Estructura, Cuota sindical, Contratos colectivos,
 // Casos DILOS and the team view of Vacaciones are only for some puestos.
-type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct' | 'dilos';
+type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct' | 'dilos' | 'votaciones';
 
 type Sesion = { numeroEmpleado?: string; nombre?: string; tienda?: string; plaza?: string; puesto?: string; createdAt?: string };
 
@@ -55,6 +57,13 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
   const [canUseActas, setCanUseActas] = useState(false);
   const [onlyOwnStores, setOnlyOwnStores] = useState(false);
   const [unreadNotices, setUnreadNotices] = useState(0);
+  const [pendingVotes, setPendingVotes] = useState<number | null>(null);
+  const [numeroEmpleado, setNumeroEmpleado] = useState('');
+
+  const refreshPendingVotes = (numero = numeroEmpleado) => {
+    if (!numero) return;
+    contarPendientes(numero).then(setPendingVotes).catch(() => {});
+  };
 
   const refreshUnreadNotices = () => {
     Promise.all([fetchNotices().catch(() => []), getJson<Record<string, boolean>>(storageKeys.noticeReadState, {})]).then(
@@ -74,6 +83,8 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       setFirstName(session?.nombre?.split(' ')[0] ?? '');
       setCanUseActas(puedeLevantarActas(session?.puesto));
       setOnlyOwnStores(soloSusTiendas(session?.puesto));
+      setNumeroEmpleado(session?.numeroEmpleado ?? '');
+      refreshPendingVotes(session?.numeroEmpleado ?? '');
       revalidarSesion(session);
     });
     refreshUnreadNotices();
@@ -102,6 +113,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
   // Recompute after leaving Avisos, since that's where read-state changes.
   useEffect(() => {
     if (activeTab !== 'notifications') refreshUnreadNotices();
+    if (activeTab === 'home') refreshPendingVotes();
   }, [activeTab]);
 
   const saveChatQuestion = (question: string) => {
@@ -129,6 +141,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
             firstName={firstName}
             unreadNotices={unreadNotices}
             showActas={canUseActas}
+            pendingVotes={pendingVotes}
           />
         );
       case 'chat':
@@ -149,12 +162,14 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
         return canUseActas ? <DilosScreen onBack={() => setActiveTab('home')} /> : null;
       case 'cct':
         return canUseActas ? <CctScreen onBack={() => setActiveTab('home')} /> : null;
+      case 'votaciones':
+        return <VotacionesScreen onBack={() => setActiveTab('home')} onCambio={() => refreshPendingVotes()} />;
       case 'vacaciones':
         return <VacacionesScreen onBack={() => setActiveTab('home')} conEquipo={canUseActas} soloMisTiendas={onlyOwnStores} />;
       default:
         return null;
     }
-  }, [activeTab, chatHistory, firstName, unreadNotices, canUseActas, onlyOwnStores]);
+  }, [activeTab, chatHistory, firstName, unreadNotices, canUseActas, onlyOwnStores, pendingVotes, numeroEmpleado]);
 
   return (
     <View style={styles.shell}>
