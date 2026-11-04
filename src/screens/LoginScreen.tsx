@@ -26,7 +26,7 @@ export function LoginScreen({
 }) {
   // Only numbers already in the roster can go anywhere — new hires are added
   // to the roster directly (by an admin), never self-registered from here.
-  const { empNum, setEmpNum, setVerifiedName, setTienda, setPlaza, setPuesto, setCreatedAt } = useOnboarding();
+  const { empNum, setEmpNum, setVerifiedName, setTienda, setPlaza, setPuesto, setCreatedAt, setPideFecha } = useOnboarding();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const full = empNum.length >= MIN;
@@ -49,6 +49,7 @@ export function LoginScreen({
       setPlaza(result.plaza ?? '');
       setPuesto(result.puesto ?? '');
       setCreatedAt(result.createdAt ?? '');
+      setPideFecha(!!result.pideFecha);
       if (result.hasPin) {
         onContinue();
       } else {

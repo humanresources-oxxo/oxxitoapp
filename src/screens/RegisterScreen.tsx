@@ -20,7 +20,6 @@ const MENSAJES: Record<string, string> = {
   pin_already_set: 'Este número ya tiene un PIN. Usa "Inicia sesión".',
   weak_pin: 'Ese PIN es muy fácil de adivinar (como 1234 o 0000). Elige otro.',
   rh_asigna_pin: 'Por tu puesto, Recursos Humanos te asigna tu primer PIN. Pídeselo a RH.',
-  sin_fecha: 'RH todavía no tiene registrada tu fecha de nacimiento. Pídele a RH tu primer PIN.',
   fecha_incorrecta: 'La fecha no coincide con la que tiene RH. Revísala e intenta de nuevo.',
   rate_limited: 'Demasiados intentos. Espera un rato o pide a RH tu primer PIN.',
   not_found: 'No encontramos tu número de empleado.',
@@ -40,8 +39,9 @@ function fechaIso(d: string): string | null {
   return `${d.slice(4, 8)}-${d.slice(2, 4)}-${d.slice(0, 2)}`;
 }
 
-// First login: the birth date (checked against the one RH loaded, migration
-// 38) and then the new PIN. Both are sent together at the end.
+// First login: the birth date when RH loaded it (checked against it,
+// migration 38) and then the new PIN. Both are sent together at the end.
+// Without a loaded date it goes straight to the PIN.
 export function RegisterScreen({
   onBack,
   onContinue,
@@ -49,8 +49,8 @@ export function RegisterScreen({
   onBack: () => void;
   onContinue: () => void;
 }) {
-  const { empNum, verifiedName, regPin, setRegPin } = useOnboarding();
-  const [paso, setPaso] = useState<'fecha' | 'pin'>('fecha');
+  const { empNum, verifiedName, regPin, setRegPin, pideFecha } = useOnboarding();
+  const [paso, setPaso] = useState<'fecha' | 'pin'>(pideFecha ? 'fecha' : 'pin');
   const [fecha, setFecha] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -67,7 +67,7 @@ export function RegisterScreen({
   const onDel = () => (paso === 'fecha' ? setFecha(fecha.slice(0, -1)) : setRegPin(regPin.slice(0, -1)));
 
   const back = () => {
-    if (paso === 'pin') {
+    if (paso === 'pin' && pideFecha) {
       setPaso('fecha');
       setRegPin('');
       setError('');

@@ -12,6 +12,8 @@ type OnboardingState = {
   plaza: string;
   puesto: string;
   createdAt: string;
+  // RH loaded this employee's birth date: the first registration asks for it.
+  pideFecha: boolean;
   notif: boolean;
   terms: boolean;
   setEmpNum: (v: string) => void;
@@ -22,6 +24,7 @@ type OnboardingState = {
   setPlaza: (v: string) => void;
   setPuesto: (v: string) => void;
   setCreatedAt: (v: string) => void;
+  setPideFecha: (v: boolean) => void;
   setNotif: (v: boolean) => void;
   setTerms: (v: boolean) => void;
   reset: () => void;
@@ -38,6 +41,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [plaza, setPlaza] = useState('');
   const [puesto, setPuesto] = useState('');
   const [createdAt, setCreatedAt] = useState('');
+  const [pideFecha, setPideFecha] = useState(false);
   const [notif, setNotif] = useState(true);
   const [terms, setTerms] = useState(false);
 
@@ -50,6 +54,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setPlaza('');
     setPuesto('');
     setCreatedAt('');
+    setPideFecha(false);
     setNotif(true);
     setTerms(false);
   }, []);
@@ -65,6 +70,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         plaza,
         puesto,
         createdAt,
+        pideFecha,
         notif,
         terms,
         setEmpNum,
@@ -75,6 +81,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         setPlaza,
         setPuesto,
         setCreatedAt,
+        setPideFecha,
         setNotif,
         setTerms,
         reset,

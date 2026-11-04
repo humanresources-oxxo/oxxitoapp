@@ -11,6 +11,8 @@ export type EmployeeLookup = {
   asesor?: string;
   puesto?: string;
   createdAt?: string;
+  // RH loaded the birth date: the first registration asks for it (migration 38).
+  pideFecha?: boolean;
 };
 export type Employee = { numeroEmpleado: string; nombre: string };
 
@@ -28,6 +30,7 @@ export async function lookupEmployee(numeroEmpleado: string): Promise<EmployeeLo
     asesor: row.asesor,
     puesto: row.puesto,
     createdAt: row.created_at,
+    pideFecha: !!row.pide_fecha,
   };
 }
 
