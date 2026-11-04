@@ -75,6 +75,15 @@
   <!-- EMPLEADOS (RH) -->
   <div id="tab-empleados" class="panel">
     <div class="card">
+      <h3>Altas por aprobar</h3>
+      <p class="muted">Quien se registra solo en la app no puede entrar hasta que su asesor, RH o el Gerente aprueben su cuenta. Rechaza si no es esa persona: la cuenta queda libre para que se registre la persona real.</p>
+      <table>
+        <thead><tr><th>Número</th><th>Nombre</th><th>Tienda</th><th>Se registró</th><th></th></tr></thead>
+        <tbody id="altasTableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
       <h3>Agregar empleado</h3>
       <div class="row">
         <input id="empNumero" placeholder="Número de empleado" />
@@ -268,7 +277,7 @@ function buildTabs(panel) {
   const bar = document.getElementById('tabs');
   bar.replaceChildren(...tabs.map(([key, label]) => el('button', { text: label, 'data-tab': key, onclick: () => showTab(key) })));
   showTab(tabs[0][0]);
-  if (panel.personal) listEmployees();
+  if (panel.personal) { listEmployees(); listAltas(); }
   if (panel.avisos) { listNotices(); listContacts(); }
 }
 
@@ -279,6 +288,7 @@ function showTab(name) {
 
 // --- Empleados ---
 function pinPill(r) {
+  if (r.pendiente) return el('span', { class: 'pill temp', text: 'Por aprobar' });
   if (r.bloqueado) return el('span', { class: 'pill lock', text: 'Bloqueado' });
   if (!r.tiene_pin) return el('span', { class: 'pill none', text: 'Sin PIN' });
   return r.temporal ? el('span', { class: 'pill temp', text: 'Temporal' }) : el('span', { class: 'pill set', text: 'Definitivo' });
@@ -348,6 +358,34 @@ async function resetPin(numero, nombre) {
   } catch (e) {
     alert('No se pudo reiniciar el PIN.');
   }
+}
+
+// --- Altas por aprobar (migration 39) ---
+async function listAltas() {
+  const r = await rpc('sesion_altas_pendientes', { p_token: token }).catch(() => null);
+  if (r?.estado === 'no_session') return sessionGone();
+  const rows = (r?.altas || []).map((a) =>
+    el('tr', {}, [
+      el('td', { text: a.numero }),
+      el('td', { text: a.nombre }),
+      el('td', { text: a.tienda || '-' }),
+      el('td', { text: a.registrada_en ? new Date(a.registrada_en).toLocaleString('es-MX') : '-' }),
+      el('td', { class: 'actions' }, [
+        el('button', { text: 'Aprobar', onclick: () => resolverAlta(a, true) }),
+        el('button', { class: 'danger', text: 'Rechazar', onclick: () => resolverAlta(a, false) }),
+      ]),
+    ])
+  );
+  fill(document.getElementById('altasTableBody'), rows, r ? 'Nadie esperando aprobación.' : 'No se pudo cargar.', 5);
+}
+
+async function resolverAlta(a, aprobar) {
+  if (!confirm(aprobar ? `¿Aprobar la cuenta de ${a.nombre} (${a.numero})?` : `¿Rechazar el registro de ${a.nombre} (${a.numero})? Podrá volver a registrarse.`)) return;
+  const r = await rpc('sesion_resolver_alta', { p_token: token, p_numero: a.numero, p_aprobar: aprobar }).catch(() => null);
+  if (r === 'no_session') return sessionGone();
+  if (r !== 'ok') alert('No se pudo guardar.');
+  listAltas();
+  listEmployees();
 }
 
 // --- Fechas de nacimiento ---

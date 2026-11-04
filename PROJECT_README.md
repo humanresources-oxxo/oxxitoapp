@@ -66,6 +66,12 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     de Excel), el primer registro (`registrar_pin`) también la pide; nunca se devuelve
     (`employee_lookup` solo dice `pide_fecha`). 5 fechas equivocadas bloquean el registro de esa
     cuenta 24 h. Sin fecha cargada, el registro sigue siendo número + PIN.
+  - Desde la migración 39, quien se registra solo queda **pendiente de aprobación**: no puede
+    entrar (`verify_pin` responde `pendiente`) hasta que su asesor (el `asesor` de su fila en
+    `employees`, comparado sin acentos con el nombre del asesor), RH o el Gerente de plaza la
+    aprueben en la app (Inicio → Altas por aprobar, `src/screens/AltasScreen.tsx`) o en el panel
+    (Empleados → Altas por aprobar). Rechazar borra el PIN y deja la cuenta libre. Un PIN temporal
+    de RH aprueba la cuenta solo.
   - La dirección del cliente sale de `cf-connecting-ip` (la pone Cloudflare; un encabezado falso
     se rechaza con 403). El diagnóstico `mi_red()` se borró en la migración 38.
 
