@@ -8,6 +8,7 @@
 // the rest. Indicators only: no names of responsables or links.
 // If DashboardsOxxo changes that action or the row keys, update this file too.
 import { clave } from './gviz';
+import { leerLlave, olvidarLlave, SIN_SESION } from './sesion';
 
 // DashboardsOxxo js/config.js -> ADMIN_UPLOAD_URL (same Apps Script as Actas and Cuota sindical).
 const URL =
@@ -83,14 +84,19 @@ export function cargarCct(): Promise<Cct> {
       const r = await fetch(URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'consultarCct' }),
+        // The session key: v65 of the Apps Script only answers puestos with permissions.
+        body: JSON.stringify({ action: 'consultarCct', llave: (await leerLlave()) ?? '' }),
         signal: control.signal,
       });
       datos = await r.json();
     } finally {
       clearTimeout(t);
     }
-    if (!datos || datos.ok === false) throw new Error((datos && datos.error) || 'el servidor no respondió');
+    if (!datos || datos.ok === false) {
+      const motivo = String((datos && datos.error) || 'el servidor no respondió');
+      if (motivo.includes(SIN_SESION)) await olvidarLlave();
+      throw new Error(motivo);
+    }
     const filas = (datos.filas ?? []) as Array<{ hoja: string; datos: CctDatos }>;
     return {
       historico: filas.filter((f) => f.hoja === 'historico').map((f) => f.datos),

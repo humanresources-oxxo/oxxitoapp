@@ -12,6 +12,9 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
+import { PinUnaVez } from '../components/PinUnaVez';
+import { getJson, storageKeys } from '../services/appStorage';
+import { esSinSesion } from '../services/sesion';
 import { Anillo, ColumnasApiladas, Desplegable, Indicador, Leyenda } from '../components/Visual';
 import { cargarCct, Cct, CctDatos, esOaxaca } from '../services/cct';
 import { normalizarNombre, sinAcentos } from '../services/gviz';
@@ -62,22 +65,35 @@ const SIN_FILTROS: Filtros = { negocio: '', cluster: '', sindicato: '', tipo: ''
 export function CctScreen({ onBack }: { onBack: () => void }) {
   const [cct, setCct] = useState<Cct | null>(null);
   const [error, setError] = useState(false);
+  // The Apps Script didn't accept the session key: confirm the PIN once.
+  const [sinSesion, setSinSesion] = useState(false);
+  const [pedirPin, setPedirPin] = useState(false);
+  const [numero, setNumero] = useState('');
   const [intento, setIntento] = useState(0);
   const [anio, setAnio] = useState(0);
   const [filtros, setFiltros] = useState<Filtros>(SIN_FILTROS);
   const [texto, setTexto] = useState('');
 
   useEffect(() => {
+    getJson<{ numeroEmpleado?: string } | null>(storageKeys.session, null).then((x) => setNumero(x?.numeroEmpleado ?? ''));
+  }, []);
+
+  useEffect(() => {
     let activo = true;
     setCct(null);
     setError(false);
+    setSinSesion(false);
     cargarCct()
       .then((c) => {
         if (!activo) return;
         setCct(c);
         setAnio((a) => a || Math.max(0, ...[...c.ejercicio, ...c.historico].map((d) => d.anio || 0)));
       })
-      .catch(() => activo && setError(true));
+      .catch((e) => {
+        if (!activo) return;
+        setSinSesion(esSinSesion(e));
+        setError(true);
+      });
     return () => {
       activo = false;
     };
@@ -179,7 +195,11 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
 
       {error ? (
         <View style={styles.content}>
-          <Aviso titulo="No se pudieron cargar los contratos" texto="Revisa tu conexión e intenta de nuevo." accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }} />
+          {sinSesion ? (
+            <Aviso titulo="Confirma tu PIN" texto="Para ver esta información, confirma tu PIN una vez." accion={{ texto: 'Confirmar PIN', onPress: () => setPedirPin(true) }} />
+          ) : (
+            <Aviso titulo="No se pudieron cargar los contratos" texto="Revisa tu conexión e intenta de nuevo." accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }} />
+          )}
         </View>
       ) : !cct ? (
         <View style={styles.cargando}>
@@ -387,6 +407,16 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
           </Text>
         </ScrollView>
       )}
+      {pedirPin ? (
+        <PinUnaVez
+          numero={numero}
+          onCerrar={() => setPedirPin(false)}
+          onListo={() => {
+            setPedirPin(false);
+            setIntento((n) => n + 1);
+          }}
+        />
+      ) : null}
     </View>
   );
 }

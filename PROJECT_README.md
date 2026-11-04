@@ -91,6 +91,15 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     Acces Test), con su llave de sesión. Son los mismos que publican avisos. Una votación para toda la plaza publica un aviso (tipo `vote`).
   - La tarjeta de Inicio muestra cuántas faltan por votar y se oculta si Supabase no responde.
 
+✅ **Sesión en el Apps Script (paso 2 de la auditoría, Apps Script v65 + migración 41):** CCT
+  (`consultarCct`), DILOS (`consultarDilos`) y las actas (`enviarActa`) mandan la llave de sesión
+  (`llave`). El script la valida con `sesion_validar` en Supabase (5 min en caché) y solo contesta
+  CCT y DILOS a puestos con permisos (o al panel con su contraseña); si no, responde
+  `sesion_conoxxo` y la pantalla pide el PIN una vez (`PinUnaVez`). Un acta enviada con sesión
+  dice en el correo quién la mandó y no la frena el límite global del formulario web (sí uno por
+  persona). Cuota sindical sigue pública porque la usa la página pública de DashboardsOxxo
+  (paso 3).
+
 ✅ **Casos DILOS (`src/screens/DilosScreen.tsx`):** dashboard **solo de la app**: casos
   abiertos de la **Zona Centro Sur** del "Reporte DILOS" que manda RH (hoja `ZCS`: caso,
   región, plaza, facilitador, estatus, días abiertos). Solo para los puestos de

@@ -8,6 +8,9 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
+import { PinUnaVez } from '../components/PinUnaVez';
+import { getJson, storageKeys } from '../services/appStorage';
+import { esSinSesion } from '../services/sesion';
 import { Anillo, BarraApilada, Barras, Desplegable, Leyenda } from '../components/Visual';
 import { cargarDilos, CasoDilos, contarPor, Dilos, DIAS_ALERTA } from '../services/dilos';
 import { normalizarNombre } from '../services/gviz';
@@ -30,18 +33,31 @@ type Filtro = 'todos' | 'RH' | 'ADM' | 'atrasados';
 export function DilosScreen({ onBack }: { onBack: () => void }) {
   const [dilos, setDilos] = useState<Dilos | null>(null);
   const [error, setError] = useState(false);
+  // The Apps Script didn't accept the session key: confirm the PIN once.
+  const [sinSesion, setSinSesion] = useState(false);
+  const [pedirPin, setPedirPin] = useState(false);
+  const [numero, setNumero] = useState('');
   const [intento, setIntento] = useState(0);
   const [filtro, setFiltro] = useState<Filtro>('todos');
   const [region, setRegion] = useState('');
   const [texto, setTexto] = useState('');
 
   useEffect(() => {
+    getJson<{ numeroEmpleado?: string } | null>(storageKeys.session, null).then((x) => setNumero(x?.numeroEmpleado ?? ''));
+  }, []);
+
+  useEffect(() => {
     let activo = true;
     setDilos(null);
     setError(false);
+    setSinSesion(false);
     cargarDilos()
       .then((d) => activo && setDilos(d))
-      .catch(() => activo && setError(true));
+      .catch((e) => {
+        if (!activo) return;
+        setSinSesion(esSinSesion(e));
+        setError(true);
+      });
     return () => {
       activo = false;
     };
@@ -89,7 +105,11 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
 
       {error ? (
         <View style={styles.content}>
-          <Aviso titulo="No se pudieron cargar los casos" texto="Revisa tu conexión e intenta de nuevo." accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }} />
+          {sinSesion ? (
+            <Aviso titulo="Confirma tu PIN" texto="Para ver esta información, confirma tu PIN una vez." accion={{ texto: 'Confirmar PIN', onPress: () => setPedirPin(true) }} />
+          ) : (
+            <Aviso titulo="No se pudieron cargar los casos" texto="Revisa tu conexión e intenta de nuevo." accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }} />
+          )}
         </View>
       ) : !dilos ? (
         <View style={styles.cargando}>
@@ -227,6 +247,16 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
           <Text style={styles.nota}>Reporte DILOS que carga RH. No incluye el nombre del facilitador; los días son los abiertos al corte.</Text>
         </ScrollView>
       )}
+      {pedirPin ? (
+        <PinUnaVez
+          numero={numero}
+          onCerrar={() => setPedirPin(false)}
+          onListo={() => {
+            setPedirPin(false);
+            setIntento((n) => n + 1);
+          }}
+        />
+      ) : null}
     </View>
   );
 }
