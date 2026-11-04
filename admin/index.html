@@ -92,7 +92,7 @@
 
     <div class="card">
       <h3>Fechas de nacimiento</h3>
-      <p class="muted">El primer registro en la app pide la fecha de nacimiento, así nadie más puede tomar la cuenta. Copia dos columnas de Excel (número de empleado y fecha de nacimiento) y pégalas aquí. Las fechas no se muestran en ningún lado: solo sirven para comparar.</p>
+      <p class="muted">Opcional. A quien tenga fecha cargada, la app se la pide en su primer registro, así nadie más puede tomar su cuenta; sin fecha, se registra solo con número y PIN. Copia dos columnas de Excel (número de empleado y fecha de nacimiento) y pégalas aquí. Las fechas no se muestran en ningún lado: solo sirven para comparar.</p>
       <div id="fechasResumen" class="muted"></div>
       <div class="row"><textarea id="fechasTexto" rows="6" placeholder="1599067&#9;15/03/1990&#10;1600123&#9;01/12/1988"></textarea></div>
       <button class="secondary" onclick="revisarFechas()">Revisar</button>
@@ -312,7 +312,7 @@ async function listEmployees() {
   fill(document.getElementById('empTableBody'), rows, r ? 'Sin resultados.' : 'No se pudo cargar.', 7);
   if (r?.estado === 'ok') {
     document.getElementById('fechasResumen').textContent =
-      `${r.total - r.sin_fecha} de ${r.total} empleados tienen fecha de nacimiento cargada.` + (r.sin_fecha ? ` Faltan ${r.sin_fecha}: sin fecha no pueden registrarse solos.` : '');
+      `${r.total - r.sin_fecha} de ${r.total} empleados tienen fecha de nacimiento cargada.` + (r.sin_fecha ? ` ${r.sin_fecha} sin fecha (se registran solo con número y PIN).` : '');
   }
 }
 

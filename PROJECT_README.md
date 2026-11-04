@@ -61,10 +61,11 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   - Primer registro: los puestos con permisos (`puesto_con_permisos`, mismos que
     `PUESTOS_ACTAS`) no pueden crear su primer PIN; RH les da uno temporal. Tope de 60 registros
     por hora en total (10 por dirección).
-  - Desde la migración 38 el primer registro (`registrar_pin`) pide además la **fecha de
-    nacimiento** (`employees.fecha_nacimiento`), que RH carga en el panel (Empleados → Fechas de
-    nacimiento, pegando dos columnas de Excel) y que ninguna función devuelve. 5 fechas
-    equivocadas bloquean el registro de esa cuenta 24 h. Sin fecha cargada, RH da PIN temporal.
+  - Desde la migración 38, si RH cargó la **fecha de nacimiento** de un empleado
+    (`employees.fecha_nacimiento`, panel → Empleados → Fechas de nacimiento, pegando dos columnas
+    de Excel), el primer registro (`registrar_pin`) también la pide; nunca se devuelve
+    (`employee_lookup` solo dice `pide_fecha`). 5 fechas equivocadas bloquean el registro de esa
+    cuenta 24 h. Sin fecha cargada, el registro sigue siendo número + PIN.
   - La dirección del cliente sale de `cf-connecting-ip` (la pone Cloudflare; un encabezado falso
     se rechaza con 403). El diagnóstico `mi_red()` se borró en la migración 38.
 
