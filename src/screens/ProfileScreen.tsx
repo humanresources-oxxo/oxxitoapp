@@ -7,25 +7,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BearAvatar } from '../components/Bear';
 import { Icon } from '../components/Icon';
-import { PreferenceKey, employeeProfile, profileSettings } from '../data/employee';
+import { TextoLegal } from '../components/TextoLegal';
+import { AVISO_PRIVACIDAD, TERMINOS_USO } from '../data/legal';
 import { AvisoComposer } from '../components/AvisoComposer';
 import { obtenerLlave, puedePublicar } from '../services/sesion';
 import { changePin } from '../services/auth';
 import { fetchContacts } from '../services/directory';
-import { getJson, setJson, storageKeys } from '../services/appStorage';
+import { getJson, storageKeys } from '../services/appStorage';
 import { showAlert } from '../utils/alert';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
-const PRIVACY_NOTICE =
-  'Según el Artículo 75, fracción X del Reglamento Interior de Trabajo: la Empresa se compromete a llevar y mantener actualizados los registros administrativos y expedientes laborales de los Trabajadores, así como resguardar y tratar la información de manera confidencial y conforme a la legislación en materia de protección de datos personales.\n\nPara el aviso de privacidad completo, contacta a Recursos Humanos.';
-
-
 export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
-  const [prefs, setPrefs] = useState<Record<PreferenceKey, boolean>>({
-    push: true,
-    privacy: true,
-    biometric: false,
-  });
   const [session, setSession] = useState<{
     numeroEmpleado: string;
     nombre: string;
@@ -41,7 +33,6 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
     let mounted = true;
 
     const loadPrefs = async () => {
-      const saved = await getJson<Partial<Record<PreferenceKey, boolean>>>(storageKeys.profilePrefs, {});
       const savedSession = await getJson<{
         numeroEmpleado: string;
         nombre: string;
@@ -54,7 +45,6 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
       const noticeReadState = await getJson<Record<string, boolean>>(storageKeys.noticeReadState, {});
       if (!mounted) return;
 
-      setPrefs((current) => ({ ...current, ...saved }));
       setSession(savedSession);
       setConsultas(questionCount);
       setAvisosLeidos(Object.values(noticeReadState).filter(Boolean).length);
@@ -77,13 +67,6 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
     { label: 'Perfil', value: `${profileCompletion}%` },
   ];
 
-  const togglePref = (key: PreferenceKey) => {
-    setPrefs((current) => {
-      const next = { ...current, [key]: !current[key] };
-      setJson(storageKeys.profilePrefs, next);
-      return next;
-    });
-  };
   const logout = () => {
     onLogout();
   };
@@ -100,21 +83,18 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
       .catch(() => showAlert('Ayuda y soporte', 'No pudimos cargar los contactos. Intenta de nuevo.'));
   };
 
-  const showPrivacy = () => {
-    showAlert('Aviso de privacidad', PRIVACY_NOTICE);
-  };
+  const [legal, setLegal] = useState<'privacidad' | 'terminos' | null>(null);
 
   return (
     <>
       <ProfileBody
         session={session}
         stats={stats}
-        prefs={prefs}
-        togglePref={togglePref}
         logout={logout}
         onPublishNotice={() => setNoticeModal(true)}
         onChangePin={() => setPinModal(true)}
-        onPrivacyNotice={showPrivacy}
+        onPrivacyNotice={() => setLegal('privacidad')}
+        onTerms={() => setLegal('terminos')}
         onHelp={showHelp}
       />
       <AvisoComposer
@@ -122,6 +102,13 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         numeroEmpleado={session?.numeroEmpleado ?? ''}
         onClose={() => setNoticeModal(false)}
       />
+      {legal ? (
+        <TextoLegal
+          titulo={legal === 'privacidad' ? 'Aviso de privacidad' : 'Términos de uso'}
+          parrafos={legal === 'privacidad' ? AVISO_PRIVACIDAD : TERMINOS_USO}
+          onClose={() => setLegal(null)}
+        />
+      ) : null}
       <ChangePinModal
         visible={pinModal}
         numeroEmpleado={session?.numeroEmpleado ?? ''}
@@ -134,12 +121,11 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
 function ProfileBody({
   session,
   stats,
-  prefs,
-  togglePref,
   logout,
   onPublishNotice,
   onChangePin,
   onPrivacyNotice,
+  onTerms,
   onHelp,
 }: {
   session: {
@@ -151,12 +137,11 @@ function ProfileBody({
     createdAt?: string;
   } | null;
   stats: Array<{ label: string; value: string }>;
-  prefs: Record<PreferenceKey, boolean>;
-  togglePref: (key: PreferenceKey) => void;
   logout: () => void;
   onPublishNotice: () => void;
   onChangePin: () => void;
   onPrivacyNotice: () => void;
+  onTerms: () => void;
   onHelp: () => void;
 }) {
 
@@ -192,8 +177,8 @@ function ProfileBody({
           <View style={styles.profileTop}>
             <BearAvatar size={64} bg="rgba(255,255,255,.88)" />
             <View style={styles.profileCopy}>
-              <Text style={styles.profileName}>{session?.nombre || employeeProfile.name}</Text>
-              <Text style={styles.profileRole}>{session?.puesto || employeeProfile.role}</Text>
+              <Text style={styles.profileName}>{session?.nombre || '—'}</Text>
+              <Text style={styles.profileRole}>{session?.puesto || ''}</Text>
               <View style={styles.verifiedPill}>
                 <Icon name="shieldCheck" size={14} color={colors.oxRed} />
                 <Text style={styles.verifiedText}>Verificado</Text>
@@ -202,10 +187,10 @@ function ProfileBody({
           </View>
 
           <View style={styles.infoGrid}>
-            <InfoItem label="Empleado" value={session?.numeroEmpleado || employeeProfile.employeeId} />
-            <InfoItem label="Tienda" value={session?.tienda || employeeProfile.store} />
-            <InfoItem label="Plaza" value={session?.plaza || employeeProfile.area} />
-            <InfoItem label="Desde" value={formatSince(session?.createdAt) || employeeProfile.since} />
+            <InfoItem label="Empleado" value={session?.numeroEmpleado || '—'} />
+            <InfoItem label="Tienda" value={session?.tienda || '—'} />
+            <InfoItem label="Plaza" value={session?.plaza || '—'} />
+            <InfoItem label="Desde" value={formatSince(session?.createdAt) || '—'} />
           </View>
         </LinearGradient>
 
@@ -214,22 +199,6 @@ function ProfileBody({
             <View style={styles.statCard} key={item.label}>
               <Text style={styles.statValue}>{item.value}</Text>
               <Text style={styles.statLabel}>{item.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        <SectionTitle title="Preferencias" meta="3 ajustes" />
-        <View style={styles.sectionCard}>
-          {profileSettings.map((item, index) => (
-            <View key={item.key}>
-              <SettingRow
-                title={item.title}
-                desc={item.desc}
-                icon={item.icon}
-                enabled={prefs[item.key]}
-                onToggle={() => togglePref(item.key)}
-              />
-              {index < profileSettings.length - 1 ? <View style={styles.divider} /> : null}
             </View>
           ))}
         </View>
@@ -245,10 +214,12 @@ function ProfileBody({
           <View style={styles.divider} />
           <ActionRow
             title="Aviso de privacidad"
-            desc="Consulta términos y uso de datos"
+            desc="Qué datos usa la app y para qué"
             icon="doc"
             onPress={onPrivacyNotice}
           />
+          <View style={styles.divider} />
+          <ActionRow title="Términos de uso" desc="Reglas para usar Conoxxo" icon="book" onPress={onTerms} />
           <View style={styles.divider} />
           <ActionRow title="Ayuda y soporte" desc="Contacta al equipo interno" icon="help" onPress={onHelp} />
           {/* RH and Gerente de plaza only (services/sesion.ts). */}
@@ -297,33 +268,6 @@ function SectionTitle({ title, meta }: { title: string; meta: string }) {
     <View style={styles.sectionTitleRow}>
       <Text style={styles.sectionTitle}>{title}</Text>
       <Text style={styles.sectionMeta}>{meta}</Text>
-    </View>
-  );
-}
-
-function SettingRow({
-  title,
-  desc,
-  icon,
-  enabled,
-  onToggle,
-}: {
-  title: string;
-  desc: string;
-  icon: string;
-  enabled: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <View style={styles.row}>
-      <View style={styles.rowIcon}>
-        <Icon name={icon} size={20} color={colors.oxRed} />
-      </View>
-      <View style={styles.rowCopy}>
-        <Text style={styles.rowTitle}>{title}</Text>
-        <Text style={styles.rowDesc}>{desc}</Text>
-      </View>
-      <Toggle enabled={enabled} onPress={onToggle} />
     </View>
   );
 }
@@ -446,19 +390,6 @@ function ChangePinModal({
         </BlurView>
       </View>
     </Modal>
-  );
-}
-
-function Toggle({ enabled, onPress }: { enabled: boolean; onPress: () => void }) {
-  return (
-    <Pressable
-      style={[styles.toggle, enabled && styles.toggleOn]}
-      onPress={onPress}
-      accessibilityRole="switch"
-      accessibilityState={{ checked: enabled }}
-    >
-      <View style={[styles.toggleKnob, enabled && styles.toggleKnobOn]} />
-    </Pressable>
   );
 }
 
@@ -666,25 +597,6 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.line,
     marginLeft: 68,
-  },
-  toggle: {
-    width: 48,
-    height: 30,
-    borderRadius: radii.pill,
-    backgroundColor: colors.line2,
-    padding: 3,
-  },
-  toggleOn: {
-    backgroundColor: colors.oxRed,
-  },
-  toggleKnob: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.white,
-  },
-  toggleKnobOn: {
-    transform: [{ translateX: 18 }],
   },
   logoutButton: {
     minHeight: 54,

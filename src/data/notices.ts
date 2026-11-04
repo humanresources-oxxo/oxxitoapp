@@ -34,4 +34,6 @@ export const noticeFilters: Array<{ key: NoticeFilter; label: string }> = [
   { key: 'policy', label: 'Políticas' },
   { key: 'training', label: 'Capacitación' },
   { key: 'schedule', label: 'Turnos' },
+  { key: 'benefit', label: 'Beneficios' },
+  { key: 'vote', label: 'Votaciones' },
 ];

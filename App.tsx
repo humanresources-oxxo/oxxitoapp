@@ -14,6 +14,7 @@ import {
 import { OnboardingNavigator, DonePlaceholder } from './src/navigation/OnboardingNavigator';
 import { getBoolean, removeItem, setBoolean, storageKeys } from './src/services/appStorage';
 import { cerrarSesion } from './src/services/sesion';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { colors } from './src/theme/tokens';
 
 export default function App() {
@@ -69,7 +70,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        {onboardingDone ? <DonePlaceholder onLogout={logout} /> : <OnboardingNavigator onFinished={finishOnboarding} />}
+        <ErrorBoundary>
+          {onboardingDone ? <DonePlaceholder onLogout={logout} /> : <OnboardingNavigator onFinished={finishOnboarding} />}
+        </ErrorBoundary>
       </NavigationContainer>
       <StatusBar style="dark" />
     </SafeAreaProvider>
