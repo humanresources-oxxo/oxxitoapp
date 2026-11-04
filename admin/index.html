@@ -4,59 +4,74 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Conoxxo - Panel Admin</title>
+<!--
+  Admin panel (run it locally, e.g. `npx serve admin`; it is not published).
+  Signs in with employee number + PIN (session key, migrations 35 and 37):
+  RH and Gerente de plaza see Avisos and Directorio; only RH puestos
+  (Responsable RH, Analista EC, test account) see Empleados and give PINs.
+  Everything from the database is shown as text (textContent), never as HTML.
+-->
 <style>
   :root { --red: #E4002B; --ink: #1c1c1c; --line: #e3e3e3; --bg: #FAF7F3; }
   * { box-sizing: border-box; }
   body { margin: 0; font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--ink); }
-  header { background: var(--red); color: #fff; padding: 16px 20px; font-weight: 800; font-size: 18px; }
+  header { background: var(--red); color: #fff; padding: 16px 20px; font-weight: 800; font-size: 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  header small { font-weight: 600; font-size: 13px; opacity: .9; }
   #gate { max-width: 360px; margin: 80px auto; padding: 24px; background: #fff; border-radius: 16px; border: 1px solid var(--line); }
-  #gate input { width: 100%; padding: 12px; font-size: 15px; border-radius: 10px; border: 1px solid var(--line); margin: 10px 0; }
+  #gate input { width: 100%; padding: 12px; font-size: 15px; border-radius: 10px; border: 1px solid var(--line); margin: 6px 0 10px; }
   button { background: var(--red); color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 14px; }
   button.secondary { background: #fff; color: var(--ink); border: 1px solid var(--line); }
   button.danger { background: #b3261e; }
+  button.light { background: rgba(255,255,255,.18); }
   button:disabled { opacity: .5; cursor: default; }
   #app { display: none; max-width: 900px; margin: 0 auto; padding: 20px; }
-  .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
   .tabs button { background: #fff; color: var(--ink); border: 1px solid var(--line); }
   .tabs button.active { background: var(--red); color: #fff; border-color: var(--red); }
   .panel { display: none; }
   .panel.active { display: block; }
   .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
   .card h3 { margin: 0 0 12px; }
+  .card { overflow-x: auto; }
   .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-  .row input, .row textarea { flex: 1; min-width: 140px; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); font-size: 14px; }
+  .row input, .row textarea, .row select { flex: 1; min-width: 140px; padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); font-size: 14px; }
   label.checkbox { display: flex; align-items: center; gap: 6px; font-size: 14px; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
   th { color: #777; font-size: 12px; text-transform: uppercase; }
   .msg { font-size: 13px; margin-top: 8px; }
   .msg.error { color: #b3261e; }
   .msg.ok { color: #1a7a3c; }
   .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
-  .pill.temp { background: #FFE8E3; color: var(--red); }
+  .pill.temp { background: #FFF4D6; color: #8a6100; }
   .pill.set { background: #E6F4EA; color: #1a7a3c; }
-  .actions { display: flex; gap: 6px; }
+  .pill.none { background: #eee; color: #555; }
+  .pill.lock { background: #FFE8E3; color: var(--red); }
+  .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pin { margin-top: 10px; padding: 12px; border-radius: 10px; background: #FFF4D6; font-size: 14px; }
+  .pin b { font-size: 22px; letter-spacing: 6px; }
+  .muted { color: #777; font-size: 13px; }
 </style>
 </head>
 <body>
-<header>Conoxxo - Panel Admin</header>
+<header>
+  <span>Conoxxo - Panel Admin</span>
+  <span id="who" style="display:none"><small id="whoName"></small> <button class="light" onclick="logout()">Salir</button></span>
+</header>
 
 <div id="gate">
-  <p>Ingresa el passcode de administrador para continuar.</p>
-  <input id="passcodeInput" type="password" placeholder="Passcode" />
+  <p>Entra con tu número de empleado y tu PIN de la app.</p>
+  <input id="gateNumero" inputmode="numeric" autocomplete="username" placeholder="Número de empleado" />
+  <input id="gatePin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" placeholder="PIN" />
   <button onclick="unlock()">Entrar</button>
   <div id="gateMsg" class="msg error"></div>
 </div>
 
 <div id="app">
-  <div class="tabs">
-    <button class="active" onclick="showTab('empleados')">Empleados</button>
-    <button onclick="showTab('avisos')">Avisos</button>
-    <button onclick="showTab('directorio')">Directorio</button>
-  </div>
+  <div class="tabs" id="tabs"></div>
 
-  <!-- EMPLEADOS -->
-  <div id="tab-empleados" class="panel active">
+  <!-- EMPLEADOS (RH) -->
+  <div id="tab-empleados" class="panel">
     <div class="card">
       <h3>Agregar empleado</h3>
       <div class="row">
@@ -67,6 +82,7 @@
         <input id="empTienda" placeholder="Tienda (opcional)" />
         <input id="empPlaza" placeholder="Plaza (opcional)" />
         <input id="empAsesor" placeholder="Asesor (opcional)" />
+        <input id="empPuesto" placeholder="Puesto (opcional)" />
       </div>
       <button onclick="addEmployee()">Agregar</button>
       <div id="empAddMsg" class="msg"></div>
@@ -77,8 +93,10 @@
       <div class="row">
         <input id="empSearch" placeholder="Buscar por número o nombre..." oninput="listEmployees()" />
       </div>
+      <p class="muted">"Dar PIN temporal" crea un PIN de 4 dígitos que solo se muestra aquí una vez: dáselo a la persona. Al entrar, la app le pide crear el suyo. Los puestos con permisos (asesores, RH, gerente, sindicato) ya no pueden crear su primer PIN solos.</p>
+      <div id="pinBox"></div>
       <table>
-        <thead><tr><th>Número</th><th>Nombre</th><th>Tienda</th><th>PIN</th><th></th></tr></thead>
+        <thead><tr><th>Número</th><th>Nombre</th><th>Tienda</th><th>Puesto</th><th>PIN</th><th></th></tr></thead>
         <tbody id="empTableBody"></tbody>
       </table>
     </div>
@@ -88,12 +106,9 @@
   <div id="tab-avisos" class="panel">
     <div class="card">
       <h3>Publicar aviso</h3>
-      <div class="row">
-        <input id="noticeTitle" placeholder="Título" />
-      </div>
-      <div class="row">
-        <textarea id="noticeBody" placeholder="Mensaje" rows="3"></textarea>
-      </div>
+      <p class="muted">Para avisos con imágenes usa la app (Avisos → lápiz).</p>
+      <div class="row"><input id="noticeTitle" placeholder="Título" /></div>
+      <div class="row"><textarea id="noticeBody" placeholder="Mensaje" rows="3"></textarea></div>
       <div class="row">
         <select id="noticeKind">
           <option value="policy">Política</option>
@@ -110,7 +125,7 @@
     <div class="card">
       <h3>Avisos publicados</h3>
       <table>
-        <thead><tr><th>Titulo</th><th>Categoria</th><th>Fecha</th><th></th></tr></thead>
+        <thead><tr><th>Título</th><th>Categoría</th><th>Fecha</th><th></th></tr></thead>
         <tbody id="noticeTableBody"></tbody>
       </table>
     </div>
@@ -152,7 +167,8 @@
 <script>
 const SUPABASE_URL = 'https://gceuazxrqdbfahtdieod.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_59I8XugqRxE-LUhMSqmiEQ_HNzD7CRK';
-let passcode = '';
+// Session key, only in memory: closing the tab signs out.
+let token = '';
 
 async function rpc(fn, body) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
@@ -169,78 +185,148 @@ async function rpc(fn, body) {
   return data;
 }
 
+// --- Safe DOM helpers: data is always text, never HTML ---
+function el(tag, props = {}, children = []) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === 'text') n.textContent = v ?? '';
+    else if (k === 'onclick') n.addEventListener('click', v);
+    else n.setAttribute(k, v);
+  }
+  for (const c of [].concat(children)) if (c) n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  return n;
+}
+function fill(tbody, rows, emptyText, cols) {
+  tbody.replaceChildren(...(rows.length ? rows : [el('tr', {}, el('td', { colspan: String(cols), text: emptyText }))]));
+}
+function setMsg(id, ok, text) {
+  const m = document.getElementById(id);
+  m.className = 'msg ' + (ok ? 'ok' : 'error');
+  m.textContent = text;
+}
+function sessionGone() {
+  alert('Tu sesión terminó (cambiaste tu PIN o te lo reiniciaron). Vuelve a entrar.');
+  logout(false);
+}
+
+// --- Sign in ---
 async function unlock() {
-  const value = document.getElementById('passcodeInput').value;
+  const numero = document.getElementById('gateNumero').value.trim();
+  const pin = document.getElementById('gatePin').value.trim();
   const gateMsg = document.getElementById('gateMsg');
   gateMsg.textContent = '';
+  if (!numero || !/^[0-9]{4}$/.test(pin)) { gateMsg.textContent = 'Escribe tu número y tu PIN de 4 dígitos.'; return; }
   try {
-    const ok = await rpc('admin_check_passcode', { p_passcode: value });
-    if (!ok) { gateMsg.textContent = 'Passcode incorrecto.'; return; }
-    passcode = value;
+    const [fila] = await rpc('iniciar_sesion', { p_numero: numero, p_pin: pin });
+    document.getElementById('gatePin').value = '';
+    if (!fila || fila.status !== 'ok') {
+      gateMsg.textContent = fila?.status === 'locked'
+        ? 'Cuenta bloqueada por varios intentos fallidos. Intenta más tarde.'
+        : 'Número o PIN incorrecto.';
+      return;
+    }
+    token = fila.token;
+    const panel = await rpc('sesion_panel', { p_token: token });
+    if (panel.estado !== 'ok' || (!panel.avisos && !panel.personal)) {
+      gateMsg.textContent = 'Tu puesto no tiene acceso al panel.';
+      await rpc('cerrar_sesion', { p_token: token }).catch(() => {});
+      token = '';
+      return;
+    }
+    document.getElementById('whoName').textContent = panel.nombre || numero;
+    document.getElementById('who').style.display = '';
     document.getElementById('gate').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    listEmployees();
-    listNotices();
-    listContacts();
+    buildTabs(panel);
   } catch (e) {
     gateMsg.textContent = 'No se pudo conectar. Intenta de nuevo.';
   }
 }
 
+async function logout(server = true) {
+  if (server && token) await rpc('cerrar_sesion', { p_token: token }).catch(() => {});
+  token = '';
+  location.reload();
+}
+
+function buildTabs(panel) {
+  const tabs = [];
+  if (panel.personal) tabs.push(['empleados', 'Empleados']);
+  if (panel.avisos) tabs.push(['avisos', 'Avisos'], ['directorio', 'Directorio']);
+  const bar = document.getElementById('tabs');
+  bar.replaceChildren(...tabs.map(([key, label]) => el('button', { text: label, 'data-tab': key, onclick: () => showTab(key) })));
+  showTab(tabs[0][0]);
+  if (panel.personal) listEmployees();
+  if (panel.avisos) { listNotices(); listContacts(); }
+}
+
 function showTab(name) {
-  document.querySelectorAll('.tabs button').forEach((b) => b.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
-  event.target.classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach((p) => p.classList.toggle('active', p.id === 'tab-' + name));
 }
 
 // --- Empleados ---
+function pinPill(r) {
+  if (r.bloqueado) return el('span', { class: 'pill lock', text: 'Bloqueado' });
+  if (!r.tiene_pin) return el('span', { class: 'pill none', text: 'Sin PIN' });
+  return r.temporal ? el('span', { class: 'pill temp', text: 'Temporal' }) : el('span', { class: 'pill set', text: 'Definitivo' });
+}
+
+function showPin(numero, nombre, pin) {
+  document.getElementById('pinBox').replaceChildren(
+    el('div', { class: 'pin' }, [
+      `PIN temporal de ${nombre || numero} (${numero}): `,
+      el('b', { text: pin }),
+      el('div', { class: 'muted', text: 'Solo se muestra esta vez. Al entrar con él, la app le pide crear su propio PIN.' }),
+    ])
+  );
+}
+
 async function listEmployees() {
   const search = document.getElementById('empSearch').value.trim();
-  const rows = await rpc('admin_list_employees', { p_passcode: passcode, p_search: search }).catch(() => []);
-  const body = document.getElementById('empTableBody');
-  body.innerHTML = rows.map((r) => `
-    <tr>
-      <td>${r.numero_empleado}</td>
-      <td>${r.nombre}</td>
-      <td>${r.tienda || '-'}</td>
-      <td>${r.has_pin ? (r.pin_is_temporary ? '<span class="pill temp">Temporal</span>' : '<span class="pill set">Definitivo</span>') : '-'}</td>
-      <td><button class="secondary" onclick="resetPin('${r.numero_empleado}')">Reiniciar PIN</button></td>
-    </tr>
-  `).join('') || '<tr><td colspan="5">Sin resultados.</td></tr>';
+  const r = await rpc('sesion_listar_empleados', { p_token: token, p_buscar: search }).catch(() => null);
+  if (r?.estado === 'no_session') return sessionGone();
+  const rows = (r?.empleados || []).map((e) =>
+    el('tr', {}, [
+      el('td', { text: e.numero }),
+      el('td', { text: e.nombre }),
+      el('td', { text: e.tienda || '-' }),
+      el('td', { text: e.puesto || '-' }),
+      el('td', {}, pinPill(e)),
+      el('td', {}, el('button', { class: 'secondary', text: 'Dar PIN temporal', onclick: () => resetPin(e.numero, e.nombre) })),
+    ])
+  );
+  fill(document.getElementById('empTableBody'), rows, r ? 'Sin resultados.' : 'No se pudo cargar.', 6);
 }
 
 async function addEmployee() {
-  const numero = document.getElementById('empNumero').value.trim();
-  const nombre = document.getElementById('empNombre').value.trim();
-  const tienda = document.getElementById('empTienda').value.trim();
-  const plaza = document.getElementById('empPlaza').value.trim();
-  const asesor = document.getElementById('empAsesor').value.trim();
-  const msg = document.getElementById('empAddMsg');
-  msg.className = 'msg';
-  msg.textContent = '';
-  if (!numero || !nombre) { msg.className = 'msg error'; msg.textContent = 'Número y nombre son obligatorios.'; return; }
+  const v = (id) => document.getElementById(id).value.trim();
+  const numero = v('empNumero'), nombre = v('empNombre');
+  if (!numero || !nombre) return setMsg('empAddMsg', false, 'Número y nombre son obligatorios.');
   try {
-    await rpc('admin_add_employee', { p_passcode: passcode, p_numero: numero, p_nombre: nombre, p_tienda: tienda, p_plaza: plaza, p_asesor: asesor });
-    msg.className = 'msg ok';
-    msg.textContent = 'Agregado. Puede crear su PIN en su primer ingreso a la app.';
-    document.getElementById('empNumero').value = '';
-    document.getElementById('empNombre').value = '';
-    document.getElementById('empTienda').value = '';
-    document.getElementById('empPlaza').value = '';
-    document.getElementById('empAsesor').value = '';
+    const r = await rpc('sesion_agregar_empleado', {
+      p_token: token, p_numero: numero, p_nombre: nombre, p_tienda: v('empTienda'), p_plaza: v('empPlaza'), p_asesor: v('empAsesor'), p_puesto: v('empPuesto'),
+    });
+    if (r.estado === 'no_session') return sessionGone();
+    if (r.estado !== 'ok') {
+      return setMsg('empAddMsg', false, r.estado === 'ya_existe' ? 'Ese número ya existe.' : r.estado === 'datos_invalidos' ? 'Revisa el número (solo dígitos) y el nombre.' : 'No se pudo agregar.');
+    }
+    setMsg('empAddMsg', true, 'Agregado.');
+    showPin(numero, nombre, r.pin_temporal);
+    ['empNumero', 'empNombre', 'empTienda', 'empPlaza', 'empAsesor', 'empPuesto'].forEach((id) => (document.getElementById(id).value = ''));
     listEmployees();
   } catch (e) {
-    msg.className = 'msg error';
-    msg.textContent = e.message.includes('employee_already_exists') ? 'Ese número ya existe.' : 'No se pudo agregar.';
+    setMsg('empAddMsg', false, 'No se pudo agregar.');
   }
 }
 
-async function resetPin(numero) {
-  if (!confirm(`¿Quitar el PIN de ${numero}? Va a poder crear uno nuevo en su siguiente ingreso.`)) return;
+async function resetPin(numero, nombre) {
+  if (!confirm(`¿Dar un PIN temporal a ${nombre} (${numero})? Su PIN actual deja de servir y se cierran sus sesiones.`)) return;
   try {
-    await rpc('admin_reset_pin', { p_passcode: passcode, p_numero: numero });
-    alert(`Listo. ${numero} puede crear un PIN nuevo en su siguiente ingreso.`);
+    const r = await rpc('sesion_reiniciar_pin', { p_token: token, p_numero: numero });
+    if (r.estado === 'no_session') return sessionGone();
+    if (r.estado !== 'ok') return alert('No se pudo reiniciar el PIN.');
+    showPin(numero, nombre, r.pin_temporal);
     listEmployees();
   } catch (e) {
     alert('No se pudo reiniciar el PIN.');
@@ -248,61 +334,73 @@ async function resetPin(numero) {
 }
 
 // --- Avisos ---
+const KINDS = { policy: 'Política', training: 'Capacitación', schedule: 'Turnos', benefit: 'Beneficio', vote: 'Votación' };
+
 async function listNotices() {
-  const rows = await rpc('list_notices', {}).catch(() => []);
-  const body = document.getElementById('noticeTableBody');
-  body.innerHTML = rows.map((r) => `
-    <tr>
-      <td>${r.title}</td>
-      <td>${r.kind}</td>
-      <td>${new Date(r.published_at).toLocaleString('es-MX')}</td>
-      <td><button class="danger" onclick="deleteNotice('${r.id}')">Borrar</button></td>
-    </tr>
-  `).join('') || '<tr><td colspan="4">Sin avisos.</td></tr>';
+  const rows = await rpc('list_avisos', {}).catch(() => []);
+  fill(
+    document.getElementById('noticeTableBody'),
+    rows.map((r) =>
+      el('tr', {}, [
+        el('td', { text: r.title + (r.imagenes?.length ? `  (${r.imagenes.length} img)` : '') }),
+        el('td', { text: KINDS[r.kind] || r.kind }),
+        el('td', { text: new Date(r.published_at).toLocaleString('es-MX') }),
+        el('td', {}, el('button', { class: 'danger', text: 'Borrar', onclick: () => deleteNotice(r.id, r.title) })),
+      ])
+    ),
+    'Sin avisos.',
+    4
+  );
 }
 
 async function createNotice() {
   const title = document.getElementById('noticeTitle').value.trim();
   const body = document.getElementById('noticeBody').value.trim();
-  const kind = document.getElementById('noticeKind').value;
-  const priority = document.getElementById('noticePriority').checked;
-  const msg = document.getElementById('noticeAddMsg');
-  if (!title || !body) { msg.className = 'msg error'; msg.textContent = 'Título y mensaje son obligatorios.'; return; }
+  if (title.length < 3 || body.length < 3) return setMsg('noticeAddMsg', false, 'Título y mensaje son obligatorios.');
   try {
-    await rpc('create_notice', { p_passcode: passcode, p_title: title, p_body: body, p_kind: kind, p_priority: priority });
-    msg.className = 'msg ok';
-    msg.textContent = 'Publicado.';
+    const r = await rpc('sesion_publicar_aviso', {
+      p_token: token, p_title: title, p_body: body,
+      p_kind: document.getElementById('noticeKind').value,
+      p_priority: document.getElementById('noticePriority').checked,
+    });
+    if (r === 'no_session') return sessionGone();
+    if (r !== 'ok') return setMsg('noticeAddMsg', false, 'No se pudo publicar.');
+    setMsg('noticeAddMsg', true, 'Publicado.');
     document.getElementById('noticeTitle').value = '';
     document.getElementById('noticeBody').value = '';
     document.getElementById('noticePriority').checked = false;
     listNotices();
   } catch (e) {
-    msg.className = 'msg error';
-    msg.textContent = 'No se pudo publicar.';
+    setMsg('noticeAddMsg', false, 'No se pudo publicar.');
   }
 }
 
-async function deleteNotice(id) {
-  if (!confirm('¿Borrar este aviso?')) return;
-  await rpc('admin_delete_notice', { p_passcode: passcode, p_id: id }).catch(() => {});
+async function deleteNotice(id, title) {
+  if (!confirm(`¿Borrar el aviso "${title}"?`)) return;
+  const r = await rpc('sesion_borrar_aviso', { p_token: token, p_id: id }).catch(() => null);
+  if (r === 'no_session') return sessionGone();
   listNotices();
 }
 
 // --- Directorio ---
 async function listContacts() {
   const rows = await rpc('list_directory_contacts', {}).catch(() => []);
-  const body = document.getElementById('contactTableBody');
-  body.innerHTML = rows.map((r) => `
-    <tr>
-      <td>${r.name}</td>
-      <td>${r.area}</td>
-      <td>${r.phone}</td>
-      <td class="actions">
-        <button class="secondary" onclick='editContact(${JSON.stringify(r).replace(/'/g, "&apos;")})'>Editar</button>
-        <button class="danger" onclick="deleteContact('${r.id}')">Borrar</button>
-      </td>
-    </tr>
-  `).join('') || '<tr><td colspan="4">Sin contactos.</td></tr>';
+  fill(
+    document.getElementById('contactTableBody'),
+    rows.map((r) =>
+      el('tr', {}, [
+        el('td', { text: r.name }),
+        el('td', { text: r.area }),
+        el('td', { text: r.phone }),
+        el('td', { class: 'actions' }, [
+          el('button', { class: 'secondary', text: 'Editar', onclick: () => editContact(r) }),
+          el('button', { class: 'danger', text: 'Borrar', onclick: () => deleteContact(r.id, r.name) }),
+        ]),
+      ])
+    ),
+    'Sin contactos.',
+    4
+  );
 }
 
 function editContact(r) {
@@ -319,39 +417,42 @@ function editContact(r) {
 
 function resetContactForm() {
   document.getElementById('contactFormTitle').textContent = 'Agregar contacto';
-  ['contactId','contactName','contactArea','contactRole','contactPhone','contactSchedule','contactTags'].forEach((id) => document.getElementById(id).value = '');
+  ['contactId', 'contactName', 'contactArea', 'contactRole', 'contactPhone', 'contactSchedule', 'contactTags'].forEach((id) => (document.getElementById(id).value = ''));
   document.getElementById('contactUrgent').checked = false;
   document.getElementById('contactMsg').textContent = '';
 }
 
 async function saveContact() {
-  const id = document.getElementById('contactId').value;
-  const name = document.getElementById('contactName').value.trim();
-  const area = document.getElementById('contactArea').value.trim();
-  const role = document.getElementById('contactRole').value.trim();
-  const phone = document.getElementById('contactPhone').value.trim();
-  const schedule = document.getElementById('contactSchedule').value.trim();
-  const tags = document.getElementById('contactTags').value.split(',').map((t) => t.trim()).filter(Boolean);
-  const urgent = document.getElementById('contactUrgent').checked;
-  const msg = document.getElementById('contactMsg');
-  if (!name || !area || !role || !phone || !schedule) { msg.className = 'msg error'; msg.textContent = 'Todos los campos son obligatorios.'; return; }
+  const v = (id) => document.getElementById(id).value.trim();
+  const id = v('contactId');
+  if (!v('contactName') || !v('contactArea') || !v('contactRole') || !v('contactPhone') || !v('contactSchedule')) {
+    return setMsg('contactMsg', false, 'Todos los campos son obligatorios.');
+  }
   try {
-    await rpc('admin_upsert_contact', { p_passcode: passcode, p_id: id || null, p_name: name, p_area: area, p_role: role, p_phone: phone, p_schedule: schedule, p_tags: tags, p_urgent: urgent });
-    msg.className = 'msg ok';
-    msg.textContent = 'Guardado.';
+    const r = await rpc('sesion_guardar_contacto', {
+      p_token: token, p_id: id || null, p_name: v('contactName'), p_area: v('contactArea'), p_role: v('contactRole'),
+      p_phone: v('contactPhone'), p_schedule: v('contactSchedule'),
+      p_tags: v('contactTags').split(',').map((t) => t.trim()).filter(Boolean),
+      p_urgent: document.getElementById('contactUrgent').checked,
+    });
+    if (r === 'no_session') return sessionGone();
+    if (r !== 'ok') return setMsg('contactMsg', false, 'Revisa el nombre y el teléfono.');
     resetContactForm();
+    setMsg('contactMsg', true, 'Guardado.');
     listContacts();
   } catch (e) {
-    msg.className = 'msg error';
-    msg.textContent = 'No se pudo guardar.';
+    setMsg('contactMsg', false, 'No se pudo guardar.');
   }
 }
 
-async function deleteContact(id) {
-  if (!confirm('¿Borrar este contacto?')) return;
-  await rpc('admin_delete_contact', { p_passcode: passcode, p_id: id }).catch(() => {});
+async function deleteContact(id, name) {
+  if (!confirm(`¿Borrar el contacto "${name}"?`)) return;
+  const r = await rpc('sesion_borrar_contacto', { p_token: token, p_id: id }).catch(() => null);
+  if (r === 'no_session') return sessionGone();
   listContacts();
 }
+
+document.getElementById('gatePin').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
 </script>
 </body>
 </html>
