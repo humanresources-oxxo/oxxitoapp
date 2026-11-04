@@ -31,11 +31,21 @@ export async function lookupEmployee(numeroEmpleado: string): Promise<EmployeeLo
   };
 }
 
-export async function setInitialPin(numeroEmpleado: string, pin: string): Promise<Employee> {
-  const { data, error } = await supabase.rpc('set_initial_pin', { p_numero: numeroEmpleado, p_pin: pin });
+// First PIN (migration 38): needs the birth date RH loaded ('YYYY-MM-DD').
+export type RegisterPinResult =
+  | 'ok'
+  | 'not_found'
+  | 'pin_already_set'
+  | 'weak_pin'
+  | 'rh_asigna_pin'
+  | 'sin_fecha'
+  | 'fecha_incorrecta'
+  | 'rate_limited';
+
+export async function registerPin(numeroEmpleado: string, fechaNacimiento: string, pin: string): Promise<RegisterPinResult> {
+  const { data, error } = await supabase.rpc('registrar_pin', { p_numero: numeroEmpleado, p_fecha: fechaNacimiento, p_pin: pin });
   if (error) throw error;
-  const row = data?.[0];
-  return { numeroEmpleado: row.numero_empleado, nombre: row.nombre };
+  return (data as RegisterPinResult) ?? 'not_found';
 }
 
 export type VerifyPinResult =
