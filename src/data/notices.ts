@@ -1,6 +1,10 @@
 export type NoticeKind = 'policy' | 'training' | 'schedule' | 'benefit' | 'vote';
 export type NoticeFilter = 'all' | 'unread' | NoticeKind;
 
+// Image of an aviso (migration 36): size only; the data loads apart
+// (services/notices.ts cargarImagenAviso).
+export type NoticeImage = { id: string; width: number; height: number };
+
 export type Notice = {
   id: string;
   title: string;
@@ -9,6 +13,7 @@ export type Notice = {
   kind: NoticeKind;
   read: boolean;
   priority?: boolean;
+  images?: NoticeImage[];
 };
 
 export const noticeKindMeta: Record<

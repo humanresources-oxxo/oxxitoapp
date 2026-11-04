@@ -25,7 +25,15 @@
       "baseUrl": "/oxxitoapp"
     },
     "plugins": [
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Conoxxo usa tus fotos solo cuando eliges una imagen para adjuntarla a un aviso.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ]
     ]
   }
 }
