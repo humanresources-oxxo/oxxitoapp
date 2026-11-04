@@ -9,6 +9,9 @@ export const storageKeys = {
   noticeReadState: 'oxxito:noticeReadState',
   profilePrefs: 'oxxito:profilePrefs',
   session: 'oxxito:session',
+  // Session key from iniciar_sesion (services/sesion.ts), apart from the
+  // session object because several screens rewrite that one.
+  sessionKey: 'oxxito:sessionKey',
   chatQuestionCount: 'oxxito:chatQuestionCount',
   actaDraft: 'oxxito:actaDraft',
   storeCatalog: 'oxxito:storeCatalog',

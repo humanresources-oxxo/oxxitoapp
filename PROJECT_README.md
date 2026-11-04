@@ -32,7 +32,13 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   nunca se embebe en el bundle del cliente), búsqueda de texto completo en español vía
   RPC `search_reglamento`. Sin LLM: es un keyword match contra el texto real.
 - Directorio: tabla `directory_contacts`, editable desde el panel admin.
-- Avisos: tabla `notices`, se publican desde Perfil (passcode) o desde el panel admin.
+- Avisos: tabla `notices`. Se publican desde Perfil, solo RH y Gerente de plaza, con la llave
+  de sesión (sin passcode); el panel admin web sigue usando el passcode de RH.
+- Llave de sesión (migración 35, `src/services/sesion.ts`): al iniciar sesión con el PIN la app
+  pide a `iniciar_sesion` una llave aleatoria y la guarda en el teléfono (Supabase guarda solo su
+  SHA-256). Publicar avisos, votar y administrar votaciones van con esa llave, sin PIN ni
+  passcode. Cambiar o reiniciar el PIN la invalida; cerrar sesión también. Una sesión de antes
+  de la llave pide el PIN una sola vez. Dura 180 días desde el último uso.
 
 ✅ **Panel admin (`admin/index.html`):** página web aparte (no dentro del app de React
   Native), protegida por el mismo passcode de RH. Sirve para: agregar empleados nuevos
@@ -45,15 +51,15 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   (`supabase/migration_34_votaciones.sql`); servicio `src/services/votaciones.ts`.
   - **Quién vota:** toda la plaza o solo algunas tiendas (se comparan con la tienda del
     empleado en `employees`, sin acentos ni "OXXO"/"OAX"; también los nombres que nómina
-    corta a 25 letras). Un voto por empleado, confirmado con su **PIN** (mismo bloqueo de 5
-    intentos que el login).
+    corta a 25 letras). Un voto por empleado, con su llave de sesión (migración 35; las
+    funciones con PIN de la migración 34 se borraron).
   - **Secreto:** `votacion_participantes` guarda quién ya votó y `votacion_opciones.votos` es
     un contador; no hay tabla que una a la persona con su opción ni horas de voto.
   - **Resultados:** al cerrar (o al votar, si se marcó "Mostrar resultados al votar"). RH los
     ve siempre. Las cerradas se ven 60 días.
   - **Crear / cerrar / borrar:** desde la misma pantalla, solo los puestos de
-    `voto_puede_administrar` (RH, gerente de plaza, analista EC, practicante, Acces Test),
-    confirmando con su PIN. Una votación para toda la plaza publica un aviso (tipo `vote`).
+    `voto_puede_administrar` (RH: Responsable RH, Analista EC, Practicante; Gerente de plaza;
+    Acces Test), con su llave de sesión. Son los mismos que publican avisos. Una votación para toda la plaza publica un aviso (tipo `vote`).
   - La tarjeta de Inicio muestra cuántas faltan por votar y se oculta si Supabase no responde.
 
 ✅ **Casos DILOS (`src/screens/DilosScreen.tsx`):** dashboard **solo de la app**: casos

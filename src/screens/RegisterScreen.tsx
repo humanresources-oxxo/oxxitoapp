@@ -12,6 +12,7 @@ import { OxButton } from '../components/OxButton';
 import { Icon } from '../components/Icon';
 import { useOnboarding } from '../context/OnboardingContext';
 import { setInitialPin } from '../services/auth';
+import { obtenerLlave } from '../services/sesion';
 import { colors, type } from '../theme/tokens';
 
 export function RegisterScreen({
@@ -38,6 +39,7 @@ export function RegisterScreen({
     setError('');
     try {
       await setInitialPin(empNum, regPin);
+      obtenerLlave(empNum, regPin).catch(() => {});
       onContinue();
     } catch (e: any) {
       const message = typeof e?.message === 'string' ? e.message : '';
