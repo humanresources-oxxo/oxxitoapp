@@ -1,13 +1,15 @@
 // src/screens/PermissionsScreen.tsx
 // Ported from PPermissions in screens-proto.jsx.
-import React, { useRef } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform, Animated } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StepsHeader } from '../components/StepsHeader';
 import { OxButton } from '../components/OxButton';
 import { Icon } from '../components/Icon';
 import { useOnboarding } from '../context/OnboardingContext';
+import { TextoLegal } from '../components/TextoLegal';
+import { AVISO_PRIVACIDAD, TERMINOS_USO } from '../data/legal';
 import { setJson, storageKeys } from '../services/appStorage';
 import { colors, gradients, radii, type } from '../theme/tokens';
 
@@ -18,8 +20,10 @@ export function PermissionsScreen({
   onBack: () => void;
   onContinue: () => void;
 }) {
-  const { empNum, verifiedName, tienda, plaza, puesto, createdAt, notif, setNotif, terms, setTerms } =
+  const { empNum, verifiedName, tienda, plaza, puesto, createdAt, terms, setTerms } =
     useOnboarding();
+
+  const [legal, setLegal] = useState<'privacidad' | 'terminos' | null>(null);
 
   const finish = () => {
     if (!terms) return;
@@ -41,17 +45,6 @@ export function PermissionsScreen({
         <View style={styles.fields}>
           <View style={styles.card}>
             <View style={styles.perm}>
-              <LinearGradient colors={gradients.oxGrad.colors} style={styles.permIcon}>
-                <Icon name="bell" size={22} color="#fff" />
-              </LinearGradient>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.permTitle}>Notificaciones</Text>
-                <Text style={styles.permDesc}>Avisos sobre cambios en el reglamento y políticas.</Text>
-              </View>
-              <Toggle on={notif} onPress={() => setNotif(!notif)} />
-            </View>
-            <View style={styles.permDivider} />
-            <View style={styles.perm}>
               <LinearGradient colors={gradients.dark.colors} style={styles.permIcon}>
                 <Icon name="shield" size={22} color="#fff" />
               </LinearGradient>
@@ -68,8 +61,15 @@ export function PermissionsScreen({
               {terms ? <Icon name="check" size={15} color="#fff" strokeWidth={2.4} /> : null}
             </View>
             <Text style={styles.checkText}>
-              Acepto los <Text style={styles.checkLink}>Términos de uso</Text> y el{' '}
-              <Text style={styles.checkLink}>Aviso de Privacidad</Text> de Cadena Comercial OXXO.
+              Acepto los{' '}
+              <Text style={styles.checkLink} onPress={() => setLegal('terminos')} accessibilityRole="link">
+                Términos de uso
+              </Text>{' '}
+              y el{' '}
+              <Text style={styles.checkLink} onPress={() => setLegal('privacidad')} accessibilityRole="link">
+                Aviso de Privacidad
+              </Text>{' '}
+              de Cadena Comercial OXXO.
             </Text>
           </Pressable>
         </View>
@@ -84,27 +84,14 @@ export function PermissionsScreen({
           Aceptar y entrar
         </OxButton>
       </SafeAreaView>
+      {legal ? (
+        <TextoLegal
+          titulo={legal === 'privacidad' ? 'Aviso de privacidad' : 'Términos de uso'}
+          parrafos={legal === 'privacidad' ? AVISO_PRIVACIDAD : TERMINOS_USO}
+          onClose={() => setLegal(null)}
+        />
+      ) : null}
     </View>
-  );
-}
-
-function Toggle({ on, onPress }: { on: boolean; onPress: () => void }) {
-  const anim = useRef(new Animated.Value(on ? 1 : 0)).current;
-  React.useEffect(() => {
-    Animated.timing(anim, { toValue: on ? 1 : 0, duration: 200, useNativeDriver: false }).start();
-  }, [on, anim]);
-
-  const knobLeft = anim.interpolate({ inputRange: [0, 1], outputRange: [3, 21] });
-
-  return (
-    <Pressable onPress={onPress}>
-      <LinearGradient
-        colors={on ? gradients.oxGrad.colors : [colors.line2, colors.line2]}
-        style={styles.toggle}
-      >
-        <Animated.View style={[styles.toggleKnob, { left: knobLeft }]} />
-      </LinearGradient>
-    </Pressable>
   );
 }
 

@@ -5,6 +5,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Icon } from '../components/Icon';
 import { ActasScreen } from '../screens/ActasScreen';
 import { ChatHistoryItem, HomeScreen } from '../screens/HomeScreen';
@@ -196,7 +197,12 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
 
   return (
     <View style={styles.shell}>
-      <View style={styles.content}>{content}</View>
+      <View style={styles.content}>
+        {/* A screen that fails shows a message; switching tabs (key) clears it. */}
+        <ErrorBoundary key={activeTab} onReset={() => setActiveTab('home')}>
+          {content}
+        </ErrorBoundary>
+      </View>
       <SafeAreaView edges={['bottom']} style={styles.tabSafe}>
         <BlurView intensity={38} tint="light" style={styles.tabBar}>
           {TABS.map((tab) => {
