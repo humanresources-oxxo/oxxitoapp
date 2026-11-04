@@ -8,9 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BearAvatar } from '../components/Bear';
 import { Icon } from '../components/Icon';
 import { PreferenceKey, employeeProfile, profileSettings } from '../data/employee';
-import { NoticeKind, noticeKindMeta } from '../data/notices';
-import { publishNotice } from '../services/notices';
-import { leerLlave, obtenerLlave, olvidarLlave, puedePublicar } from '../services/sesion';
+import { AvisoComposer } from '../components/AvisoComposer';
+import { obtenerLlave, puedePublicar } from '../services/sesion';
 import { changePin } from '../services/auth';
 import { fetchContacts } from '../services/directory';
 import { getJson, setJson, storageKeys } from '../services/appStorage';
@@ -118,7 +117,7 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         onPrivacyNotice={showPrivacy}
         onHelp={showHelp}
       />
-      <NoticeComposer
+      <AvisoComposer
         visible={noticeModal}
         numeroEmpleado={session?.numeroEmpleado ?? ''}
         onClose={() => setNoticeModal(false)}
@@ -448,152 +447,6 @@ function ChangePinModal({
   );
 }
 
-const NOTICE_KINDS: NoticeKind[] = ['policy', 'training', 'schedule', 'benefit'];
-
-// Avisos go with the session key, no passcode. A session from before the key
-// existed asks for the PIN once.
-function NoticeComposer({ visible, numeroEmpleado, onClose }: { visible: boolean; numeroEmpleado: string; onClose: () => void }) {
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
-  const [kind, setKind] = useState<NoticeKind>('policy');
-  const [priority, setPriority] = useState(false);
-  const [pin, setPin] = useState('');
-  const [sinLlave, setSinLlave] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (visible) leerLlave().then((l) => setSinLlave(!l));
-  }, [visible]);
-
-  const ready = title.trim().length > 2 && body.trim().length > 2 && (!sinLlave || pin.length === 4);
-
-  const reset = () => {
-    setTitle('');
-    setBody('');
-    setKind('policy');
-    setPriority(false);
-    setPin('');
-    setError('');
-  };
-
-  const submit = async () => {
-    if (!ready || submitting) return;
-    setSubmitting(true);
-    setError('');
-    try {
-      if (sinLlave) {
-        const st = await obtenerLlave(numeroEmpleado, pin);
-        if (st !== 'ok') {
-          setPin('');
-          setError(st === 'locked' ? 'Cuenta bloqueada por varios intentos fallidos. Intenta más tarde.' : 'El PIN no es correcto.');
-          return;
-        }
-        setSinLlave(false);
-      }
-      const r = await publishNotice((await leerLlave()) ?? '', title.trim(), body.trim(), kind, priority);
-      if (r === 'ok') {
-        reset();
-        onClose();
-        showAlert('Aviso publicado', 'Ya está visible para todos los colaboradores.');
-      } else if (r === 'no_session') {
-        await olvidarLlave();
-        setSinLlave(true);
-        setError('Confirma tu PIN para publicar.');
-      } else if (r === 'not_allowed') {
-        setError('Tu puesto no puede publicar avisos.');
-      } else {
-        setError('Revisa el título y el mensaje.');
-      }
-    } catch {
-      setError('No pudimos publicar el aviso.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
-      <View style={styles.modalBackdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <BlurView intensity={36} tint="light" style={styles.composerSheet}>
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.composerTitle}>Publicar aviso</Text>
-
-            <Text style={styles.composerLabel}>Titulo</Text>
-            <TextInput
-              style={styles.composerInput}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Ej. Actualización de puntualidad"
-              placeholderTextColor={colors.ink3}
-            />
-
-            <Text style={styles.composerLabel}>Mensaje</Text>
-            <TextInput
-              style={[styles.composerInput, styles.composerTextarea]}
-              value={body}
-              onChangeText={setBody}
-              placeholder="Escribe el comunicado completo"
-              placeholderTextColor={colors.ink3}
-              multiline
-            />
-
-            <Text style={styles.composerLabel}>Categoria</Text>
-            <View style={styles.kindRow}>
-              {NOTICE_KINDS.map((k) => (
-                <Pressable
-                  key={k}
-                  style={[styles.kindChip, kind === k && styles.kindChipActive]}
-                  onPress={() => setKind(k)}
-                >
-                  <Text style={[styles.kindChipText, kind === k && styles.kindChipTextActive]}>
-                    {noticeKindMeta[k].label}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Pressable style={styles.priorityRow} onPress={() => setPriority(!priority)}>
-              <View style={[styles.checkBox, !priority && styles.checkBoxEmpty]}>
-                {priority ? <Icon name="check" size={14} color="#fff" /> : null}
-              </View>
-              <Text style={styles.composerLabel}>Marcar como prioritario</Text>
-            </Pressable>
-
-            {sinLlave ? (
-              <>
-                <Text style={styles.composerLabel}>Tu PIN (solo esta vez)</Text>
-                <TextInput
-                  style={styles.composerInput}
-                  value={pin}
-                  onChangeText={(v) => setPin(v.replace(/\D/g, '').slice(0, 4))}
-                  placeholder="••••"
-                  placeholderTextColor={colors.ink3}
-                  keyboardType="number-pad"
-                  secureTextEntry
-                  maxLength={4}
-                  autoComplete="off"
-                />
-              </>
-            ) : null}
-            {error ? <Text style={styles.composerError}>{error}</Text> : null}
-
-            <Pressable
-              style={[styles.publishButton, !ready && styles.publishButtonDisabled]}
-              onPress={submit}
-              disabled={!ready || submitting}
-            >
-              <Text style={styles.publishButtonText}>{submitting ? 'Publicando...' : 'Publicar'}</Text>
-            </Pressable>
-          </ScrollView>
-        </BlurView>
-      </View>
-    </Modal>
-  );
-}
-
 function Toggle({ enabled, onPress }: { enabled: boolean; onPress: () => void }) {
   return (
     <Pressable
@@ -897,54 +750,6 @@ const styles = StyleSheet.create({
     fontFamily: 'PlusJakartaSans_600SemiBold',
     fontSize: 14.5,
     color: colors.ink,
-  },
-  composerTextarea: {
-    minHeight: 90,
-    textAlignVertical: 'top',
-  },
-  kindRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  kindChip: {
-    borderRadius: radii.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  kindChipActive: {
-    backgroundColor: colors.oxRed,
-    borderColor: colors.oxRed,
-  },
-  kindChipText: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    fontSize: 12.5,
-    color: colors.ink2,
-  },
-  kindChipTextActive: {
-    color: colors.white,
-  },
-  priorityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 16,
-  },
-  checkBox: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    backgroundColor: colors.oxRed,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkBoxEmpty: {
-    backgroundColor: 'transparent',
-    borderWidth: 1.5,
-    borderColor: colors.line2,
   },
   composerError: {
     ...type.caption,

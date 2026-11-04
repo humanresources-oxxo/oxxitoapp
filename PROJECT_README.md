@@ -32,8 +32,13 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   nunca se embebe en el bundle del cliente), búsqueda de texto completo en español vía
   RPC `search_reglamento`. Sin LLM: es un keyword match contra el texto real.
 - Directorio: tabla `directory_contacts`, editable desde el panel admin.
-- Avisos: tabla `notices`. Se publican desde Perfil, solo RH y Gerente de plaza, con la llave
-  de sesión (sin passcode); el panel admin web sigue usando el passcode de RH.
+- Avisos: tabla `notices`. Se publican desde Avisos (botón de lápiz) o Perfil, solo RH y Gerente
+  de plaza, con la llave de sesión (sin passcode); el panel admin web sigue usando el passcode de RH.
+  Desde la migración 36 llevan hasta 3 imágenes (`notice_images`, Base64): se eligen con
+  `expo-image-picker` y se comprimen en el teléfono con `expo-image-manipulator` (JPEG, lado mayor
+  1280 px, ~150 KB); la app lista con `list_avisos` y carga cada imagen con `aviso_imagen`. Con
+  imagen el texto es opcional. RH y Gerente de plaza también los borran desde el detalle
+  (`sesion_borrar_aviso`). Componentes: `AvisoComposer`, `PinUnaVez`.
 - Llave de sesión (migración 35, `src/services/sesion.ts`): al iniciar sesión con el PIN la app
   pide a `iniciar_sesion` una llave aleatoria y la guarda en el teléfono (Supabase guarda solo su
   SHA-256). Publicar avisos, votar y administrar votaciones van con esa llave, sin PIN ni

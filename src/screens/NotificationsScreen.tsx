@@ -1,18 +1,25 @@
 // src/screens/NotificationsScreen.tsx
-// Internal notices center with read/unread state and detail sheet.
-import React, { useEffect, useMemo, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+// Internal notices center with read/unread state and detail sheet. Avisos can
+// carry up to 3 images (shown in the card, the detail and full screen). RH and
+// Gerente de plaza also publish ("Nuevo aviso") and delete them here.
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AvisoComposer } from '../components/AvisoComposer';
 import { Icon } from '../components/Icon';
+import { PinUnaVez } from '../components/PinUnaVez';
 import {
   Notice,
   NoticeFilter,
   noticeFilters,
+  NoticeImage,
   noticeKindMeta,
 } from '../data/notices';
-import { fetchNotices } from '../services/notices';
+import { cargarImagenAviso, deleteNotice, fetchNotices } from '../services/notices';
+import { leerLlave, olvidarLlave, puedePublicar } from '../services/sesion';
+import { confirmAlert, showAlert } from '../utils/alert';
 import { getJson, setJson, storageKeys } from '../services/appStorage';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
@@ -22,6 +29,21 @@ export function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<NoticeFilter>('all');
   const [selected, setSelected] = useState<Notice | null>(null);
+  const [viewer, setViewer] = useState<NoticeImage | null>(null);
+  const [composer, setComposer] = useState(false);
+  const [numero, setNumero] = useState('');
+  const [canPublish, setCanPublish] = useState(false);
+  const [reload, setReload] = useState(0);
+  // Aviso to delete once the PIN is confirmed (session without a key).
+  const [pinFor, setPinFor] = useState<Notice | null>(null);
+  const refresh = useCallback(() => setReload((n) => n + 1), []);
+
+  useEffect(() => {
+    getJson<{ numeroEmpleado?: string; puesto?: string } | null>(storageKeys.session, null).then((s) => {
+      setNumero(s?.numeroEmpleado ?? '');
+      setCanPublish(puedePublicar(s?.puesto));
+    });
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -48,7 +70,7 @@ export function NotificationsScreen() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [reload]);
 
   const saveNotices = (nextNotices: Notice[]) => {
     const readState = nextNotices.reduce<Record<string, boolean>>((acc, notice) => {
@@ -88,6 +110,21 @@ export function NotificationsScreen() {
     setSelected(null);
   };
 
+  const removeNotice = async (notice: Notice, confirmed = false) => {
+    if (!confirmed && !(await confirmAlert('Borrar aviso', `"${notice.title}" se borra para todos, con sus imágenes.`, 'Borrar'))) return;
+    const llave = await leerLlave();
+    const r = llave ? await deleteNotice(llave, notice.id).catch(() => 'error') : 'no_session';
+    if (r === 'ok') {
+      setSelected(null);
+      refresh();
+    } else if (r === 'no_session') {
+      await olvidarLlave();
+      setPinFor(notice);
+    } else {
+      showAlert('No se pudo borrar', r === 'not_allowed' ? 'Tu puesto no puede borrar avisos.' : 'Revisa tu conexión e intenta de nuevo.');
+    }
+  };
+
   return (
     <View style={styles.screen}>
       <LinearGradient
@@ -106,9 +143,16 @@ export function NotificationsScreen() {
               {unreadCount > 0 ? `${unreadCount} ${unreadCount === 1 ? 'pendiente' : 'pendientes'} por revisar` : 'Todo está al día'}
             </Text>
           </View>
-          <Pressable style={styles.headerAction} onPress={markAllRead}>
-            <Icon name="check" size={20} color={colors.oxRed} />
-          </Pressable>
+          <View style={styles.headerActions}>
+            {canPublish ? (
+              <Pressable style={[styles.headerAction, styles.headerActionMain]} onPress={() => setComposer(true)} accessibilityLabel="Nuevo aviso">
+                <Icon name="edit" size={19} color={colors.white} />
+              </Pressable>
+            ) : null}
+            <Pressable style={styles.headerAction} onPress={markAllRead} accessibilityLabel="Marcar todos como leídos">
+              <Icon name="check" size={20} color={colors.oxRed} />
+            </Pressable>
+          </View>
         </View>
       </SafeAreaView>
 
@@ -157,10 +201,32 @@ export function NotificationsScreen() {
         <View style={styles.modalBackdrop}>
           <Pressable style={StyleSheet.absoluteFill} onPress={closeDetail} />
           <BlurView intensity={36} tint="light" style={styles.detailSheet}>
-            {selected ? <NoticeDetail notice={selected} onClose={closeDetail} /> : null}
+            {selected ? (
+              <NoticeDetail
+                notice={selected}
+                onClose={closeDetail}
+                onImage={setViewer}
+                onDelete={canPublish ? () => removeNotice(selected) : undefined}
+              />
+            ) : null}
           </BlurView>
         </View>
+        {viewer ? <ImageViewer image={viewer} onClose={() => setViewer(null)} /> : null}
       </Modal>
+
+      {pinFor ? (
+        <PinUnaVez
+          numero={numero}
+          onCerrar={() => setPinFor(null)}
+          onListo={() => {
+            const n = pinFor;
+            setPinFor(null);
+            removeNotice(n, true);
+          }}
+        />
+      ) : null}
+
+      <AvisoComposer visible={composer} numeroEmpleado={numero} onClose={() => setComposer(false)} onPublished={refresh} />
     </View>
   );
 }
@@ -183,20 +249,90 @@ function NoticeCard({ notice, onPress }: { notice: Notice; onPress: () => void }
           <Text style={styles.noticeDate}>{notice.date}</Text>
         </View>
         <Text style={styles.noticeTitle}>{notice.title}</Text>
-        <Text style={styles.noticeBody} numberOfLines={2}>
-          {notice.body}
-        </Text>
+        {notice.body ? (
+          <Text style={styles.noticeBody} numberOfLines={2}>
+            {notice.body}
+          </Text>
+        ) : null}
+        {notice.images?.length ? (
+          <View>
+            <NoticeImageView image={notice.images[0]} style={styles.cardImage} />
+            {notice.images.length > 1 ? (
+              <View style={styles.moreImages}>
+                <Text style={styles.moreImagesText}>+{notice.images.length - 1}</Text>
+              </View>
+            ) : null}
+          </View>
+        ) : null}
       </View>
       <Icon name="chevR" size={18} color={colors.ink3} />
     </Pressable>
   );
 }
 
-function NoticeDetail({ notice, onClose }: { notice: Notice; onClose: () => void }) {
+// One aviso image, loaded on demand (services/notices.ts keeps it in memory).
+function NoticeImageView({
+  image,
+  style,
+  resizeMode = 'cover',
+  onPress,
+}: {
+  image: NoticeImage;
+  style: any;
+  resizeMode?: 'cover' | 'contain';
+  onPress?: () => void;
+}) {
+  const [uri, setUri] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let active = true;
+    cargarImagenAviso(image.id)
+      .then((u) => active && setUri(u))
+      .catch(() => active && setFailed(true));
+    return () => {
+      active = false;
+    };
+  }, [image.id]);
+  return (
+    <Pressable style={[styles.imageBox, style]} onPress={onPress} disabled={!onPress || !uri} accessibilityRole={onPress ? 'imagebutton' : 'image'}>
+      {uri ? (
+        <Image source={{ uri }} style={styles.imageFill} resizeMode={resizeMode} accessibilityLabel="Imagen del aviso" />
+      ) : failed ? (
+        <Icon name="alert" size={20} color={colors.ink3} />
+      ) : (
+        <ActivityIndicator color={colors.oxRed} />
+      )}
+    </Pressable>
+  );
+}
+
+function ImageViewer({ image, onClose }: { image: NoticeImage; onClose: () => void }) {
+  return (
+    <View style={styles.viewer}>
+      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      <NoticeImageView image={image} style={styles.viewerImage} resizeMode="contain" />
+      <Pressable style={styles.viewerClose} onPress={onClose} accessibilityLabel="Cerrar imagen">
+        <Icon name="close" size={20} color={colors.white} />
+      </Pressable>
+    </View>
+  );
+}
+
+function NoticeDetail({
+  notice,
+  onClose,
+  onImage,
+  onDelete,
+}: {
+  notice: Notice;
+  onClose: () => void;
+  onImage: (image: NoticeImage) => void;
+  onDelete?: () => void;
+}) {
   const meta = noticeKindMeta[notice.kind];
 
   return (
-    <>
+    <ScrollView style={{ alignSelf: 'stretch' }} contentContainerStyle={{ alignItems: 'center' }} showsVerticalScrollIndicator={false}>
       <View style={styles.sheetHandle} />
       <LinearGradient colors={gradients[meta.accent].colors} style={styles.detailIcon}>
         <Icon name={meta.icon} size={27} color="#fff" />
@@ -204,7 +340,15 @@ function NoticeDetail({ notice, onClose }: { notice: Notice; onClose: () => void
       <Text style={styles.detailKind}>{meta.label}</Text>
       <Text style={styles.detailTitle}>{notice.title}</Text>
       <Text style={styles.detailDate}>{notice.date}</Text>
-      <Text style={styles.detailBody}>{notice.body}</Text>
+      {notice.body ? <Text style={styles.detailBody}>{notice.body}</Text> : null}
+      {notice.images?.map((img) => (
+        <NoticeImageView
+          key={img.id}
+          image={img}
+          style={[styles.detailImage, { aspectRatio: img.width / img.height }]}
+          onPress={() => onImage(img)}
+        />
+      ))}
       {notice.priority ? (
         <View style={styles.priorityBox}>
           <Icon name="alert" size={18} color={colors.oxRed} />
@@ -214,11 +358,48 @@ function NoticeDetail({ notice, onClose }: { notice: Notice; onClose: () => void
       <Pressable style={styles.closeButton} onPress={onClose}>
         <Text style={styles.closeButtonText}>Entendido</Text>
       </Pressable>
-    </>
+      {onDelete ? (
+        <Pressable style={styles.deleteButton} onPress={onDelete} accessibilityRole="button">
+          <Icon name="close" size={15} color={colors.oxRed} />
+          <Text style={styles.deleteButtonText}>Borrar aviso</Text>
+        </Pressable>
+      ) : null}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  headerActions: { flexDirection: 'row', gap: 8 },
+  headerActionMain: { backgroundColor: colors.oxRed, borderColor: colors.oxRed },
+  cardImage: { height: 150, borderRadius: 14, marginTop: 10 },
+  moreImages: {
+    position: 'absolute',
+    right: 8,
+    bottom: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(36,26,23,.72)',
+  },
+  moreImagesText: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: colors.white },
+  imageBox: { overflow: 'hidden', backgroundColor: colors.field, alignItems: 'center', justifyContent: 'center' },
+  imageFill: { width: '100%', height: '100%' },
+  detailImage: { alignSelf: 'stretch', borderRadius: 16, marginTop: 14, maxHeight: 520 },
+  viewer: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(10,8,7,.94)', alignItems: 'center', justifyContent: 'center', padding: 12 },
+  viewerImage: { width: '100%', height: '82%', backgroundColor: 'transparent' },
+  viewerClose: {
+    position: 'absolute',
+    top: 48,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButton: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14, paddingVertical: 8, paddingHorizontal: 14 },
+  deleteButtonText: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13.5, color: colors.oxRed },
   screen: {
     flex: 1,
     backgroundColor: colors.bg,
@@ -415,6 +596,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   detailSheet: {
+    maxHeight: '88%',
     borderRadius: 28,
     overflow: 'hidden',
     backgroundColor: 'rgba(255,255,255,.88)',
