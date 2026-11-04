@@ -175,6 +175,53 @@ export function Columnas({
   );
 }
 
+// Stacked columns (e.g. negotiations per month split by business unit).
+export function ColumnasApiladas({
+  datos,
+  alto = 130,
+}: {
+  datos: Array<{ clave: string; etiqueta: string; segmentos: Array<{ valor: number; color: string }> }>;
+  alto?: number;
+}) {
+  const total = (d: (typeof datos)[number]) => d.segmentos.reduce((x, s) => x + s.valor, 0);
+  const max = Math.max(0, ...datos.map(total)) || 1;
+  return (
+    <View>
+      <View style={[styles.colFila, { height: alto }]}>
+        {datos.map((d) => (
+          <View key={d.clave} style={styles.colToque} accessibilityLabel={`${d.etiqueta}: ${total(d)}`}>
+            {total(d) ? <Text style={styles.colTotal}>{total(d)}</Text> : null}
+            <View style={[styles.colPila, { height: `${(total(d) / max) * 82}%` }]}>
+              {[...d.segmentos].reverse().map((s, i) => (s.valor ? <View key={i} style={{ flex: s.valor, backgroundColor: s.color }} /> : null))}
+            </View>
+          </View>
+        ))}
+      </View>
+      <View style={styles.colEtqs}>
+        {datos.map((d) => (
+          <Text key={d.clave} style={styles.colEtq} numberOfLines={1}>
+            {d.etiqueta}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// Big number tile ("129 mil · Colaboradores"); tono tints the value.
+export function Indicador({ valor, etiqueta, tono }: { valor: string; etiqueta: string; tono?: string }) {
+  return (
+    <View style={[styles.card, styles.indicador]}>
+      <Text style={[styles.indValor, tono ? { color: tono } : null]} numberOfLines={1} adjustsFontSizeToFit>
+        {valor}
+      </Text>
+      <Text style={styles.indEtq} numberOfLines={2}>
+        {etiqueta}
+      </Text>
+    </View>
+  );
+}
+
 // One bar split in segments, with its legend below.
 export function BarraApilada({ segmentos }: { segmentos: Array<{ etiqueta: string; valor: number; color: string; texto?: string }> }) {
   const total = segmentos.reduce((s, x) => s + x.valor, 0) || 1;
@@ -271,6 +318,11 @@ const styles = StyleSheet.create({
   colEtqs: { flexDirection: 'row', gap: 4, marginTop: 6 },
   colEtq: { flex: 1, textAlign: 'center', fontFamily: 'PlusJakartaSans_700Bold', fontSize: 9.5, color: colors.ink3 },
   colEtqActiva: { color: colors.oxRed },
+  colTotal: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 10, color: colors.ink2, textAlign: 'center', marginBottom: 3 },
+  colPila: { borderTopLeftRadius: 5, borderTopRightRadius: 5, overflow: 'hidden', minHeight: 3 },
+  indicador: { flex: 1, paddingVertical: 14, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', minHeight: 84 },
+  indValor: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 24, color: colors.ink },
+  indEtq: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11.5, color: colors.ink2, textAlign: 'center', marginTop: 4 },
   apilada: { flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', backgroundColor: colors.field },
   delta: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: radii.pill, backgroundColor: 'rgba(255,255,255,.22)', marginTop: 8 },
   deltaTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12.5, color: colors.white },
