@@ -1,40 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <title>Conoxxo</title>
-    <meta name="theme-color" content="#E30613" />
-    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
-    <style id="expo-reset">
-      /* These styles make the body full-height */
-      html,
-      body {
-        height: 100%;
-      }
-      /* These styles disable body scrolling if you are using <ScrollView> */
-      body {
-        overflow: hidden;
-      }
-      /* These styles make the root element full-height */
-      #root {
-        display: flex;
-        height: 100%;
-        flex: 1;
-      }
-    </style>
-  <link rel="icon" href="/oxxitoapp/favicon.ico" />  <link rel="icon" href="/oxxitoapp/icon-192.png" />
-  <link rel="manifest" href="/oxxitoapp/manifest.json" />
-  <link rel="apple-touch-icon" href="/oxxitoapp/apple-touch-icon.png" /></head>
-
-  <body>
-    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
-    <noscript>
-      You need to enable JavaScript to run this app.
-    </noscript>
-    <!-- The root element for your Expo app. -->
-    <div id="root"></div>
-  <script src="/oxxitoapp/_expo/static/js/web/index-e7cda0ed9cb5afae5eda1b7d1c0d6267.js" defer></script>
+<html lang="es">
+<head>
+  <!-- La app se mudo a Cloudflare (PROJECT_README, "Mudanza a Cloudflare").
+       GitHub Pages ya solo publica esta pagina (deploy-web.yml): en cualquier
+       ruta de /oxxitoapp/ avisa y manda a la misma ruta en la direccion nueva. -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#E30613" />
+  <meta name="robots" content="noindex" />
+  <title>Conoxxo se mudó</title>
+  <link rel="icon" href="/oxxitoapp/icon-192.png" />
+  <style>
+    :root { --bg: #FFF7F0; --ink: #241A17; --ink2: #6B5A54; --red: #E30613; --orange: #F2412A; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--bg); color: var(--ink);
+      font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+    .tarjeta { width: min(420px, 100%); padding: 28px 24px; border-radius: 28px; background: #fff; box-shadow: 0 20px 50px rgba(120, 30, 20, .12); text-align: center; }
+    img { width: 84px; height: 84px; border-radius: 22px; }
+    h1 { margin: 14px 0 8px; font-size: 26px; }
+    p { margin: 0 0 14px; color: var(--ink2); font-size: 15px; line-height: 1.5; }
+    .direccion { display: inline-block; margin: 2px 0 18px; padding: 8px 12px; border-radius: 12px; background: var(--bg); color: var(--ink); font-weight: 700; word-break: break-all; }
+    a.boton { display: block; padding: 15px 18px; border-radius: 16px; background: linear-gradient(135deg, var(--red), var(--orange)); color: #fff; font-weight: 800; font-size: 16px; text-decoration: none; }
+    a.secundario { display: block; margin-top: 12px; color: var(--red); font-weight: 700; text-decoration: none; }
+    small { display: block; margin-top: 14px; color: var(--ink2); }
+  </style>
+</head>
+<body>
+  <main class="tarjeta">
+    <img src="/oxxitoapp/icon-192.png" alt="Conoxxo" />
+    <h1>Conoxxo se mudó</h1>
+    <p>La app ahora está en una dirección nueva. Entras igual, con tu número de empleado y tu PIN.</p>
+    <span class="direccion">conoxxo.plaza-oaxaca.workers.dev</span>
+    <a class="boton" id="ir" href="https://conoxxo.plaza-oaxaca.workers.dev/">Abrir Conoxxo</a>
+    <a class="secundario" href="https://conoxxo.plaza-oaxaca.workers.dev/instalar.html">¿La tenías instalada? Instálala de nuevo aquí</a>
+    <small id="cuenta"></small>
+  </main>
+  <script>
+    (function () {
+      var NUEVA = 'https://conoxxo.plaza-oaxaca.workers.dev';
+      var ruta = location.pathname.replace(/^\/oxxitoapp(?=\/|$)/, '') || '/';
+      // Esta misma pagina se publica como 404.html, admin/ e instalar.html.
+      if (/\/404\.html$/.test(ruta)) ruta = '/';
+      var destino = NUEVA + ruta + location.search + location.hash;
+      document.getElementById('ir').href = destino;
+      // Abierta como app instalada (icono viejo): no se manda sola, para que
+      // alcancen a leer que hay que instalarla de nuevo.
+      var instalada = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
+      if (instalada || /instalar/.test(ruta)) return;
+      var s = 6, el = document.getElementById('cuenta');
+      (function tic() {
+        if (s <= 0) { location.replace(destino); return; }
+        el.textContent = 'Te llevamos en ' + s + ' s…';
+        s -= 1; setTimeout(tic, 1000);
+      })();
+    })();
+  </script>
 </body>
 </html>
