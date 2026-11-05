@@ -373,6 +373,9 @@
 </div>
 
 <script>
+  // La direccion de la app donde se abrio esta pagina (GitHub Pages o Cloudflare).
+  document.getElementById('url-text').textContent = (location.host + location.pathname.replace(/instalar(\.html)?$/, '')).replace(/\/$/, '');
+
   const tabs = document.querySelectorAll('.tab');
   const panels = { android: document.getElementById('panel-android'), ios: document.getElementById('panel-ios') };
   tabs.forEach((tab) => {
