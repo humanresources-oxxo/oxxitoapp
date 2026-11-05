@@ -91,6 +91,17 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     `voto_puede_administrar` (RH: Responsable RH, Analista EC, Practicante; Gerente de plaza), con su llave de sesión. Son los mismos que publican avisos. Una votación para toda la plaza publica un aviso (tipo `vote`).
   - La tarjeta de Inicio muestra cuántas faltan por votar y se oculta si Supabase no responde.
 
+✅ **Lectura con sesión (paso 3, Apps Script v66):** Estructura, Vacaciones, el catálogo de
+  tiendas y la cuota sindical ya no dependen de que el Google Sheet sea público. `leerCsv`
+  (`src/services/gviz.ts`) pide los datos al Apps Script (`leerDatos`) con la llave de sesión;
+  el script lee la hoja como su dueño y solo deja leer `Configuracion`, `Catalogo_Asesores`,
+  `Dashboard_1_Diario` y `Dashboard_5_Semanal`. Mientras la hoja siga pública (o el Apps
+  Script no esté en v66, que se revisa con un GET antes de usarlo: a uno anterior la petición
+  le contaría como contraseña fallida) se cae a GViz directo como antes. Si el script responde
+  `sesion_conoxxo`, la pantalla pide el PIN una vez (`src/components/PinDeSesion.tsx`). La
+  cuota sindical manda la llave y seguirá pública hasta que DashboardsOxxo active
+  `LECTURA_PRIVADA` (entonces exige sesión).
+
 ✅ **Sesión en el Apps Script (paso 2 de la auditoría, Apps Script v65 + migración 41):** CCT
   (`consultarCct`), DILOS (`consultarDilos`) y las actas (`enviarActa`) mandan la llave de sesión
   (`llave`). El script la valida con `sesion_validar` en Supabase (5 min en caché) y solo contesta
@@ -170,7 +181,7 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     `src/utils/compartir.ts` (en web se descarga), igual que el Word de las actas.
   - Si DashboardsOxxo cambia los puestos por defecto, la lista de preaperturas, la
     pestaña o sus columnas, hay que actualizar el servicio.
-  - `src/services/gviz.ts` concentra la lectura por GViz que comparten Vacaciones y
+  - `src/services/gviz.ts` concentra la lectura (Apps Script con sesión, o GViz) que comparten Vacaciones y
     Estructura (y el parser CSV que usa el catálogo de tiendas). Las hojas traen las cinco
     plazas de la Región; la app filtra a `PLAZA = 'Oaxaca'` en la consulta y otra vez al leer.
 
@@ -189,8 +200,8 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   - La fecha de actualización sale de la pestaña `Configuracion` (fila `s5`).
   - El reporte solo trae personal de tienda (SINDICALIZADO): el personal de oficina no
     aparece y, si tiene acceso, la pantalla abre directo en "Mi equipo".
-  - La hoja es pública por GViz, igual que para los dashboards: el filtro por puesto solo
-    oculta la vista de equipo en la app, no es un candado.
+  - Mientras la hoja siga pública por GViz, el filtro por puesto solo oculta la vista de
+    equipo en la app, no es un candado (ver "Lectura con sesión").
   - Si DashboardsOxxo renombra la pestaña o sus columnas, hay que actualizar el servicio.
 
 ✅ **Actas y Formatos (`src/screens/ActasScreen.tsx`):** versión nativa del formulario
@@ -207,7 +218,7 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     DashboardsOxxo: llega al correo de RH y queda en el mismo registro privado de actas.
     "Compartir Word" (en web, "Descargar Word") no lo registra.
   - La tienda se elige del catálogo de DashboardsOxxo (`Catalogo_Asesores`, en
-    `src/services/tiendas.ts`): primero la hoja en vivo vía Apps Script (`readSheet`), si
+    `src/services/tiendas.ts`): primero la hoja en vivo vía Apps Script (`leerDatos` con sesión, luego `readSheet`), si
     falla el CSV de GitHub Pages, y sin señal la última copia guardada. Así el acta se
     envía con el **CR** de la tienda y en el registro de RH (panel admin → Registro de
     actas) se junta con las de la web, que también agrupan por CR. Al elegir la tienda

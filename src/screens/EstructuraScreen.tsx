@@ -10,6 +10,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, Text
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
+import { usePinDeSesion } from '../components/PinDeSesion';
 import { Anillo, Barras, Desplegable, Leyenda } from '../components/Visual';
 import { getJson, storageKeys } from '../services/appStorage';
 import {
@@ -46,8 +47,9 @@ const titulo = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase
 export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: () => void; soloMisTiendas?: boolean }) {
   const [sesion, setSesion] = useState<Sesion>(null);
   const [corte, setCorte] = useState<Corte | null>(null);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<unknown>(null);
   const [intento, setIntento] = useState(0);
+  const pin = usePinDeSesion(() => setIntento((i) => i + 1));
   const [actualizado, setActualizado] = useState('');
   const [texto, setTexto] = useState('');
   const [soloMias, setSoloMias] = useState(true);
@@ -62,10 +64,10 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
   useEffect(() => {
     let activo = true;
     setCorte(null);
-    setError(false);
+    setError(null);
     cargarEstructura()
       .then((c) => activo && setCorte(c))
-      .catch(() => activo && setError(true));
+      .catch((e) => activo && setError(e ?? true));
     return () => {
       activo = false;
     };
@@ -139,11 +141,22 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
         <View style={styles.content}>
           <View style={[styles.card, styles.aviso]}>
             <Icon name="alert" size={26} color={colors.oxRed} />
-            <Text style={styles.avisoTitulo}>No se pudo cargar la estructura</Text>
-            <Text style={styles.avisoTexto}>Revisa tu conexión e intenta de nuevo.</Text>
-            <Pressable style={styles.avisoBoton} onPress={() => setIntento((i) => i + 1)}>
-              <Text style={styles.avisoBotonTexto}>Reintentar</Text>
-            </Pressable>
+            {(() => {
+              const a = pin.aviso(error, {
+                titulo: 'No se pudo cargar la estructura',
+                texto: 'Revisa tu conexión e intenta de nuevo.',
+                accion: { texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) },
+              });
+              return (
+                <>
+                  <Text style={styles.avisoTitulo}>{a.titulo}</Text>
+                  <Text style={styles.avisoTexto}>{a.texto}</Text>
+                  <Pressable style={styles.avisoBoton} onPress={a.accion.onPress}>
+                    <Text style={styles.avisoBotonTexto}>{a.accion.texto}</Text>
+                  </Pressable>
+                </>
+              );
+            })()}
           </View>
         </View>
       ) : !corte ? (
@@ -301,6 +314,7 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
           {detalle ? <DetalleTienda t={detalle} /> : null}
         </SafeAreaView>
       </Modal>
+      {pin.modal}
     </View>
   );
 }

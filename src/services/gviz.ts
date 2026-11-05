@@ -1,9 +1,15 @@
 // src/services/gviz.ts
-// Reads tabs of DashboardsOxxo's Google Sheet through GViz CSV, the same way
-// the dashboards do (js/core.js buildSheetURL). Shared by the screens that show
+// Reads tabs of DashboardsOxxo's Google Sheet as GViz CSV, the same way the
+// dashboards do (js/core.js buildSheetURL). Shared by the screens that show
 // dashboard data (Vacaciones, Estructura).
+// Through the DashboardsOxxo Apps Script (leerDatos, v66) with the session key,
+// so the data keeps loading once the sheet stops being public; while it still
+// is (or the Apps Script hasn't been redeployed), GViz directly as before.
+import { leerLlave, SIN_SESION } from './sesion';
 
 export const SPREADSHEET_ID = '1EbUuyy-PRXiDwPmn9L14P93cGN6VXTyLfAHx-CE8M_A';
+export const APPS_SCRIPT_URL =
+  'https://script.google.com/macros/s/AKfycbwe_RcnVRkZy9x1YcRuum4qdLucIWLTVsnTZcMvQDyobo6f3ot-YG0Lv00hYS-1XEg/exec';
 
 export const sinAcentos = (v: unknown) => String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 // Header/value key: no accents, case, spaces or the "_buffer_" prefix GViz
@@ -38,7 +44,46 @@ export function parsearCsv(texto: string): string[][] {
   return filas;
 }
 
-export async function leerCsv(hoja: string, consulta?: string) {
+// leerDatos exists from Apps Script v66. Asking an older one would land in its
+// admin-password check and count as a failed login, so the version (GET, no
+// data) is checked once per app start first.
+let conLeerDatos: Promise<boolean> | null = null;
+function soportaLeerDatos() {
+  conLeerDatos ??= fetch(APPS_SCRIPT_URL)
+    .then((r) => r.json())
+    .then((d) => Number(d?.version) >= 66)
+    .catch(() => {
+      conLeerDatos = null;
+      return false;
+    });
+  return conLeerDatos;
+}
+
+// leerDatos of the Apps Script: { hoja, consulta?, formato: 'csv' | 'valores' }.
+// Without a session key it fails with SIN_SESION before asking anything.
+export async function leerDatos(pedido: { hoja: string; consulta?: string; formato?: 'csv' | 'valores' }, ms = 30000) {
+  if (!(await soportaLeerDatos())) throw new Error('Apps Script sin leerDatos');
+  const llave = await leerLlave();
+  if (!llave) throw new Error(`${SIN_SESION}: sin llave`);
+  const control = new AbortController();
+  const t = setTimeout(() => control.abort(), ms);
+  try {
+    // text/plain avoids the CORS preflight Apps Script does not answer (web).
+    const r = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'leerDatos', formato: 'csv', ...pedido, llave }),
+      signal: control.signal,
+    });
+    const datos = await r.json();
+    if (!datos || datos.ok === false) throw new Error((datos && datos.error) || 'el servidor no respondió');
+    return datos as { csv?: string; values?: unknown[][] };
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+async function leerCsvPublico(hoja: string, consulta?: string) {
   const params = [`tqx=out:csv`, `sheet=${encodeURIComponent(hoja)}`];
   // Published tabs have a _buffer_ row above the real headers; with a query
   // GViz must be told about both or it takes the first result as a header.
@@ -49,9 +94,26 @@ export async function leerCsv(hoja: string, consulta?: string) {
   try {
     const r = await fetch(url, { signal: control.signal });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return parsearCsv(await r.text());
+    const texto = await r.text();
+    // A private sheet answers with Google's sign-in page instead of CSV.
+    if (/^\s*</.test(texto)) throw new Error('la hoja ya no es pública');
+    return parsearCsv(texto);
   } finally {
     clearTimeout(t);
+  }
+}
+
+export async function leerCsv(hoja: string, consulta?: string) {
+  try {
+    const { csv } = await leerDatos({ hoja, consulta });
+    if (typeof csv !== 'string') throw new Error('respuesta inválida');
+    return parsearCsv(csv);
+  } catch (e) {
+    // If the public route also fails, the Apps Script error is the useful one
+    // (SIN_SESION makes the screen ask for the PIN).
+    return leerCsvPublico(hoja, consulta).catch(() => {
+      throw e;
+    });
   }
 }
 
