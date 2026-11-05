@@ -17,10 +17,11 @@ import { getJson, storageKeys } from '../services/appStorage';
 import { leerLlave } from '../services/sesion';
 import { colors, radii, type } from '../theme/tokens';
 
-// Same domain as the app on GitHub Pages: on web a path is enough (and keeps
-// the session key readable by the page); native opens the full address.
+// Same domain as the app (Cloudflare passes /DashboardsOxxo/* to the dashboards
+// site, worker/index.js): on web a path is enough (and keeps the session key
+// readable by the page); native opens the full address.
 const FICHA_PATH = '/DashboardsOxxo/dashboards/ficha-plaza.html?embed=1';
-export const FICHA_URL = 'https://humanresources-oxxo.github.io' + FICHA_PATH;
+export const FICHA_URL = 'https://conoxxo.plaza-oaxaca.workers.dev' + FICHA_PATH;
 
 export function ResumenScreen() {
   const [numero, setNumero] = useState('');

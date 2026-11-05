@@ -17,7 +17,7 @@ const READ_SHEET_URL =
 // worker/index.js passes /DashboardsOxxo/* to the dashboards site); native
 // needs the full address.
 const CSV_PATH = '/DashboardsOxxo/assets/catalogo_asesores.csv';
-const CSV_URL = Platform.OS === 'web' ? CSV_PATH : 'https://humanresources-oxxo.github.io' + CSV_PATH;
+const CSV_URL = Platform.OS === 'web' ? CSV_PATH : 'https://conoxxo.plaza-oaxaca.workers.dev' + CSV_PATH;
 
 export type Tienda = { tienda: string; cr: string; asesor: string };
 
