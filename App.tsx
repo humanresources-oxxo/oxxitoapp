@@ -69,7 +69,9 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      {/* On the web React Navigation names the browser tab after the screen
+          ("undefined" for screens without a title): always Conoxxo. */}
+      <NavigationContainer documentTitle={{ formatter: () => 'Conoxxo' }}>
         <ErrorBoundary>
           {onboardingDone ? <DonePlaceholder onLogout={logout} /> : <OnboardingNavigator onFinished={finishOnboarding} />}
         </ErrorBoundary>
