@@ -63,7 +63,7 @@ export function ResumenScreen() {
             src: FICHA_PATH,
             title: 'Ficha de Plaza Oaxaca',
             allow: 'web-share; clipboard-write',
-            style: { border: 0, width: '100%', height: '100%', background: '#fff' },
+            style: { border: 0, width: '100%', height: '100%', background: colors.bg },
           })}
         </View>
       ) : (
@@ -79,9 +79,9 @@ export function ResumenScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg, paddingBottom: 96 },
+  screen: { flex: 1, backgroundColor: colors.bg, paddingBottom: 88 },
   safeTop: { backgroundColor: 'rgba(255,255,255,.56)' },
-  header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerButton: {
     width: 44,
     height: 44,
@@ -94,7 +94,9 @@ const styles = StyleSheet.create({
   },
   eyebrow: { ...type.eyebrowSm, color: colors.oxRed, marginBottom: 3 },
   title: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 25, lineHeight: 29, color: colors.ink },
-  marco: { flex: 1, marginHorizontal: 8, borderRadius: radii.xl, overflow: 'hidden', backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line },
+  // Full width, same background as the app: the page inside (embed view)
+  // already brings its own cards.
+  marco: { flex: 1, backgroundColor: colors.bg },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
   texto: { ...type.caption, color: colors.ink2, textAlign: 'center' },
   boton: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: radii.pill, backgroundColor: colors.oxRed },
