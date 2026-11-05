@@ -50,8 +50,9 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   el passcode compartido de RH ya no existe. RH (Responsable RH, Analista EC, cuenta de prueba)
   ve Empleados: agregar empleados y "Dar PIN temporal" (4 dígitos que se muestran una vez; al
   entrar, la app obliga a crear uno propio). RH y Gerente de plaza ven Avisos y Directorio.
-  Todo lo que viene de la base se pinta como texto (`textContent`). Se corre local con
-  `npx serve admin` o similar — no está desplegada en ningún lado público.
+  Todo lo que viene de la base se pinta como texto (`textContent`). Se publica con la app en
+  https://humanresources-oxxo.github.io/oxxitoapp/admin/ (no guarda ningún secreto: el acceso lo
+  decide el servidor por el puesto de quien entra).
 
 ✅ **Seguridad de acceso (migración 37):**
   - Bloqueo de PIN que crece y no depende de la dirección: 5 fallos → 15 min por intento,
