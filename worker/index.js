@@ -11,6 +11,12 @@ const PERMITIDO = [/^\/dashboards\/ficha-plaza(\.html)?$/, /^\/js\/[\w./-]+\.js$
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    // Fonts are exported under /assets/node_modules/@expo-google-fonts/...;
+    // Cloudflare's asset server answers "@" with a redirect to "%40" and the
+    // browser loops on it. Ask for the encoded path directly.
+    if (url.pathname.startsWith('/assets/') && url.pathname.includes('@')) {
+      return env.ASSETS.fetch(new Request(url.origin + url.pathname.replace(/@/g, '%40') + url.search, request));
+    }
     if (!url.pathname.startsWith('/DashboardsOxxo/')) return env.ASSETS.fetch(request);
     const ruta = url.pathname.slice('/DashboardsOxxo'.length);
     if (!['GET', 'HEAD'].includes(request.method) || ruta.includes('..') || !PERMITIDO.some((re) => re.test(ruta))) {
