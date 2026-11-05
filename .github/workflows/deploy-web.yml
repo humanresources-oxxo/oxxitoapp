@@ -1,8 +1,10 @@
-# Publishes the web version of the app on GitHub Pages
-# (https://humanresources-oxxo.github.io/oxxitoapp/) on every push to main.
-# Pages serves the gh-pages branch: the build replaces the app's files there
-# and keeps the rest (instalar.html, .nojekyll).
-name: Publicar web
+# The app moved to Cloudflare (conoxxo.plaza-oaxaca.workers.dev, built there
+# with npm run build:cloudflare; see PROJECT_README "Mudanza a Cloudflare").
+# GitHub Pages (https://humanresources-oxxo.github.io/oxxitoapp/) now only
+# serves mudanza/index.html, as every route (index, 404, admin/, instalar),
+# which sends people to the same route at the new address. Pages goes away
+# when the repository turns private.
+name: Publicar aviso de mudanza
 
 on:
   push:
@@ -19,44 +21,24 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      # Publishable values (they end up in the public bundle anyway). A repo
-      # variable with the same name overrides them.
-      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL || 'https://gceuazxrqdbfahtdieod.supabase.co' }}
-      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_59I8XugqRxE-LUhMSqmiEQ_HNzD7CRK' }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - run: npm ci
-
-      - name: Revisar tipos
-        run: npx tsc --noEmit
-
-      - name: Exportar web
-        run: npx expo export -p web --output-dir dist
-
-      - run: node scripts/patch-web-index.mjs dist/index.html
-
-      # Admin panel (admin/index.html) at /oxxitoapp/admin/: it signs in with
-      # employee number + PIN and the server only lets RH puestos manage
-      # employees (migrations 37-39), so it holds no secret.
-      - run: mkdir -p dist/admin && cp admin/index.html dist/admin/index.html
-
-      # Which commit of main is live: https://humanresources-oxxo.github.io/oxxitoapp/version.txt
-      - run: echo "${GITHUB_SHA}" > dist/version.txt
+      - name: Armar el aviso
+        run: |
+          mkdir -p dist/admin
+          for f in index.html 404.html instalar.html admin/index.html; do cp mudanza/index.html "dist/$f"; done
+          # Icons, so an installed (old) shortcut still looks like Conoxxo.
+          cp public/icon-192.png public/icon-512.png public/apple-touch-icon.png public/manifest.json dist/
+          echo "${GITHUB_SHA}" > dist/version.txt
 
       - name: Publicar en gh-pages
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git clone --depth 1 --branch gh-pages "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" site
-          # Old bundles and assets go; everything else (instalar.html, .nojekyll) stays.
-          rm -rf site/_expo site/assets
+          # Everything but .git and .nojekyll goes: only the notice stays.
+          find site -mindepth 1 -maxdepth 1 ! -name .git ! -name .nojekyll -exec rm -rf {} +
           cp -r dist/. site/
           cd site
           git add -A
@@ -64,5 +46,5 @@ jobs:
             echo "Sin cambios que publicar."
             exit 0
           fi
-          git commit -m "Deploy main (${GITHUB_SHA::7})"
+          git commit -m "Aviso de mudanza (${GITHUB_SHA::7})"
           git push origin gh-pages
