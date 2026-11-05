@@ -7,12 +7,17 @@
 // (leerDatos with the session key, then the public readSheet while it still
 // answers), then the versioned CSV on GitHub Pages, then the last copy saved
 // on the phone.
+import { Platform } from 'react-native';
 import { getJson, setJson, storageKeys } from './appStorage';
 import { leerDatos, parsearCsv } from './gviz';
 
 const READ_SHEET_URL =
   'https://script.google.com/macros/s/AKfycbwe_RcnVRkZy9x1YcRuum4qdLucIWLTVsnTZcMvQDyobo6f3ot-YG0Lv00hYS-1XEg/exec?action=readSheet&sheet=Catalogo_Asesores';
-const CSV_URL = 'https://humanresources-oxxo.github.io/DashboardsOxxo/assets/catalogo_asesores.csv';
+// On the web the same path works on GitHub Pages and on Cloudflare (there
+// worker/index.js passes /DashboardsOxxo/* to the dashboards site); native
+// needs the full address.
+const CSV_PATH = '/DashboardsOxxo/assets/catalogo_asesores.csv';
+const CSV_URL = Platform.OS === 'web' ? CSV_PATH : 'https://humanresources-oxxo.github.io' + CSV_PATH;
 
 export type Tienda = { tienda: string; cr: string; asesor: string };
 

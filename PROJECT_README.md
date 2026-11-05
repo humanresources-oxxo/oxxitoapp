@@ -91,6 +91,24 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     `voto_puede_administrar` (RH: Responsable RH, Analista EC, Practicante; Gerente de plaza), con su llave de sesión. Son los mismos que publican avisos. Una votación para toda la plaza publica un aviso (tipo `vote`).
   - La tarjeta de Inicio muestra cuántas faltan por votar y se oculta si Supabase no responde.
 
+🚧 **Mudanza a Cloudflare (en curso, coordinar antes de tocar el despliegue web):** la app web
+  se publicará también en `conoxxo.plaza-oaxaca.workers.dev` (Cloudflare Workers, sin
+  Cloudflare Access: se entra con número de empleado y PIN como hoy). GitHub Pages sigue
+  igual hasta el cambio final.
+  - `npm run build:cloudflare` (`scripts/build-cloudflare.mjs`) hace lo mismo que
+    `deploy-web.yml` pero con la app en la raíz del dominio (`EXPO_BASE_URL=''`, leído por
+    `app.config.js`). El manifiesto usa rutas relativas y `public/instalar.html` (antes solo
+    en la rama gh-pages) muestra la dirección donde se abrió, así que la app se puede
+    instalar desde las dos direcciones.
+  - `wrangler.jsonc` + `worker/index.js`: `/DashboardsOxxo/*` pasa al Worker de los
+    dashboards por *service binding* (no pasa por Access) y SOLO deja la Ficha
+    (`dashboards/ficha-plaza.html`), `js/`, `css/` y `assets/` (incluye el CSV del
+    catálogo). Así `ResumenScreen` y `tiendas.ts` usan en web la misma ruta en las dos
+    direcciones. `/api` y los demás dashboards siguen detrás de Access.
+  - Pendiente al cambio final: la dirección vieja muestra "La app se mudó" (con botón para
+    instalar desde la nueva), `FICHA_URL` y el CSV de nativo pasan a la dirección nueva, se
+    apaga GitHub Pages y el repositorio pasa a privado.
+
 ✅ **Lectura con sesión (paso 3, Apps Script v66):** Estructura, Vacaciones, el catálogo de
   tiendas y la cuota sindical ya no dependen de que el Google Sheet sea público. `leerCsv`
   (`src/services/gviz.ts`) pide los datos al Apps Script (`leerDatos`) con la llave de sesión;

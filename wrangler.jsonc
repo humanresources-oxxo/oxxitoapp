@@ -1,0 +1,19 @@
+// Cloudflare Workers: the web app (dist/, npm run build:cloudflare) at the root
+// of conoxxo.<cuenta>.workers.dev. It has no Cloudflare Access: everyone signs
+// in with their employee number and PIN, as on GitHub Pages.
+// /DashboardsOxxo/* goes through worker/index.js to the dashboards Worker
+// (service binding, so Access does not apply) for the Ficha de Plaza of the
+// "Resumen" tab and the store catalog CSV only.
+{
+  "name": "conoxxo",
+  "main": "worker/index.js",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/DashboardsOxxo/*"]
+  },
+  "services": [{ "binding": "DASHBOARDS", "service": "dashboardsoxxo" }],
+  "observability": { "enabled": true }
+}
