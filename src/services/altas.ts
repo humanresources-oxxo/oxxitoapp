@@ -10,7 +10,16 @@ export type Alta = { numero: string; nombre: string; tienda: string; puesto: str
 // Puestos that see "Altas por aprobar" (the server decides who can approve whom).
 export function puedeAprobarAltas(puesto?: string) {
   const p = String(puesto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
-  return ['RESPONSABLE RECURSOS HUMANOS', 'ANALISTA EXPERIENCIA COLABORADOR', 'ACCES TEST', 'GERENTE PLAZA', 'ASESOR TIENDA'].some((x) => p.startsWith(x));
+  return ['RESPONSABLE RECURSOS HUMANOS', 'ANALISTA EXPERIENCIA COLABORADOR', 'GERENTE PLAZA', 'ASESOR TIENDA'].some((x) => p.startsWith(x));
+}
+
+// Also people given employee management one by one (accesos_especiales,
+// migration 42), whatever their puesto: the server says so (sesion_panel).
+export async function puedoAprobarAltas(puesto: string | undefined, llave: string | null): Promise<boolean> {
+  if (puedeAprobarAltas(puesto)) return true;
+  if (!llave) return false;
+  const { data, error } = await supabase.rpc('sesion_panel', { p_token: llave });
+  return !error && data?.estado === 'ok' && data.personal === true;
 }
 
 // null when the key is missing or no longer valid.
