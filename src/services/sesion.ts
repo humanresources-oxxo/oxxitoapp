@@ -8,10 +8,10 @@ import { getJson, removeItem, setJson, storageKeys } from './appStorage';
 import { supabase } from './supabaseClient';
 
 // Puestos that publish avisos and create, close and delete votaciones: RH and
-// Gerente de plaza (plus the test account). Same list as
+// Gerente de plaza. Same list as
 // voto_puede_administrar in migration 34, which is what really enforces it;
 // here it only decides what to show.
-const PUESTOS_PUBLICAR = ['RESPONSABLE RECURSOS HUMANOS', 'ANALISTA EXPERIENCIA COLABORADOR', 'PRACTICANTE', 'GERENTE PLAZA', 'ACCES TEST'];
+const PUESTOS_PUBLICAR = ['RESPONSABLE RECURSOS HUMANOS', 'ANALISTA EXPERIENCIA COLABORADOR', 'PRACTICANTE', 'GERENTE PLAZA'];
 
 export function puedePublicar(puesto?: string) {
   const p = String(puesto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();

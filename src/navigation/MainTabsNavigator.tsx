@@ -25,7 +25,7 @@ import { puedeLevantarActas, soloSusTiendas } from '../services/actas';
 import { lookupEmployee } from '../services/auth';
 import { fetchNotices } from '../services/notices';
 import { contarPendientes } from '../services/votaciones';
-import { listarAltas, puedeAprobarAltas } from '../services/altas';
+import { listarAltas, puedoAprobarAltas } from '../services/altas';
 import { leerLlave } from '../services/sesion';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
@@ -99,8 +99,13 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       setOnlyOwnStores(soloSusTiendas(session?.puesto));
       setNumeroEmpleado(session?.numeroEmpleado ?? '');
       refreshPendingVotes(session?.numeroEmpleado ?? '');
-      setCanApprove(puedeAprobarAltas(session?.puesto));
-      if (puedeAprobarAltas(session?.puesto)) refreshAltas();
+      leerLlave()
+        .then((llave) => puedoAprobarAltas(session?.puesto, llave))
+        .then((si) => {
+          setCanApprove(si);
+          if (si) refreshAltas();
+        })
+        .catch(() => {});
       revalidarSesion(session);
     });
     refreshUnreadNotices();
@@ -122,7 +127,10 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
         setFirstName(nueva.nombre?.split(' ')[0] ?? '');
         setCanUseActas(puedeLevantarActas(nueva.puesto));
         setOnlyOwnStores(soloSusTiendas(nueva.puesto));
-        setCanApprove(puedeAprobarAltas(nueva.puesto));
+        leerLlave()
+          .then((llave) => puedoAprobarAltas(nueva.puesto, llave))
+          .then(setCanApprove)
+          .catch(() => {});
       })
       .catch(() => {});
   };

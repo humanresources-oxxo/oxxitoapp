@@ -21,8 +21,6 @@ export const PUESTOS_ACTAS = [
   'GERENTE PLAZA',
   'ANALISTA EXPERIENCIA COLABORADOR',
   'PRACTICANTE',
-  // Test account with full access (employee 1599067's puesto in Supabase).
-  'ACCES TEST',
   // David, the union's representative (90000001, migration 31): full access.
   'SINDICATO',
 ];

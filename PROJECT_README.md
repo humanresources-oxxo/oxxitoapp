@@ -47,7 +47,7 @@ a partir del design handoff (`design_handoff_oxxito_app`).
 
 ✅ **Panel admin (`admin/index.html`):** página web aparte (no dentro del app de React
   Native). Desde la migración 37 se entra con **número de empleado y PIN** (llave de sesión);
-  el passcode compartido de RH ya no existe. RH (Responsable RH, Analista EC, cuenta de prueba)
+  el passcode compartido de RH ya no existe. RH (Responsable RH, Analista EC y quien esté en `accesos_especiales`, migración 42)
   ve Empleados: agregar empleados y "Dar PIN temporal" (4 dígitos que se muestran una vez; al
   entrar, la app obliga a crear uno propio). RH y Gerente de plaza ven Avisos y Directorio.
   Todo lo que viene de la base se pinta como texto (`textContent`). Se publica con la app en
@@ -88,8 +88,7 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   - **Resultados:** al cerrar (o al votar, si se marcó "Mostrar resultados al votar"). RH los
     ve siempre. Las cerradas se ven 60 días.
   - **Crear / cerrar / borrar:** desde la misma pantalla, solo los puestos de
-    `voto_puede_administrar` (RH: Responsable RH, Analista EC, Practicante; Gerente de plaza;
-    Acces Test), con su llave de sesión. Son los mismos que publican avisos. Una votación para toda la plaza publica un aviso (tipo `vote`).
+    `voto_puede_administrar` (RH: Responsable RH, Analista EC, Practicante; Gerente de plaza), con su llave de sesión. Son los mismos que publican avisos. Una votación para toda la plaza publica un aviso (tipo `vote`).
   - La tarjeta de Inicio muestra cuántas faltan por votar y se oculta si Supabase no responde.
 
 ✅ **Sesión en el Apps Script (paso 2 de la auditoría, Apps Script v65 + migración 41):** CCT
@@ -229,7 +228,7 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   (los reales tienen 7 o menos). Hoy: 90000001 David (Sindicato, puesto `SINDICATO`, con
   acceso completo vía `PUESTOS_ACTAS`) y 90000002 Antonio Cruz (sin puesto) (migración 31).
 - El resto del personal de tienda no tiene `puesto` en `employees` (solo los 22 de la
-  migración 22 y la cuenta de prueba 1599067). Hoy no les quita acceso a nada.
+  migración 22; la cuenta de prueba 1599067 se borró en la migración 42). Hoy no les quita acceso a nada.
 
 ## Publicación web (automática)
 
