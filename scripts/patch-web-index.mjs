@@ -1,12 +1,13 @@
 // scripts/patch-web-index.mjs
 // `expo export -p web` writes a bare dist/index.html (title "oxxito-app", no
 // manifest). This adds what the published site needs: the Conoxxo title, the
-// theme color and the icon/manifest links under the /oxxitoapp/ base path.
+// theme color and the icon/manifest links under the web base path: /oxxitoapp on
+// GitHub Pages, the root on Cloudflare (EXPO_BASE_URL, as in app.config.js).
 // Usage: node scripts/patch-web-index.mjs [dist/index.html]
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const file = process.argv[2] || 'dist/index.html';
-const BASE = '/oxxitoapp';
+const BASE = process.env.EXPO_BASE_URL !== undefined ? process.env.EXPO_BASE_URL : '/oxxitoapp';
 let html = readFileSync(file, 'utf8');
 
 if (!/<title>[^<]*<\/title>/.test(html) || !html.includes('</head>')) {
