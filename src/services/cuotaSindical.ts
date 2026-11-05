@@ -6,6 +6,7 @@
 // personal data). Plaza Oaxaca only (its divisiones are OXXO OAXACA I/II/III).
 // If DashboardsOxxo changes that action or its columns, update this file too.
 import { clave } from './gviz';
+import { leerLlave } from './sesion';
 import { asesorDelCatalogo, cargarTiendas } from './tiendas';
 
 // DashboardsOxxo js/config.js -> ADMIN_UPLOAD_URL (same Apps Script as Actas).
@@ -72,7 +73,7 @@ export function cargarCuota(): Promise<Cuota> {
       const r = await fetch(URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'consultarCuotaSindical' }),
+        body: JSON.stringify({ action: 'consultarCuotaSindical', llave: (await leerLlave()) ?? '' }),
         signal: control.signal,
       });
       datos = await r.json();

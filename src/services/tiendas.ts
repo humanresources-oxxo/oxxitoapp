@@ -3,10 +3,12 @@
 // AT. Actas need it so they are sent with the store's CR, which is how RH's
 // register groups actas by store (the web form sends it too); without the CR
 // an app acta would show up as a separate store in the admin panel.
-// Same sources as the web, in order: the live sheet through the Apps Script,
-// then the versioned CSV on GitHub Pages, then the last copy saved on the phone.
+// Same sources as the web, in order: the live sheet through the Apps Script
+// (leerDatos with the session key, then the public readSheet while it still
+// answers), then the versioned CSV on GitHub Pages, then the last copy saved
+// on the phone.
 import { getJson, setJson, storageKeys } from './appStorage';
-import { parsearCsv } from './gviz';
+import { leerDatos, parsearCsv } from './gviz';
 
 const READ_SHEET_URL =
   'https://script.google.com/macros/s/AKfycbwe_RcnVRkZy9x1YcRuum4qdLucIWLTVsnTZcMvQDyobo6f3ot-YG0Lv00hYS-1XEg/exec?action=readSheet&sheet=Catalogo_Asesores';
@@ -71,6 +73,12 @@ async function conTiempo(url: string, ms: number) {
 }
 
 async function desdeHoja() {
+  try {
+    const { values } = await leerDatos({ hoja: 'Catalogo_Asesores', formato: 'valores' }, 12000);
+    if (Array.isArray(values)) return aTiendas(values as string[][]);
+  } catch {
+    // No session key or an Apps Script before v66: the public read below.
+  }
   const datos = await (await conTiempo(READ_SHEET_URL, 8000)).json();
   if (!datos?.ok || !Array.isArray(datos.values)) throw new Error('respuesta inválida');
   return aTiendas(datos.values);

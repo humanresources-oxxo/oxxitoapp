@@ -9,6 +9,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, Text
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
+import { usePinDeSesion } from '../components/PinDeSesion';
 import { Anillo, BarraApilada, Barras, Desplegable, Leyenda } from '../components/Visual';
 import { getJson, storageKeys } from '../services/appStorage';
 import {
@@ -48,13 +49,14 @@ export function VacacionesScreen({
   const [sesion, setSesion] = useState<Sesion>(null);
   const [vista, setVista] = useState<Vista>('mias');
   const [mia, setMia] = useState<MiVacacion | null>(null);
-  const [errorMia, setErrorMia] = useState(false);
+  const [errorMia, setErrorMia] = useState<unknown>(null);
   const [actualizado, setActualizado] = useState('');
   const [intento, setIntento] = useState(0);
+  const pin = usePinDeSesion(() => setIntento((i) => i + 1));
 
   useEffect(() => {
     let activo = true;
-    setErrorMia(false);
+    setErrorMia(null);
     setMia(null);
     getJson<Sesion>(storageKeys.session, null).then((s) => {
       if (!activo) return;
@@ -66,7 +68,7 @@ export function VacacionesScreen({
           // Office staff aren't in the report; with team access, go straight to the team.
           if (!r.vacacion && conEquipo) setVista('equipo');
         })
-        .catch(() => activo && setErrorMia(true));
+        .catch((e) => activo && setErrorMia(e ?? true));
     });
     fechaActualizacion().then((f) => activo && setActualizado(f));
     return () => {
@@ -109,9 +111,11 @@ export function VacacionesScreen({
           {errorMia ? (
             <Aviso
               icono="alert"
-              titulo="No se pudo cargar tu saldo"
-              texto="Revisa tu conexión e intenta de nuevo."
-              accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }}
+              {...pin.aviso(errorMia, {
+                titulo: 'No se pudo cargar tu saldo',
+                texto: 'Revisa tu conexión e intenta de nuevo.',
+                accion: { texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) },
+              })}
             />
           ) : !mia ? (
             <View style={styles.cargando}>
@@ -139,6 +143,7 @@ export function VacacionesScreen({
       ) : (
         <Equipo sesion={sesion} soloMisTiendas={soloMisTiendas} />
       )}
+      {pin.modal}
     </View>
   );
 }
@@ -232,21 +237,22 @@ function Aviso({ icono, titulo, texto, accion }: { icono: string; titulo: string
 
 function Equipo({ sesion, soloMisTiendas }: { sesion: Sesion; soloMisTiendas: boolean }) {
   const [filas, setFilas] = useState<Vacacion[] | null>(null);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<unknown>(null);
   const [texto, setTexto] = useState('');
   const [soloMias, setSoloMias] = useState(true);
   const [urgentes, setUrgentes] = useState(false);
   const [todosUrgentes, setTodosUrgentes] = useState(false);
   const [detalle, setDetalle] = useState<Vacacion | null>(null);
   const [intento, setIntento] = useState(0);
+  const pin = usePinDeSesion(() => setIntento((i) => i + 1));
 
   useEffect(() => {
     let activo = true;
     setFilas(null);
-    setError(false);
+    setError(null);
     cargarEquipo()
       .then((l) => activo && setFilas(l))
-      .catch(() => activo && setError(true));
+      .catch((e) => activo && setError(e ?? true));
     return () => {
       activo = false;
     };
@@ -308,9 +314,11 @@ function Equipo({ sesion, soloMisTiendas }: { sesion: Sesion; soloMisTiendas: bo
         {error ? (
           <Aviso
             icono="alert"
-            titulo="No se pudo cargar el equipo"
-            texto="Revisa tu conexión e intenta de nuevo."
-            accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }}
+            {...pin.aviso(error, {
+              titulo: 'No se pudo cargar el equipo',
+              texto: 'Revisa tu conexión e intenta de nuevo.',
+              accion: { texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) },
+            })}
           />
         ) : !filas ? (
           <View style={styles.cargando}>
@@ -402,6 +410,7 @@ function Equipo({ sesion, soloMisTiendas }: { sesion: Sesion; soloMisTiendas: bo
           <ScrollView contentContainerStyle={styles.content}>{detalle ? <Saldo v={detalle} compacto /> : null}</ScrollView>
         </SafeAreaView>
       </Modal>
+      {pin.modal}
     </>
   );
 }

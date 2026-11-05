@@ -8,6 +8,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from '../components/Icon';
+import { usePinDeSesion } from '../components/PinDeSesion';
 import { Anillo, Barras, Columnas, Delta, Desplegable, Leyenda } from '../components/Visual';
 import { getJson, storageKeys } from '../services/appStorage';
 import { agrupar, cargarCuota, Cuota, suma } from '../services/cuotaSindical';
@@ -38,8 +39,9 @@ const titulo = (s: string) =>
 export function CuotaSindicalScreen({ onBack, soloMisTiendas = false }: { onBack: () => void; soloMisTiendas?: boolean }) {
   const [sesion, setSesion] = useState<Sesion>(null);
   const [cuota, setCuota] = useState<Cuota | null>(null);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<unknown>(null);
   const [intento, setIntento] = useState(0);
+  const pin = usePinDeSesion(() => setIntento((i) => i + 1));
   const [mes, setMes] = useState('');
   const [texto, setTexto] = useState('');
 
@@ -49,14 +51,14 @@ export function CuotaSindicalScreen({ onBack, soloMisTiendas = false }: { onBack
   useEffect(() => {
     let activo = true;
     setCuota(null);
-    setError(false);
+    setError(null);
     cargarCuota()
       .then((c) => {
         if (!activo) return;
         setCuota(c);
         setMes((m) => m || c.meses[c.meses.length - 1] || '');
       })
-      .catch(() => activo && setError(true));
+      .catch((e) => activo && setError(e ?? true));
     return () => {
       activo = false;
     };
@@ -117,9 +119,11 @@ export function CuotaSindicalScreen({ onBack, soloMisTiendas = false }: { onBack
       {error ? (
         <View style={styles.content}>
           <Aviso
-            titulo="No se pudo cargar la cuota sindical"
-            texto="Revisa tu conexión e intenta de nuevo."
-            accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }}
+            {...pin.aviso(error, {
+              titulo: 'No se pudo cargar la cuota sindical',
+              texto: 'Revisa tu conexión e intenta de nuevo.',
+              accion: { texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) },
+            })}
           />
         </View>
       ) : !cuota ? (
@@ -239,6 +243,7 @@ export function CuotaSindicalScreen({ onBack, soloMisTiendas = false }: { onBack
           <Text style={styles.nota}>Por privacidad no se publican nombres: para saber quiénes son, revisa el reporte de nómina.</Text>
         </ScrollView>
       )}
+      {pin.modal}
     </View>
   );
 }
