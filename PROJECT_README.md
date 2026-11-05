@@ -20,7 +20,7 @@ a partir del design handoff (`design_handoff_oxxito_app`).
 ✅ **Backend real (Supabase, ver `supabase/migration_*.sql`, en orden):**
 - Auth: tabla `employees` cargada con la nómina real (`employee_lookup` / `set_initial_pin` /
   `verify_pin` / `change_pin`). Solo empleados ya en la nómina pueden entrar — no hay
-  registro libre; un empleado nuevo se agrega vía el panel admin (`admin/index.html`).
+  registro libre; un empleado nuevo se agrega vía el panel admin (`conoxxo.html` de DashboardsOxxo).
   Al abrir la app, la sesión guardada se revisa contra la nómina (`employee_lookup`): se
   actualiza el puesto y, si el empleado ya no está en `employees`, se cierra la sesión.
   Sin red (o con el rate-limit) se conserva la sesión guardada.
@@ -45,14 +45,17 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   passcode. Cambiar o reiniciar el PIN la invalida; cerrar sesión también. Una sesión de antes
   de la llave pide el PIN una sola vez. Dura 180 días desde el último uso.
 
-✅ **Panel admin (`admin/index.html`):** página web aparte (no dentro del app de React
-  Native). Desde la migración 37 se entra con **número de empleado y PIN** (llave de sesión);
+✅ **Panel admin (`conoxxo.html` en el repositorio DashboardsOxxo):** página web aparte (no
+  dentro del app de React Native). Vive junto al Panel Admin de los dashboards, en
+  https://dashboardsoxxo.plaza-oaxaca.workers.dev/conoxxo.html, detrás de Cloudflare Access
+  (correo de la lista autorizada) y con botones para pasar de un panel al otro. La dirección
+  vieja de la app (`/admin/`) redirige ahí (`worker/index.js`). Si hay que cambiarlo, se
+  cambia en DashboardsOxxo. Desde la migración 37 se entra con **número de empleado y PIN** (llave de sesión);
   el passcode compartido de RH ya no existe. RH (Responsable RH, Analista EC y quien esté en `accesos_especiales`, migración 42)
   ve Empleados: agregar empleados y "Dar PIN temporal" (4 dígitos que se muestran una vez; al
   entrar, la app obliga a crear uno propio). RH y Gerente de plaza ven Avisos y Directorio.
-  Todo lo que viene de la base se pinta como texto (`textContent`). Se publica con la app en
-  https://humanresources-oxxo.github.io/oxxitoapp/admin/ (no guarda ningún secreto: el acceso lo
-  decide el servidor por el puesto de quien entra).
+  Todo lo que viene de la base se pinta como texto (`textContent`). No guarda ningún secreto:
+  el acceso lo decide el servidor por el puesto de quien entra.
 
 ✅ **Seguridad de acceso (migración 37):**
   - Bloqueo de PIN que crece y no depende de la dirección: 5 fallos → 15 min por intento,

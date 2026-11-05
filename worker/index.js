@@ -8,9 +8,15 @@
 // reads its data with the app's session key (?embed=1), never through /api.
 const PERMITIDO = [/^\/dashboards\/ficha-plaza(\.html)?$/, /^\/js\/[\w./-]+\.js$/, /^\/css\/[\w./-]+\.css$/, /^\/assets\/[\w./-]+$/];
 
+// The Conoxxo admin panel lives next to the dashboards' Panel Admin, behind
+// Cloudflare Access (DashboardsOxxo conoxxo.html). The old /admin/ address
+// sends people there.
+const PANEL_CONOXXO = 'https://dashboardsoxxo.plaza-oaxaca.workers.dev/conoxxo.html';
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return Response.redirect(PANEL_CONOXXO, 302);
     // Fonts are exported under /assets/node_modules/@expo-google-fonts/...;
     // Cloudflare's asset server answers "@" with a redirect to "%40" and the
     // browser loops on it. Ask for the encoded path directly.
