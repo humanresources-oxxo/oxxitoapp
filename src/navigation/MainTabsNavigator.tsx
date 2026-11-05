@@ -17,6 +17,7 @@ import { DirectoryScreen } from '../screens/DirectoryScreen';
 import { EstructuraScreen } from '../screens/EstructuraScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { ResumenScreen } from '../screens/ResumenScreen';
 import { VacacionesScreen } from '../screens/VacacionesScreen';
 import { VotacionesScreen } from '../screens/VotacionesScreen';
 import { AltasScreen } from '../screens/AltasScreen';
@@ -32,7 +33,7 @@ import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 // 'actas', 'vacaciones', 'estructura', 'cuota', 'cct', 'dilos' and 'votaciones' are not in the tab
 // bar: they open from Inicio. Actas, Estructura, Cuota sindical, Contratos colectivos,
 // Casos DILOS and the team view of Vacaciones are only for some puestos.
-type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'dashboard' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct' | 'dilos' | 'votaciones' | 'altas';
+type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'actas' | 'vacaciones' | 'estructura' | 'cuota' | 'cct' | 'dilos' | 'votaciones' | 'altas' | 'resumen';
 
 type Sesion = { numeroEmpleado?: string; nombre?: string; tienda?: string; plaza?: string; puesto?: string; createdAt?: string };
 
@@ -43,16 +44,18 @@ type TabItem = {
   external?: string;
 };
 
-const DASHBOARD_URL = 'https://humanresources-oxxo.github.io/DashboardsOxxo/';
-
-const TABS: TabItem[] = [
+// The old "Dashboard" tab (opened the DashboardsOxxo site) is replaced by
+// "Resumen" (the Ficha de Plaza inside the app), only for roles with
+// permissions; the rest see 5 tabs.
+const TABS_BASE: TabItem[] = [
   { key: 'home', label: 'Inicio', icon: 'home' },
   { key: 'chat', label: 'Chat', icon: 'chat' },
   { key: 'directory', label: 'Directorio', icon: 'headset' },
   { key: 'notifications', label: 'Avisos', icon: 'bell' },
-  { key: 'dashboard', label: 'Dashboard', icon: 'globe', external: DASHBOARD_URL },
   { key: 'profile', label: 'Perfil', icon: 'user' },
 ];
+const RESUMEN_TAB: TabItem = { key: 'resumen', label: 'Resumen', icon: 'chart' };
+const tabsPara = (conResumen: boolean) => (conResumen ? [...TABS_BASE.slice(0, 4), RESUMEN_TAB, TABS_BASE[4]] : TABS_BASE);
 
 export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState<TabKey>('home');
@@ -192,6 +195,8 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
         return canUseActas ? <DilosScreen onBack={() => setActiveTab('home')} /> : null;
       case 'cct':
         return canUseActas ? <CctScreen onBack={() => setActiveTab('home')} /> : null;
+      case 'resumen':
+        return canUseActas ? <ResumenScreen /> : null;
       case 'altas':
         return canApprove ? <AltasScreen onBack={() => setActiveTab('home')} onCambio={refreshAltas} /> : null;
       case 'votaciones':
@@ -213,7 +218,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       </View>
       <SafeAreaView edges={['bottom']} style={styles.tabSafe}>
         <BlurView intensity={38} tint="light" style={styles.tabBar}>
-          {TABS.map((tab) => {
+          {tabsPara(canUseActas).map((tab) => {
             const active = tab.key === activeTab;
             return (
               <Pressable
