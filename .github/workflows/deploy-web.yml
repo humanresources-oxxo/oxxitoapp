@@ -42,6 +42,11 @@ jobs:
 
       - run: node scripts/patch-web-index.mjs dist/index.html
 
+      # Admin panel (admin/index.html) at /oxxitoapp/admin/: it signs in with
+      # employee number + PIN and the server only lets RH puestos manage
+      # employees (migrations 37-39), so it holds no secret.
+      - run: mkdir -p dist/admin && cp admin/index.html dist/admin/index.html
+
       # Which commit of main is live: https://humanresources-oxxo.github.io/oxxitoapp/version.txt
       - run: echo "${GITHUB_SHA}" > dist/version.txt
 
