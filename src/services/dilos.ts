@@ -22,8 +22,76 @@ export type CasoDilos = {
 };
 export type Dilos = { casos: CasoDilos[]; corte: string; cargadoEl: string };
 
-// Days open from which a case counts as delayed.
-export const DIAS_ALERTA = 15;
+// Escalation matrix of the Línea Ética (RH's "Seguimiento de folios" workbook,
+// tab "Dashboard ZCS"): the level comes from the days open in the portal.
+// If RH changes the matrix there, change it here too.
+export type NivelDilos = 'tiempo' | 'n1' | 'n2' | 'n3';
+export const MATRIZ_DILOS: Array<{
+  nivel: NivelDilos;
+  nombre: string;
+  fase: string;
+  desde: number;
+  hasta: number | null; // null = no limit
+  sesion: string;
+  participantes: string[];
+}> = [
+  { nivel: 'tiempo', nombre: 'En tiempo', fase: 'Seguimiento normal', desde: 0, hasta: 19, sesion: '—', participantes: ['Facilitador'] },
+  {
+    nivel: 'n1',
+    nombre: 'Nivel 1',
+    fase: 'Preventiva',
+    desde: 20,
+    hasta: 25,
+    sesion: 'Día 15',
+    participantes: ['Coordinador Laboral', 'Facilitador', 'Gerente Regional RH', 'Gerente de Plaza'],
+  },
+  {
+    nivel: 'n2',
+    nombre: 'Nivel 2',
+    fase: 'Alerta',
+    desde: 26,
+    hasta: 50,
+    sesion: 'Días 20–25',
+    participantes: ['Coordinador Laboral', 'Gerente Laboral', 'Facilitador', 'Gerente Regional RH', 'Encargado de Sistema Ético', 'Gerente Regional de Operaciones'],
+  },
+  {
+    nivel: 'n3',
+    nombre: 'Nivel 3',
+    fase: 'Crítica',
+    desde: 51,
+    hasta: null,
+    sesion: 'Días 45–55',
+    participantes: [
+      'Coordinador Laboral',
+      'Gerente Laboral',
+      'Director Laboral',
+      'Gerente Ética',
+      'Facilitador',
+      'Gerente Regional de Operaciones',
+      'Gerente Zonal de Operaciones',
+      'Director de Zona',
+    ],
+  },
+];
+// From this day a case still "en tiempo" needs its Nivel 1 session scheduled.
+export const DIA_AGENDAR_N1 = 15;
+
+export function nivelDe(dias: number): NivelDilos {
+  const fila = [...MATRIZ_DILOS].reverse().find((m) => dias >= m.desde);
+  return fila ? fila.nivel : 'tiempo';
+}
+export const porAgendar = (c: CasoDilos) => nivelDe(c.dias) === 'tiempo' && c.dias >= DIA_AGENDAR_N1;
+// What to do now, as in the workbook's "Sesión / acción" column.
+export function accionDe(c: CasoDilos) {
+  const n = nivelDe(c.dias);
+  if (n === 'tiempo') return porAgendar(c) ? 'Agendar sesión Nivel 1' : 'Seguimiento normal';
+  return `Sesión ${MATRIZ_DILOS.find((m) => m.nivel === n)!.sesion.toLowerCase()}`;
+}
+// Days until the next level (null in Nivel 3).
+export function diasParaSiguiente(c: CasoDilos) {
+  const fila = MATRIZ_DILOS.find((m) => m.nivel === nivelDe(c.dias))!;
+  return fila.hasta === null ? null : fila.hasta + 1 - c.dias;
+}
 
 let enMemoria: Promise<Dilos> | null = null;
 export function cargarDilos(): Promise<Dilos> {
