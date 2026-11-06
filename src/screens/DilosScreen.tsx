@@ -11,8 +11,8 @@ import { Icon } from '../components/Icon';
 import { PinUnaVez } from '../components/PinUnaVez';
 import { getJson, storageKeys } from '../services/appStorage';
 import { esSinSesion } from '../services/sesion';
-import { Anillo, BarraApilada, Barras, Desplegable, Leyenda } from '../components/Visual';
-import { cargarDilos, CasoDilos, contarPor, Dilos, DIAS_ALERTA } from '../services/dilos';
+import { Anillo, Desplegable, Leyenda } from '../components/Visual';
+import { accionDe, cargarDilos, CasoDilos, contarPor, DIA_AGENDAR_N1, diasParaSiguiente, Dilos, MATRIZ_DILOS, nivelDe, NivelDilos, porAgendar } from '../services/dilos';
 import { normalizarNombre } from '../services/gviz';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
@@ -28,7 +28,15 @@ const titulo = (s: string) =>
     .split(' ')
     .map((w) => (SIGLAS.has(w.toUpperCase()) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()))
     .join(' ');
-type Filtro = 'todos' | 'RH' | 'ADM' | 'atrasados';
+type Filtro = 'todos' | 'agendar' | NivelDilos;
+// Traffic light of the matrix, as in RH's workbook: grey on time, then green,
+// yellow and red. fuerte = bar/dot, tinte = card, texto = text on the tint.
+const NIVEL_COLOR: Record<NivelDilos, { fuerte: string; tinte: string; texto: string }> = {
+  tiempo: { fuerte: '#9C918B', tinte: '#F2EDE9', texto: '#5E5550' },
+  n1: { fuerte: colors.ok, tinte: '#E3F4EB', texto: '#1F7A4A' },
+  n2: { fuerte: colors.oxGold, tinte: '#FFF4D1', texto: '#8A6100' },
+  n3: { fuerte: colors.oxRed, tinte: '#FDE3E1', texto: '#B5000F' },
+};
 
 export function DilosScreen({ onBack }: { onBack: () => void }) {
   const [dilos, setDilos] = useState<Dilos | null>(null);
@@ -67,25 +75,32 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
   }, [intento]);
 
   const casos = dilos?.casos || [];
-  const rh = casos.filter((c) => c.area === 'RH').length;
-  const adm = casos.filter((c) => c.area === 'ADM').length;
-  const otra = casos.length - rh - adm;
   const promedio = casos.length ? casos.reduce((s, c) => s + c.dias, 0) / casos.length : 0;
-  // Aging buckets: on time, delayed, very delayed.
-  const enTiempo = casos.filter((c) => c.dias <= DIAS_ALERTA).length;
-  const muyAtrasados = casos.filter((c) => c.dias > DIAS_ALERTA + 5).length;
-  const atrasados = casos.length - enTiempo - muyAtrasados;
+  const cuenta = useMemo(() => {
+    const m: Record<NivelDilos, number> = { tiempo: 0, n1: 0, n2: 0, n3: 0 };
+    casos.forEach((c) => (m[nivelDe(c.dias)] += 1));
+    return m;
+  }, [casos]);
+  const agendar = casos.filter(porAgendar).length;
+  const pct = (n: number) => (casos.length ? `${((n / casos.length) * 100).toLocaleString('es-MX', { maximumFractionDigits: 1 })}%` : '0%');
+  // Region x level, regions with more cases first.
+  const porRegion = useMemo(() => {
+    const m = new Map<string, Record<NivelDilos, number>>();
+    casos.forEach((c) => {
+      const r = c.region || 'Sin dato';
+      if (!m.has(r)) m.set(r, { tiempo: 0, n1: 0, n2: 0, n3: 0 });
+      m.get(r)![nivelDe(c.dias)] += 1;
+    });
+    const total = (x: Record<NivelDilos, number>) => x.tiempo + x.n1 + x.n2 + x.n3;
+    return [...m].map(([region, n]) => ({ region, n, total: total(n) })).sort((a, b) => b.total - a.total || a.region.localeCompare(b.region, 'es'));
+  }, [casos]);
+  const maxRegion = Math.max(1, ...porRegion.map((r) => r.total));
   const regiones = useMemo(() => contarPor(casos, 'region'), [casos]);
-  const plazas = useMemo(() => contarPor(casos, 'plaza'), [casos]);
-  const tabasco = casos.filter((c) => normalizarNombre(c.region) === 'TABASCO').length;
-  const pct = (n: number) => (casos.length ? `${Math.round((n / casos.length) * 100)}%` : '0%');
 
   const lista = useMemo(() => {
     const n = normalizarNombre(texto);
     return casos.filter((c: CasoDilos) => {
-      if (filtro === 'RH' && c.area !== 'RH') return false;
-      if (filtro === 'ADM' && c.area !== 'ADM') return false;
-      if (filtro === 'atrasados' && c.dias <= DIAS_ALERTA) return false;
+      if (filtro === 'agendar' ? !porAgendar(c) : filtro !== 'todos' && nivelDe(c.dias) !== filtro) return false;
       if (region && c.region !== region) return false;
       return !n || normalizarNombre(`${c.caso} ${c.plaza} ${c.region}`).includes(n);
     });
@@ -100,8 +115,8 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
             <Icon name="chevL" size={20} color={colors.ink} />
           </Pressable>
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>Zona Centro Sur{dilos?.corte ? ` · corte ${fecha(dilos.corte)}` : ''}</Text>
-            <Text style={styles.title}>Casos DILOS</Text>
+            <Text style={styles.eyebrow}>Línea Ética · ZCS{dilos?.corte ? ` · corte ${fecha(dilos.corte)}` : ''}</Text>
+            <Text style={styles.title}>Folios DILOS</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -117,7 +132,7 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
           ) : sinSesion ? (
             <Aviso titulo="Confirma tu PIN" texto="Para ver esta información, confirma tu PIN una vez." accion={{ texto: 'Confirmar PIN', onPress: () => setPedirPin(true) }} />
           ) : (
-            <Aviso titulo="No se pudieron cargar los casos" texto="Revisa tu conexión e intenta de nuevo." accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }} />
+            <Aviso titulo="No se pudieron cargar los folios" texto="Revisa tu conexión e intenta de nuevo." accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }} />
           )}
         </View>
       ) : !dilos ? (
@@ -126,134 +141,187 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
         </View>
       ) : !casos.length ? (
         <View style={styles.content}>
-          <Aviso titulo="Sin casos abiertos" texto="RH aún no ha cargado el reporte DILOS o el último corte no trae casos." />
+          <Aviso titulo="Sin folios abiertos" texto="RH aún no ha cargado el reporte DILOS o el último corte no trae folios." />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <LinearGradient colors={gradients.oxGrad.colors} start={gradients.oxGrad.start} end={gradients.oxGrad.end} style={styles.hero}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.heroKicker}>Casos abiertos</Text>
+              <Text style={styles.heroKicker}>Total de folios</Text>
               <Text style={styles.heroNumero}>{casos.length}</Text>
-              <Text style={styles.heroBody}>{promedio.toLocaleString('es-MX', { maximumFractionDigits: 0 })} días en promedio</Text>
+              <Text style={styles.heroBody}>
+                {promedio.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} días abiertos en promedio · el más antiguo, {casos[0].dias}
+              </Text>
             </View>
-            <View style={styles.heroLado}>
-              <Text style={styles.heroLadoNum}>{casos[0].dias}</Text>
-              <Text style={styles.heroLadoTxt}>días el más antiguo</Text>
-            </View>
+            <Pressable style={styles.heroLado} onPress={() => setFiltro('agendar')} accessibilityLabel={`${agendar} folios por agendar sesión de Nivel 1`}>
+              <Text style={styles.heroLadoNum}>{agendar}</Text>
+              <Text style={styles.heroLadoTxt}>por agendar sesión N1</Text>
+              <Text style={styles.heroLadoMini}>desde el día {DIA_AGENDAR_N1}</Text>
+            </Pressable>
           </LinearGradient>
 
+          <View style={styles.kpis}>
+            {MATRIZ_DILOS.map((m) => (
+              <Pressable
+                key={m.nivel}
+                style={[styles.kpi, { backgroundColor: NIVEL_COLOR[m.nivel].tinte, borderColor: NIVEL_COLOR[m.nivel].tinte }, filtro === m.nivel && { borderColor: NIVEL_COLOR[m.nivel].fuerte }]}
+                onPress={() => setFiltro(filtro === m.nivel ? 'todos' : m.nivel)}
+                accessibilityRole="button"
+                accessibilityLabel={`${m.nombre}: ${cuenta[m.nivel]} folios`}
+              >
+                <View style={styles.kpiCab}>
+                  <View style={[styles.punto, { backgroundColor: NIVEL_COLOR[m.nivel].fuerte }]} />
+                  <Text style={[styles.kpiTitulo, { color: NIVEL_COLOR[m.nivel].texto }]} numberOfLines={1}>
+                    {m.nivel === 'tiempo' ? m.nombre : `${m.nombre} · ${m.fase}`}
+                  </Text>
+                </View>
+                <Text style={styles.kpiValor}>{cuenta[m.nivel]}</Text>
+                <Text style={styles.kpiNota}>
+                  {pct(cuenta[m.nivel])} · {m.hasta === null ? `${m.desde}+ días` : `${m.desde}–${m.hasta} días`}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>¿Quién los atiende?</Text>
+            <Text style={styles.cardTitle}>Folios por nivel de semáforo</Text>
             <View style={styles.anilloFila}>
               <Anillo
-                segmentos={[
-                  { valor: rh, color: colors.oxBlue },
-                  { valor: adm, color: colors.oxGold },
-                  { valor: otra, color: colors.ink3 },
-                ]}
+                segmentos={MATRIZ_DILOS.map((m) => ({ valor: cuenta[m.nivel], color: NIVEL_COLOR[m.nivel].fuerte }))}
                 centro={
                   <View style={{ alignItems: 'center' }}>
                     <Text style={styles.anilloNum}>{casos.length}</Text>
-                    <Text style={styles.anilloTxt}>casos</Text>
+                    <Text style={styles.anilloTxt}>folios</Text>
                   </View>
                 }
               />
               <View style={{ flex: 1 }}>
-                <Leyenda
-                  items={[
-                    { etiqueta: 'Recursos Humanos', valor: `${rh} · ${pct(rh)}`, color: colors.oxBlue },
-                    { etiqueta: 'Administración', valor: `${adm} · ${pct(adm)}`, color: colors.oxGold },
-                    ...(otra ? [{ etiqueta: 'Otra área', valor: String(otra), color: colors.ink3 }] : []),
-                  ]}
-                />
+                <Leyenda items={MATRIZ_DILOS.map((m) => ({ etiqueta: m.nombre, valor: `${cuenta[m.nivel]} · ${pct(cuenta[m.nivel])}`, color: NIVEL_COLOR[m.nivel].fuerte }))} />
               </View>
             </View>
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>¿Cuánto llevan abiertos?</Text>
-            <BarraApilada
-              segmentos={[
-                { etiqueta: `Hasta ${DIAS_ALERTA} días`, valor: enTiempo, color: colors.ok },
-                { etiqueta: `${DIAS_ALERTA + 1} a ${DIAS_ALERTA + 5} días`, valor: atrasados, color: colors.oxGold },
-                { etiqueta: `Más de ${DIAS_ALERTA + 5} días`, valor: muyAtrasados, color: colors.oxRed },
-              ]}
-            />
+            <Text style={styles.cardTitle}>Folios por región y nivel</Text>
+            <View style={{ gap: 12 }}>
+              {porRegion.map((r) => (
+                <View key={r.region} style={styles.regionFila}>
+                  <View style={styles.regionCab}>
+                    <Text style={styles.regionNombre}>{titulo(r.region)}</Text>
+                    {normalizarNombre(r.region) === 'TABASCO' ? <Text style={styles.tuRegion}>TU REGIÓN</Text> : null}
+                    <Text style={styles.regionTotal}>{r.total}</Text>
+                  </View>
+                  <View style={styles.regionPista}>
+                    <View style={[styles.regionBarra, { width: `${(r.total / maxRegion) * 100}%` }]}>
+                      {MATRIZ_DILOS.filter((m) => r.n[m.nivel] > 0).map((m) => (
+                        <View key={m.nivel} style={{ flex: r.n[m.nivel], backgroundColor: NIVEL_COLOR[m.nivel].fuerte }} />
+                      ))}
+                    </View>
+                  </View>
+                  <Text style={styles.regionDetalle}>
+                    {MATRIZ_DILOS.filter((m) => r.n[m.nivel] > 0)
+                      .map((m) => `${m.nombre} ${r.n[m.nivel]}`)
+                      .join(' · ')}
+                  </Text>
+                </View>
+              ))}
+            </View>
           </View>
 
-          <View style={[styles.card, styles.oaxaca]}>
-            <Icon name="pin" size={20} color={colors.oxRed} />
-            <Text style={styles.oaxacaTexto}>
-              {tabasco ? (
-                <>
-                  <Text style={styles.oaxacaFuerte}>{tabasco === 1 ? '1 caso' : `${tabasco} casos`}</Text> en la región Tabasco, la de Plaza Oaxaca
-                </>
-              ) : (
-                'Sin casos en la región Tabasco, la de Plaza Oaxaca'
-              )}
-            </Text>
-          </View>
-
-          <Desplegable
-            titulo="Por región y plaza"
-            icono="pin"
-            resumen={plazas.length ? `${titulo(plazas[0][0])} tiene más casos (${plazas[0][1]}) · ${regiones.length} regiones` : undefined}
-          >
-            <Text style={styles.subTitulo}>Regiones</Text>
-            <Barras filas={regiones.map(([r, n]) => ({ etiqueta: titulo(r), valor: n }))} formato={(v) => String(v)} destacar="Tabasco" />
-            <Text style={[styles.subTitulo, { marginTop: 6 }]}>Plazas</Text>
-            <Barras filas={plazas.map(([p, n]) => ({ etiqueta: titulo(p), valor: n }))} formato={(v) => String(v)} maxFilas={5} />
+          <Desplegable titulo="Matriz de escalamiento" icono="shield" resumen="Días, sesión y participantes de cada nivel">
+            <View style={{ gap: 10 }}>
+              {MATRIZ_DILOS.map((m) => (
+                <View key={m.nivel} style={[styles.matriz, { backgroundColor: NIVEL_COLOR[m.nivel].tinte }]}>
+                  <View style={[styles.matrizBarra, { backgroundColor: NIVEL_COLOR[m.nivel].fuerte }]} />
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <View style={styles.matrizCab}>
+                      <Text style={styles.matrizNivel}>
+                        {m.nombre} <Text style={styles.matrizFase}>· {m.fase}</Text>
+                      </Text>
+                      <Text style={styles.matrizCuenta}>
+                        {cuenta[m.nivel]} <Text style={styles.matrizPct}>({pct(cuenta[m.nivel])})</Text>
+                      </Text>
+                    </View>
+                    <Text style={styles.matrizDato}>
+                      <Text style={styles.matrizFuerte}>Días:</Text> {m.hasta === null ? `${m.desde} en adelante` : `${m.desde} a ${m.hasta}`}
+                      {'   '}
+                      <Text style={styles.matrizFuerte}>Sesión:</Text> {m.sesion === '—' ? 'no aplica' : m.sesion.toLowerCase()}
+                    </Text>
+                    <Text style={styles.matrizParticipantes}>{m.participantes.join(' · ')}</Text>
+                  </View>
+                </View>
+              ))}
+              <Text style={styles.nota}>Un folio en tiempo agenda su sesión de Nivel 1 desde el día {DIA_AGENDAR_N1}.</Text>
+            </View>
           </Desplegable>
 
-          <Desplegable titulo="Lista de casos" icono="doc" resumen={`${casos.length} casos · del más antiguo al más reciente`}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-              <Chip texto="Todas" activo={!region} onPress={() => setRegion('')} />
-              {regiones.map(([r, n]) => (
-                <Chip key={r} texto={`${titulo(r)} · ${n}`} activo={region === r} onPress={() => setRegion(region === r ? '' : r)} />
-              ))}
-            </ScrollView>
+          <Desplegable titulo="Detalle de folios" icono="doc" inicial resumen={`${casos.length} folios · del más antiguo al más reciente`}>
             <View style={styles.chipsFila}>
               {(
                 [
                   ['todos', 'Todos'],
-                  ['RH', 'RH'],
-                  ['ADM', 'ADM'],
-                  ['atrasados', `+${DIAS_ALERTA} días`],
+                  ['agendar', `Por agendar · ${agendar}`],
+                  ...MATRIZ_DILOS.map((m) => [m.nivel, `${m.nombre} · ${cuenta[m.nivel]}`]),
                 ] as Array<[Filtro, string]>
               ).map(([k, t]) => (
                 <Chip key={k} texto={t} activo={filtro === k} onPress={() => setFiltro(k)} />
               ))}
             </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              <Chip texto="Todas las regiones" activo={!region} onPress={() => setRegion('')} />
+              {regiones.map(([r, n]) => (
+                <Chip key={r} texto={`${titulo(r)} · ${n}`} activo={region === r} onPress={() => setRegion(region === r ? '' : r)} />
+              ))}
+            </ScrollView>
             <View style={styles.buscador}>
               <Icon name="search" size={18} color={colors.ink3} />
               <TextInput
                 style={styles.buscadorInput}
                 value={texto}
                 onChangeText={setTexto}
-                placeholder="Número de caso o plaza"
+                placeholder="Número de folio o plaza"
                 placeholderTextColor={colors.ink3}
                 autoCorrect={false}
               />
             </View>
             {lista.length ? (
-              lista.map((c, i) => (
-                <View key={c.caso} style={[styles.caso, i < lista.length - 1 && styles.linea]}>
-                  <View style={[styles.casoBarra, { backgroundColor: c.dias > DIAS_ALERTA + 5 ? colors.oxRed : c.dias > DIAS_ALERTA ? colors.oxGold : colors.ok }]} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.casoNum}>{c.caso}</Text>
-                    <Text style={styles.casoMeta} numberOfLines={1}>
-                      {titulo(c.plaza)} · {c.area === 'RH' ? 'RH' : c.area === 'ADM' ? 'Administración' : c.estatus}
-                    </Text>
+              lista.map((c, i) => {
+                const n = nivelDe(c.dias);
+                const m = MATRIZ_DILOS.find((x) => x.nivel === n)!;
+                const faltan = diasParaSiguiente(c);
+                const siguiente = MATRIZ_DILOS[MATRIZ_DILOS.indexOf(m) + 1];
+                return (
+                  <View key={c.caso} style={[styles.caso, i < lista.length - 1 && styles.linea]}>
+                    <View style={[styles.casoBarra, { backgroundColor: NIVEL_COLOR[n].fuerte }]} />
+                    <View style={{ flex: 1, gap: 3 }}>
+                      <Text style={styles.casoNum}>{c.caso}</Text>
+                      <Text style={styles.casoMeta} numberOfLines={1}>
+                        {titulo(c.plaza)} · {titulo(c.region)} · {c.area === 'RH' ? 'RH' : c.area === 'ADM' ? 'Administración' : c.estatus}
+                      </Text>
+                      <View style={styles.casoChips}>
+                        <View style={[styles.nivelChip, { backgroundColor: NIVEL_COLOR[n].tinte }]}>
+                          <Text style={[styles.nivelChipTxt, { color: NIVEL_COLOR[n].texto }]}>
+                            {m.nombre}
+                            {n === 'tiempo' ? '' : ` · ${m.fase}`}
+                          </Text>
+                        </View>
+                        <Text style={[styles.casoAccion, porAgendar(c) && { color: colors.oxRed }]}>{accionDe(c)}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.dias}>
+                      <Text style={styles.diasNum}>{c.dias}</Text>
+                      <Text style={styles.diasTxt}>días</Text>
+                      {faltan !== null && siguiente ? <Text style={styles.diasFalta}>{faltan === 1 ? '1 día' : `${faltan} días`} a {siguiente.nombre}</Text> : null}
+                    </View>
                   </View>
-                  <Text style={styles.casoDias}>{c.dias} d</Text>
-                </View>
-              ))
+                );
+              })
             ) : (
-              <Text style={styles.nota}>Ningún caso coincide con los filtros.</Text>
+              <Text style={styles.nota}>Ningún folio coincide con los filtros.</Text>
             )}
           </Desplegable>
 
-          <Text style={styles.nota}>Reporte DILOS que carga RH. No incluye el nombre del facilitador; los días son los abiertos al corte.</Text>
+          <Text style={styles.nota}>Reporte DILOS que carga RH. El nivel sale de los días abiertos en el portal al corte; no incluye el nombre del facilitador.</Text>
         </ScrollView>
       )}
       {pedirPin ? (
@@ -341,10 +409,37 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   cardTitle: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink, marginBottom: 8 },
-  kpi: { flex: 1, padding: 12 },
-  kpiTitulo: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11.5, color: colors.ink2 },
-  kpiValor: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 24, color: colors.ink, marginTop: 4 },
-  kpiNota: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11, color: colors.ink3, marginTop: 2 },
+  kpis: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  kpi: { flexBasis: '47%', flexGrow: 1, padding: 14, borderRadius: radii.lg, borderWidth: 1.5 },
+  kpiCab: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  punto: { width: 9, height: 9, borderRadius: 5 },
+  kpiTitulo: { flex: 1, fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12 },
+  kpiValor: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 30, lineHeight: 36, color: colors.ink, marginTop: 6 },
+  kpiNota: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11.5, color: colors.ink2, marginTop: 1 },
+  heroLadoMini: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 10.5, color: 'rgba(255,255,255,.8)', marginTop: 2, textAlign: 'center' },
+  regionFila: { gap: 6 },
+  regionCab: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  regionNombre: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14, color: colors.ink },
+  tuRegion: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 10, color: colors.oxRed, letterSpacing: 0.6 },
+  regionTotal: { marginLeft: 'auto', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink },
+  regionPista: { height: 12, borderRadius: 6, backgroundColor: colors.field, overflow: 'hidden' },
+  regionBarra: { height: 12, flexDirection: 'row', borderRadius: 6, overflow: 'hidden' },
+  regionDetalle: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11.5, color: colors.ink2 },
+  matriz: { flexDirection: 'row', gap: 12, padding: 12, borderRadius: radii.md },
+  matrizBarra: { width: 5, borderRadius: 3 },
+  matrizCab: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  matrizNivel: { flex: 1, fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 15, color: colors.ink },
+  matrizFase: { fontFamily: 'PlusJakartaSans_600SemiBold', color: colors.ink2 },
+  matrizCuenta: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink },
+  matrizPct: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink2 },
+  matrizDato: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12.5, color: colors.ink2 },
+  matrizFuerte: { fontFamily: 'PlusJakartaSans_800ExtraBold', color: colors.ink },
+  matrizParticipantes: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, lineHeight: 17, color: colors.ink2 },
+  casoChips: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 2 },
+  nivelChip: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: radii.pill },
+  nivelChipTxt: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 11.5 },
+  casoAccion: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11.5, color: colors.ink2 },
+  diasFalta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 10.5, color: colors.ink3, textAlign: 'center', marginTop: 2, maxWidth: 82 },
   barraFila: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 5 },
   barraEtq: { width: 96, fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12.5, color: colors.ink2 },
   barraFondo: { flex: 1, height: 9, borderRadius: 5, backgroundColor: colors.field, overflow: 'hidden' },
