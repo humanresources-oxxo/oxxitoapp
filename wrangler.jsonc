@@ -3,7 +3,8 @@
 // in with their employee number and PIN, as on GitHub Pages.
 // /DashboardsOxxo/* goes through worker/index.js to the dashboards Worker
 // (service binding, so Access does not apply) for the Ficha de Plaza of the
-// "Resumen" tab and the store catalog CSV only.
+// "Resumen" tab and the store catalog CSV only. /admin goes to the Conoxxo
+// panel, which now lives with the dashboards' Panel Admin (behind Access).
 {
   "name": "conoxxo",
   "main": "worker/index.js",
@@ -12,7 +13,7 @@
     "directory": "dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/DashboardsOxxo/*", "/assets/node_modules/*"]
+    "run_worker_first": ["/DashboardsOxxo/*", "/assets/node_modules/*", "/admin", "/admin/*"]
   },
   "services": [{ "binding": "DASHBOARDS", "service": "dashboardsoxxo" }],
   "observability": { "enabled": true }

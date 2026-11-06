@@ -4,7 +4,7 @@
 // the root of the domain instead of /oxxitoapp. Cloudflare's build command:
 // npm run build:cloudflare
 import { execSync } from 'node:child_process';
-import { cpSync, mkdirSync, writeFileSync } from 'node:fs';
+import { writeFileSync } from 'node:fs';
 
 // Publishable values, the same defaults as deploy-web.yml (they end up in the
 // public bundle anyway); a Cloudflare build variable with the same name wins.
@@ -19,7 +19,5 @@ const run = (cmd) => execSync(cmd, { stdio: 'inherit', env });
 run('npx tsc --noEmit');
 run('npx expo export -p web --output-dir dist --clear');
 run('node scripts/patch-web-index.mjs dist/index.html');
-mkdirSync('dist/admin', { recursive: true });
-cpSync('admin/index.html', 'dist/admin/index.html');
 writeFileSync('dist/version.txt', `${process.env.WORKERS_CI_COMMIT_SHA || process.env.GITHUB_SHA || 'local'}\n`);
 console.log('dist/ listo para Cloudflare');
