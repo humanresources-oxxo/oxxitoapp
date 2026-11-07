@@ -213,14 +213,23 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     se guarda en el teléfono para verlo sin señal y se borra al cerrar sesión.
   - Los puestos de `PUESTOS_ACTAS` tienen además "Mi equipo". Los Asesores de Tienda
     (`soloSusTiendas` en `src/services/actas.ts`) solo ven sus tiendas; los demás, toda
-    Plaza Oaxaca. El AT de cada tienda sale de `Catalogo_Asesores` (como en Estructura). Con
-    búsqueda por nombre, número o tienda, el filtro "Mis tiendas" (cuando el nombre de la
-    sesión es el Asesor de esas filas) y "Por vencer o vencidos".
+    Plaza Oaxaca. El AT de cada tienda sale de `Catalogo_Asesores` (como en Estructura).
+  - "Mi equipo" sigue el diseño del **Dashboard 6 (Ausentismos)** de DashboardsOxxo:
+    filtros arriba (Asesor y Puesto, más "Mis tiendas" / "Toda la plaza" cuando el nombre
+    de la sesión es el Asesor de esas filas) que valen para toda la pantalla, y cuatro
+    capas. **Resumen ejecutivo:** tarjetas con borde de color (colaboradores, días
+    pendientes, vencidos del periodo anterior, vencen en 0 a 50 días, al día, tiendas con
+    vencidos); tocar Vencidos, Vencen o Al día filtra lo de abajo. **Vencidos y por
+    vencer:** personas por rango de `Bucket_Ant` y barras rojo / naranja / verde por
+    asesor (por tienda en las tiendas de un solo asesor). **Foco y responsables:**
+    "Atender primero" y días pendientes por asesor. **Exploración detallada:** tiendas,
+    puestos, resumen por rango y el detalle completo con búsqueda (20 a la vez). Cada
+    tarjeta explica qué muestra con el botón ⓘ.
   - La fecha de actualización sale de la pestaña `Configuracion` (fila `s5`).
   - El reporte solo trae personal de tienda (SINDICALIZADO): el personal de oficina no
     aparece y, si tiene acceso, la pantalla abre directo en "Mi equipo".
-  - Mientras la hoja siga pública por GViz, el filtro por puesto solo oculta la vista de
-    equipo en la app, no es un candado (ver "Lectura con sesión").
+  - Con la hoja cerrada (Apps Script v68), un puesto sin permisos solo recibe su propio
+    renglón: "Mi equipo" depende del servidor, no solo de la app.
   - Si DashboardsOxxo renombra la pestaña o sus columnas, hay que actualizar el servicio.
 
 ✅ **Actas y Formatos (`src/screens/ActasScreen.tsx`):** versión nativa del formulario
