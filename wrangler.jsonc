@@ -13,7 +13,15 @@
     "directory": "dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/DashboardsOxxo/*", "/assets/node_modules/*", "/admin", "/admin/*"]
+    "run_worker_first": ["/DashboardsOxxo/*", "/assets/node_modules/*", "/admin", "/admin/*", "/api/*"]
+  },
+  // Chat prototype (worker/chat.js): Workers AI, only for these employee
+  // numbers until it is opened to everyone. The model can be changed here.
+  "ai": { "binding": "AI" },
+  "vars": {
+    "CHAT_IA_NUMEROS": "5843652,1599067",
+    "CHAT_IA_MODELO": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "CHAT_IA_LIMITE_DIA": "40"
   },
   "services": [{ "binding": "DASHBOARDS", "service": "dashboardsoxxo" }],
   "observability": { "enabled": true }

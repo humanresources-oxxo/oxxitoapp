@@ -130,6 +130,24 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   persona). Cuota sindical sigue pública porque la usa la página pública de DashboardsOxxo
   (paso 3).
 
+🧪 **Chat con IA (prototipo, `worker/chat.js` + `answerQuestion` en `src/services/chatQa.ts`):**
+  el chat del reglamento puede contestar con un modelo de **Cloudflare Workers AI** (gratis
+  hasta 10,000 neuronas al día) en lugar de solo mostrar el artículo encontrado.
+  - La app manda la pregunta y la llave de sesión a `POST /api/chat` del Worker de la app. El
+    Worker valida la sesión (`sesion_validar`), deja pasar **solo los números de
+    `CHAT_IA_NUMEROS`** (`wrangler.jsonc`; por ahora 5843652 y la cuenta de prueba), con un
+    tope aproximado de `CHAT_IA_LIMITE_DIA` preguntas por persona al día.
+  - Busca los 3 artículos más cercanos con la misma `search_reglamento` de siempre y **solo
+    esos** van al modelo (`CHAT_IA_MODELO`, hoy `@cf/meta/llama-3.3-70b-instruct-fp8-fast`),
+    con la instrucción de contestar únicamente con ellos, citar el artículo y mandar a RH lo
+    que no esté. La última línea del modelo ("ARTICULO: n") dice cuál fue la fuente.
+  - En el chat sale con la insignia "Respuesta con IA · prueba". Los flujos de sanciones y de
+    artículos con puntos siguen igual. Si el número no está habilitado, la IA falla o se acaba
+    la cuota del día, se muestra la búsqueda de siempre.
+  - El texto de las preguntas no se guarda en los registros: solo modelo, tokens, tiempo y
+    artículo citado (Cloudflare → Workers → conoxxo → Observabilidad, buscar `chat_ia`).
+  - Para abrirlo a todos: decidir con RH y quitar la lista (o cambiarla por puesto).
+
 ✅ **Casos DILOS (`src/screens/DilosScreen.tsx`):** dashboard **solo de la app**: casos
   abiertos de la **Zona Centro Sur** del "Reporte DILOS" que manda RH (hoja `ZCS`: caso,
   región, plaza, facilitador, estatus, días abiertos). Solo para los puestos de
