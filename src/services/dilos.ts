@@ -87,6 +87,13 @@ export function accionDe(c: CasoDilos) {
   if (n === 'tiempo') return porAgendar(c) ? 'Agendar sesión Nivel 1' : 'Seguimiento normal';
   return `Sesión ${MATRIZ_DILOS.find((m) => m.nivel === n)!.sesion.toLowerCase()}`;
 }
+// RH's workbook warns when a folio is this many days (or fewer) from the next level.
+export const DIAS_ALERTA_ESCALAR = 3;
+export const porEscalar = (c: CasoDilos) => {
+  const faltan = diasParaSiguiente(c);
+  return faltan !== null && faltan <= DIAS_ALERTA_ESCALAR;
+};
+
 // Days until the next level (null in Nivel 3).
 export function diasParaSiguiente(c: CasoDilos) {
   const fila = MATRIZ_DILOS.find((m) => m.nivel === nivelDe(c.dias))!;
