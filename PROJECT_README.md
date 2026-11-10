@@ -163,8 +163,13 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     `AvisoComposer`): para quien puede publicar avisos (`sesion_panel` → `avisos`). Corrige
     ortografía y tono sin cambiar fechas, horas, nombres ni montos, y lo muestra como
     propuesta: "Usar esta versión" o "Descartar". No publica ni guarda nada.
+  - **Lo importante de la ficha** (`worker/resumen.js`, `POST /api/resumen-ficha`): la Ficha
+    de Plaza de la pestaña Resumen manda sus propios números (`datosResumen` en
+    DashboardsOxxo) y Haiku escribe un titular y 2 a 4 puntos solo con ellos. Solo puestos
+    con permisos. Con los mismos números no se vuelve a pedir (memoria del Worker y del
+    teléfono), así que se paga una vez por corte. Si no está activo, la tarjeta no aparece.
   - No se registra el texto: solo modelo, tokens y tiempo (Observabilidad: `chat_ia`,
-    `redactar_ia`). Costo y límite de gasto: en la consola de Anthropic.
+    `redactar_ia`, `resumen_ia`). Costo y límite de gasto: en la consola de Anthropic.
 
 ✅ **Casos DILOS (`src/screens/DilosScreen.tsx`):** dashboard **solo de la app**: casos
   abiertos de la **Zona Centro Sur** del "Reporte DILOS" que manda RH (hoja `ZCS`: caso,

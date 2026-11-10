@@ -9,6 +9,7 @@
 // reads its data with the app's session key (?embed=1), never through /api.
 import { chat, rpc } from './chat.js';
 import { redactar } from './redactar.js';
+import { resumenFicha } from './resumen.js';
 
 const PERMITIDO = [/^\/dashboards\/ficha-plaza(\.html)?$/, /^\/js\/[\w./-]+\.js$/, /^\/css\/[\w./-]+\.css$/, /^\/assets\/[\w./-]+$/];
 
@@ -22,6 +23,16 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return Response.redirect(PANEL_CONOXXO, 302);
     // Prototype: chat answers with Workers AI, only for CHAT_IA_NUMEROS (worker/chat.js).
+    // "Lo importante" of the Ficha de Plaza with Claude Haiku (worker/resumen.js).
+    if (url.pathname === '/api/resumen-ficha') {
+      if (request.method !== 'POST') return new Response('Método no permitido', { status: 405 });
+      try {
+        return await resumenFicha(request, env, rpc);
+      } catch (err) {
+        console.log(JSON.stringify({ resumen_ia: true, error: String((err && (err.status || err.message)) || err) }));
+        return new Response(JSON.stringify({ ok: false, error: 'error_servidor' }), { status: 502, headers: { 'content-type': 'application/json' } });
+      }
+    }
     // "Mejorar redacción" of avisos with Claude Haiku (worker/redactar.js).
     if (url.pathname === '/api/redactar') {
       if (request.method !== 'POST') return new Response('Método no permitido', { status: 405 });
