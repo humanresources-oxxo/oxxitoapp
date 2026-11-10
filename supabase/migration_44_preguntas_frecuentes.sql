@@ -12,6 +12,8 @@
 -- 3. Only 'aprobada' ones are public: the chat's suggestions
 --    (faq_reglamento_aprobadas) and the context Haiku gets when answering
 --    (search_faq).
+-- (The two sesion_* readers are VOLATILE, not STABLE: sesion_empleado renews
+-- the session, and PostgREST runs STABLE functions read-only. Migration 45.)
 -- Everything that writes or reads proposals needs a session of someone who
 -- manages personnel (empleado_gestiona_personal: RH puestos and
 -- accesos_especiales).
@@ -38,7 +40,6 @@ alter table reglamento_faq enable row level security;
 create or replace function sesion_reglamento_articulos(p_token text, p_desde int, p_limite int)
 returns jsonb
 language plpgsql
-stable
 security definer
 set search_path = public, extensions
 as $$
@@ -97,7 +98,6 @@ $$;
 create or replace function sesion_faq_lista(p_token text)
 returns jsonb
 language plpgsql
-stable
 security definer
 set search_path = public, extensions
 as $$
