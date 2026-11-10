@@ -141,8 +141,9 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     esos** van al modelo (`CHAT_IA_MODELO`, hoy `@cf/meta/llama-3.3-70b-instruct-fp8-fast`),
     con la instrucción de contestar únicamente con ellos, citar el artículo y mandar a RH lo
     que no esté. La última línea del modelo ("ARTICULO: n") dice cuál fue la fuente.
-  - En el chat sale con la insignia "Respuesta con IA · prueba". Los flujos de sanciones y de
-    artículos con puntos siguen igual. Si el número no está habilitado, la IA falla o se acaba
+  - En el chat sale con la insignia "Respuesta con IA · prueba". Si la búsqueda cae en un flujo
+    con opciones (sanciones, artículos con puntos), arriba va la respuesta de la IA y abajo
+    las opciones. Si el número no está habilitado, la IA falla o se acaba
     la cuota del día, se muestra la búsqueda de siempre.
   - El texto de las preguntas no se guarda en los registros: solo modelo, tokens, tiempo y
     artículo citado (Cloudflare → Workers → conoxxo → Observabilidad, buscar `chat_ia`).

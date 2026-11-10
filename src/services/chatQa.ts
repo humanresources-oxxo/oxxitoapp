@@ -154,11 +154,13 @@ async function preguntarIa(question: string): Promise<QAResult | null> {
   }
 }
 
-// What the chat shows. The interactive flows (sanciones, articles with
-// items) stay as they are; for the rest, the AI answer when there is one.
+// What the chat shows: the AI answer when there is one. When the search landed
+// on an interactive flow (sanciones, articles with items), the AI text goes on
+// top and the choices stay below it, so the detail is still one tap away.
 export async function answerQuestion(question: string): Promise<QAResult> {
   const [busqueda, ia] = await Promise.all([matchQA(question), preguntarIa(question)]);
-  if (busqueda.choices || !ia) return busqueda;
+  if (!ia) return busqueda;
+  if (busqueda.choices) return { ...busqueda, answer: `${ia.answer}\n\nPara ver el detalle, elige un punto:`, ia: true };
   return ia;
 }
 
