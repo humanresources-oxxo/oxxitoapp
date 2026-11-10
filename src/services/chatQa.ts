@@ -203,6 +203,23 @@ export const chatSuggestions = [
   '¿Cómo solicito un permiso?',
 ];
 
+// Suggestions: 3 of the preguntas frecuentes RH approved (migration 44), a
+// different mix each time; the fixed ones while there are none.
+export async function cargarSugerencias(): Promise<string[]> {
+  try {
+    const { data, error } = await supabase.rpc('faq_reglamento_aprobadas');
+    const preguntas = !error && Array.isArray(data) ? (data as { pregunta: string }[]).map((f) => f.pregunta).filter(Boolean) : [];
+    if (preguntas.length < 3) return chatSuggestions;
+    return preguntas
+      .map((p) => ({ p, orden: Math.random() }))
+      .sort((a, b) => a.orden - b.orden)
+      .slice(0, 3)
+      .map((x) => x.p);
+  } catch {
+    return chatSuggestions;
+  }
+}
+
 export const initialChatMessages: ChatMessage[] = [
   {
     id: 'welcome',

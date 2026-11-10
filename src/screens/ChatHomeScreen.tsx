@@ -1,6 +1,6 @@
 // src/screens/ChatHomeScreen.tsx
 // First post-onboarding chat home with mock grounded answers.
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   FlatList,
@@ -22,6 +22,7 @@ import {
   ChatChoice,
   ChatMessage,
   ChatSource,
+  cargarSugerencias,
   chatSuggestions,
   getReglamentoItem,
   getSancion,
@@ -33,6 +34,14 @@ import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
 export function ChatHomeScreen({ onQuestionAsked }: { onQuestionAsked?: (question: string) => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialChatMessages);
+  const [sugerencias, setSugerencias] = useState<string[]>(chatSuggestions);
+  useEffect(() => {
+    let activo = true;
+    cargarSugerencias().then((l) => activo && setSugerencias(l));
+    return () => {
+      activo = false;
+    };
+  }, []);
   const [draft, setDraft] = useState('');
   const [typing, setTyping] = useState(false);
   const [selectedSource, setSelectedSource] = useState<ChatSource | null>(null);
@@ -186,7 +195,7 @@ export function ChatHomeScreen({ onQuestionAsked }: { onQuestionAsked?: (questio
       />
 
       <View style={styles.suggestions}>
-        {chatSuggestions.map((item) => (
+        {sugerencias.map((item) => (
           <Pressable key={item} style={styles.suggestion} onPress={() => send(item)}>
             <Text style={styles.suggestionText}>{item}</Text>
           </Pressable>
