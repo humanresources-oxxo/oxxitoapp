@@ -43,6 +43,7 @@ export type QAResult = {
   choices?: ChatChoice[];
   choiceKind?: ChoiceKind;
   ia?: boolean;
+  articuloNumero?: number; // article the AI answer is based on
 };
 
 const HR_CONTACT = { name: 'Recursos Humanos', area: 'Personas' };
@@ -60,6 +61,20 @@ const FALLBACK: QAResult = {
 function truncate(text: string, max = 220) {
   if (text.length <= max) return text;
   return `${text.slice(0, max).trimEnd()}…`;
+}
+
+// The interactive list of an article, if it has one: the sanciones table
+// (79, 93, 106) or the numbered items (77, 78).
+async function opcionesDe(numero: number): Promise<{ choices: ChatChoice[]; choiceKind: ChoiceKind } | null> {
+  if (numero === 79 || numero === 93 || numero === 106) {
+    const { data } = await supabase.rpc('list_sanciones', { p_article: numero });
+    if (data && data.length > 0) return { choices: (data as { id: number; infraccion: string }[]).map((s) => ({ id: s.id, label: s.infraccion })), choiceKind: 'sancion' };
+  }
+  if (numero === 77 || numero === 78) {
+    const { data } = await supabase.rpc('list_reglamento_items', { p_article: numero });
+    if (data && data.length > 0) return { choices: data as ChatChoice[], choiceKind: 'item' };
+  }
+  return null;
 }
 
 export async function matchQA(question: string): Promise<QAResult> {
@@ -146,6 +161,7 @@ async function preguntarIa(question: string): Promise<QAResult | null> {
       nextStep: 'Respuesta de prueba escrita con IA a partir del reglamento. Si tu caso es delicado o algo no coincide, confírmalo con Recursos Humanos.',
       contact: HR_CONTACT,
       ia: true,
+      articuloNumero: f ? f.number : undefined,
     };
   } catch {
     return null;
@@ -154,13 +170,14 @@ async function preguntarIa(question: string): Promise<QAResult | null> {
   }
 }
 
-// What the chat shows: the AI answer when there is one. When the search landed
-// on an interactive flow (sanciones, articles with items), the AI text goes on
-// top and the choices stay below it, so the detail is still one tap away.
+// What the chat shows: the AI answer when there is one. If the article the AI
+// based it on has an interactive list (sanciones, items), that list goes below
+// the AI text, so the detail is one tap away and matches what it just said.
 export async function answerQuestion(question: string): Promise<QAResult> {
   const [busqueda, ia] = await Promise.all([matchQA(question), preguntarIa(question)]);
   if (!ia) return busqueda;
-  if (busqueda.choices) return { ...busqueda, answer: `${ia.answer}\n\nPara ver el detalle, elige un punto:`, ia: true };
+  const opciones = ia.articuloNumero ? await opcionesDe(ia.articuloNumero).catch(() => null) : null;
+  if (opciones) return { ...ia, ...opciones, answer: `${ia.answer}\n\nPara ver el detalle, elige un punto:` };
   return ia;
 }
 
