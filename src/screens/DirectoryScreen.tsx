@@ -124,7 +124,7 @@ export function DirectoryScreen() {
         {directoryFilters.map((item) => {
           const active = item === filter;
           return (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={item}
               style={[styles.filterChip, active && styles.filterChipActive]}
               onPress={() => setFilter(item)}
@@ -153,7 +153,7 @@ export function DirectoryScreen() {
 
       <Modal transparent visible={!!selected} animationType="fade" onRequestClose={() => setSelected(null)}>
         <View style={styles.modalBackdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setSelected(null)} />
+          <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={() => setSelected(null)} />
           <BlurView intensity={35} tint="light" style={styles.callSheet}>
             {selected ? (
               <>
@@ -168,16 +168,16 @@ export function DirectoryScreen() {
                   <Text style={styles.phoneLineText}>{selected.schedule}</Text>
                 </View>
                 <View style={styles.sheetActions}>
-                  <Pressable style={styles.whatsappButton} onPress={whatsappSelected}>
+                  <Pressable accessibilityRole="button" style={styles.whatsappButton} onPress={whatsappSelected}>
                     <Icon name="whatsapp" size={18} color="#fff" />
                     <Text style={styles.primaryButtonText}>WhatsApp</Text>
                   </Pressable>
-                  <Pressable style={styles.primaryButton} onPress={callSelected}>
+                  <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={callSelected}>
                     <Icon name="phone" size={18} color="#fff" />
                     <Text style={styles.primaryButtonText}>Llamar</Text>
                   </Pressable>
                 </View>
-                <Pressable style={styles.cancelRow} onPress={() => setSelected(null)}>
+                <Pressable accessibilityRole="button" style={styles.cancelRow} onPress={() => setSelected(null)}>
                   <Text style={styles.secondaryButtonText}>Cancelar</Text>
                 </Pressable>
               </>
@@ -191,7 +191,7 @@ export function DirectoryScreen() {
 
 function ContactCard({ contact, onPress }: { contact: Contact; onPress: () => void }) {
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Pressable accessibilityRole="button" style={styles.card} onPress={onPress}>
       <View style={styles.cardTop}>
         <View style={styles.contactIcon}>
           <Icon name={contact.urgent ? 'shieldCheck' : 'user'} size={20} color={colors.oxRed} />

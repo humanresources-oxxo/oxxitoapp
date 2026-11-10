@@ -212,7 +212,7 @@ export function ChatHomeScreen({
 
       <View style={styles.suggestions}>
         {sugerencias.map((item) => (
-          <Pressable key={item} style={styles.suggestion} onPress={() => send(item)}>
+          <Pressable accessibilityRole="button" key={item} style={styles.suggestion} onPress={() => send(item)}>
             <Text style={styles.suggestionText} numberOfLines={2}>
               {item}
             </Text>
@@ -231,7 +231,7 @@ export function ChatHomeScreen({
             returnKeyType="send"
             style={styles.input}
           />
-          <Pressable
+          <Pressable accessibilityRole="button" accessibilityLabel="Enviar pregunta"
             style={[styles.sendButton, !draft.trim() && styles.sendButtonDisabled]}
             onPress={() => send()}
           >
@@ -242,7 +242,7 @@ export function ChatHomeScreen({
 
       <Modal transparent visible={!!selectedSource} animationType="fade" onRequestClose={() => setSelectedSource(null)}>
         <View style={styles.modalBackdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setSelectedSource(null)} />
+          <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={() => setSelectedSource(null)} />
           <BlurView intensity={38} tint="light" style={styles.sourceSheet}>
             {selectedSource ? (
               <SourceDetail source={selectedSource} onClose={() => setSelectedSource(null)} />
@@ -291,7 +291,7 @@ function Bubble({
         {message.choices ? (
           <View style={styles.choiceList}>
             {message.choices.map((choice) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={choice.id}
                 style={styles.choiceItem}
                 onPress={() => onPickChoice(choice, message.choiceKind ?? 'sancion')}
@@ -303,7 +303,7 @@ function Bubble({
           </View>
         ) : null}
         {message.source ? (
-          <Pressable style={styles.citation} onPress={() => onOpenSource(message.source!)}>
+          <Pressable accessibilityRole="button" style={styles.citation} onPress={() => onOpenSource(message.source!)}>
             <View style={styles.citationIcon}>
               <Icon name="doc" size={14} color={colors.oxRed} />
             </View>
@@ -347,7 +347,7 @@ function SourceDetail({ source, onClose }: { source: ChatSource; onClose: () => 
           </View>
         </View>
       ) : null}
-      <Pressable style={styles.closeButton} onPress={onClose}>
+      <Pressable accessibilityRole="button" style={styles.closeButton} onPress={onClose}>
         <Text style={styles.closeButtonText}>Entendido</Text>
       </Pressable>
     </>

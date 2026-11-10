@@ -153,7 +153,7 @@ export function VotacionesScreen({ onBack, onCambio }: { onBack: () => void; onC
       <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
       <SafeAreaView edges={['top']} style={styles.safeTop}>
         <View style={styles.header}>
-          <Pressable style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
+          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
             <Icon name="chevL" size={20} color={colors.ink} />
           </Pressable>
           <View style={styles.headerCopy}>
@@ -437,7 +437,7 @@ function PinModal({ numero, accion, onCerrar, onListo }: { numero: string; accio
   return (
     <Modal transparent visible animationType="fade" onRequestClose={onCerrar}>
       <View style={styles.modalFondo}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onCerrar} />
+        <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={onCerrar} />
         <BlurView intensity={36} tint="light" style={styles.hoja}>
           <View style={styles.asa} />
           <Text style={styles.hojaTitulo}>Confirma tu PIN</Text>
@@ -457,7 +457,7 @@ function PinModal({ numero, accion, onCerrar, onListo }: { numero: string; accio
             onSubmitEditing={enviar}
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <Pressable style={[styles.boton, { marginTop: 16 }, pin.length !== 4 && styles.botonApagado]} onPress={enviar} disabled={pin.length !== 4 || enviando}>
+          <Pressable accessibilityRole="button" style={[styles.boton, { marginTop: 16 }, pin.length !== 4 && styles.botonApagado]} onPress={enviar} disabled={pin.length !== 4 || enviando}>
             <Text style={styles.botonTexto}>{enviando ? 'Enviando…' : 'Confirmar'}</Text>
           </Pressable>
         </BlurView>
@@ -560,7 +560,7 @@ function NuevaVotacionModal({
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalFondo}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={onClose} />
         <BlurView intensity={36} tint="light" style={[styles.hoja, { maxHeight: '90%' }]}>
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <View style={styles.asa} />
@@ -600,7 +600,7 @@ function NuevaVotacionModal({
                     maxLength={80}
                   />
                   {opciones.length > 2 ? (
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       style={styles.quitar}
                       onPress={() => setOpciones((xs) => xs.filter((_, j) => j !== i))}
                       accessibilityLabel={`Quitar opción ${i + 1}`}
@@ -635,7 +635,7 @@ function NuevaVotacionModal({
                 {tiendas.length ? (
                   <View style={styles.chips}>
                     {tiendas.map((t) => (
-                      <Pressable key={t} style={[styles.chip, styles.chipActivo, styles.chipQuitar]} onPress={() => setTiendas((xs) => xs.filter((x) => x !== t))}>
+                      <Pressable accessibilityRole="button" key={t} style={[styles.chip, styles.chipActivo, styles.chipQuitar]} onPress={() => setTiendas((xs) => xs.filter((x) => x !== t))}>
                         <Text style={[styles.chipTexto, { color: colors.white }]}>{t}</Text>
                         <Icon name="close" size={13} color={colors.white} />
                       </Pressable>
@@ -651,7 +651,7 @@ function NuevaVotacionModal({
                   autoCorrect={false}
                 />
                 {sugeridas.map((t) => (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={t.cr}
                     style={styles.sugerida}
                     onPress={() => {
@@ -694,7 +694,7 @@ function NuevaVotacionModal({
             ) : null}
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
-            <Pressable style={[styles.boton, { marginTop: 18 }, !listo && styles.botonApagado]} onPress={publicar} disabled={!listo || enviando}>
+            <Pressable accessibilityRole="button" style={[styles.boton, { marginTop: 18 }, !listo && styles.botonApagado]} onPress={publicar} disabled={!listo || enviando}>
               <Text style={styles.botonTexto}>{enviando ? 'Publicando…' : 'Publicar votación'}</Text>
             </Pressable>
           </ScrollView>
@@ -706,7 +706,7 @@ function NuevaVotacionModal({
 
 function Chip({ texto, activo, onPress }: { texto: string; activo: boolean; onPress: () => void }) {
   return (
-    <Pressable style={[styles.chip, activo && styles.chipActivo]} onPress={onPress} accessibilityState={{ selected: activo }}>
+    <Pressable accessibilityRole="button" style={[styles.chip, activo && styles.chipActivo]} onPress={onPress} accessibilityState={{ selected: activo }}>
       <Text style={[styles.chipTexto, activo && { color: colors.white }]}>{texto}</Text>
     </Pressable>
   );
@@ -728,7 +728,7 @@ function Aviso({ titulo, texto, icono = 'alert', accion }: { titulo: string; tex
       <Text style={styles.avisoTitulo}>{titulo}</Text>
       <Text style={styles.avisoTexto}>{texto}</Text>
       {accion ? (
-        <Pressable style={styles.avisoBoton} onPress={accion.onPress}>
+        <Pressable accessibilityRole="button" style={styles.avisoBoton} onPress={accion.onPress}>
           <Text style={styles.avisoBotonTexto}>{accion.texto}</Text>
         </Pressable>
       ) : null}

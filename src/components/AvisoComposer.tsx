@@ -150,7 +150,7 @@ export function AvisoComposer({
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={onClose} />
         <BlurView intensity={36} tint="light" style={styles.sheet}>
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <View style={styles.handle} />
@@ -216,7 +216,7 @@ export function AvisoComposer({
               {images.map((img, i) => (
                 <View key={img.uri + i} style={styles.thumb}>
                   <Image source={{ uri: `data:${img.mime};base64,${img.data}` }} style={styles.thumbImg} resizeMode="cover" />
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     style={styles.thumbRemove}
                     onPress={() => setImages((xs) => xs.filter((_, j) => j !== i))}
                     accessibilityLabel={`Quitar imagen ${i + 1}`}
@@ -242,7 +242,7 @@ export function AvisoComposer({
             <Text style={styles.label}>Categoría</Text>
             <View style={styles.kindRow}>
               {KINDS.map((k) => (
-                <Pressable key={k} style={[styles.kindChip, kind === k && styles.kindChipActive]} onPress={() => setKind(k)}>
+                <Pressable accessibilityRole="button" key={k} style={[styles.kindChip, kind === k && styles.kindChipActive]} onPress={() => setKind(k)}>
                   <Text style={[styles.kindChipText, kind === k && styles.kindChipTextActive]}>{noticeKindMeta[k].label}</Text>
                 </Pressable>
               ))}
@@ -271,7 +271,7 @@ export function AvisoComposer({
             ) : null}
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
-            <Pressable style={[styles.publish, !ready && styles.publishDisabled]} onPress={submit} disabled={!ready || submitting}>
+            <Pressable accessibilityRole="button" style={[styles.publish, !ready && styles.publishDisabled]} onPress={submit} disabled={!ready || submitting}>
               <Text style={styles.publishText}>{submitting ? 'Publicando...' : 'Publicar'}</Text>
             </Pressable>
           </ScrollView>

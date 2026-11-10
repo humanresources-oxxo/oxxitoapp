@@ -34,6 +34,8 @@ export function VerifyScreen({
   const { empNum, pin, setPin, verifiedName } = useOnboarding();
   const len = pin.length;
   const [error, setError] = useState(false);
+  // A network failure is not a wrong PIN: say so, so nobody burns attempts.
+  const [sinConexion, setSinConexion] = useState(false);
   const [checking, setChecking] = useState(false);
   const [lockedMessage, setLockedMessage] = useState('');
   // Temporary PIN from RH that was just accepted: the employee now picks
@@ -43,6 +45,7 @@ export function VerifyScreen({
 
   const onKey = (k: string) => {
     if (len >= 4 || checking || lockedMessage) return;
+    setSinConexion(false);
     const next = pin + k;
     setPin(next);
     setError(false);
@@ -96,7 +99,7 @@ export function VerifyScreen({
           setTimeout(() => setPin(''), 420);
         })
         .catch(() => {
-          setError(true);
+          setSinConexion(true);
           setTimeout(() => setPin(''), 420);
         })
         .finally(() => setChecking(false));
@@ -134,7 +137,12 @@ export function VerifyScreen({
           <Text style={[styles.sub, { textAlign: 'center' }]}>
             {temporal
               ? nuevoError || 'RH te dio un PIN temporal. Elige uno nuevo de 4 dígitos que solo tú sepas.'
-              : lockedMessage || (error ? 'PIN incorrecto, intenta de nuevo.' : 'Ingresa tu PIN de 4 dígitos para verificar tu identidad.')}
+              : lockedMessage ||
+                (sinConexion
+                  ? 'No pudimos conectar. Revisa tu conexión e intenta de nuevo.'
+                  : error
+                    ? 'PIN incorrecto, intenta de nuevo.'
+                    : 'Ingresa tu PIN de 4 dígitos para verificar tu identidad.')}
           </Text>
         </View>
 

@@ -13,7 +13,7 @@ type StepsHeaderProps = {
 export function StepsHeader({ active, onBack }: StepsHeaderProps) {
   return (
     <View style={styles.top}>
-      <Pressable onPress={onBack} style={styles.back}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Regresar" onPress={onBack} style={styles.back}>
         <Icon name="chevL" size={20} color={colors.ink} />
       </Pressable>
       <View style={styles.steps}>

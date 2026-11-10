@@ -29,7 +29,7 @@ export function PinUnaVez({ numero, onListo, onCerrar }: { numero: string; onLis
   return (
     <Modal transparent visible animationType="fade" onRequestClose={onCerrar}>
       <View style={styles.fondo}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onCerrar} />
+        <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={onCerrar} />
         <BlurView intensity={36} tint="light" style={styles.hoja}>
           <View style={styles.asa} />
           <Text style={styles.titulo}>Confirma tu PIN</Text>
@@ -48,7 +48,7 @@ export function PinUnaVez({ numero, onListo, onCerrar }: { numero: string; onLis
             onSubmitEditing={enviar}
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <Pressable style={[styles.boton, pin.length !== 4 && { opacity: 0.45 }]} onPress={enviar} disabled={pin.length !== 4 || enviando}>
+          <Pressable accessibilityRole="button" style={[styles.boton, pin.length !== 4 && { opacity: 0.45 }]} onPress={enviar} disabled={pin.length !== 4 || enviando}>
             <Text style={styles.botonTexto}>{enviando ? 'Enviando…' : 'Confirmar'}</Text>
           </Pressable>
         </BlurView>

@@ -28,7 +28,7 @@ export function OxButton({ children, onPress, variant = 'primary', disabled, ico
       );
     }
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [pressed && styles.pressed]}>
+      <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [pressed && styles.pressed]}>
         <LinearGradient
           colors={gradients.oxGrad.colors}
           locations={gradients.oxGrad.locations}
@@ -48,6 +48,8 @@ export function OxButton({ children, onPress, variant = 'primary', disabled, ico
       <Pressable
         onPress={onPress}
         disabled={disabled}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !!disabled }}
         style={({ pressed }) => [styles.base, styles.light, styles.shadowLight, pressed && styles.pressed, style]}
       >
         <Text style={[type.button, { color: colors.oxRedDark }]}>{children}</Text>
@@ -61,6 +63,8 @@ export function OxButton({ children, onPress, variant = 'primary', disabled, ico
       <Pressable
         onPress={onPress}
         disabled={disabled}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: !!disabled }}
         style={({ pressed }) => [styles.base, styles.outline, pressed && styles.pressed, style]}
       >
         <Text style={[type.button, { color: colors.ink }]}>{children}</Text>
@@ -74,6 +78,8 @@ export function OxButton({ children, onPress, variant = 'primary', disabled, ico
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => [styles.ghost, pressed && styles.pressed, style]}
     >
       <Text style={styles.ghostText}>{children}</Text>

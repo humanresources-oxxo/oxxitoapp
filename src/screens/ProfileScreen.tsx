@@ -233,7 +233,7 @@ function ProfileBody({
           ) : null}
         </View>
 
-        <Pressable style={styles.logoutButton} onPress={logout}>
+        <Pressable accessibilityRole="button" style={styles.logoutButton} onPress={logout}>
           <Icon name="logout" size={19} color={colors.oxRed} />
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </Pressable>
@@ -281,7 +281,7 @@ function ActionRow({
   onPress?: () => void;
 }) {
   return (
-    <Pressable style={styles.row} onPress={onPress}>
+    <Pressable accessibilityRole="button" style={styles.row} onPress={onPress}>
       <View style={styles.rowIcon}>
         <Icon name={icon} size={20} color={colors.oxRed} />
       </View>
@@ -352,7 +352,7 @@ function ChangePinModal({
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalBackdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={onClose} />
         <BlurView intensity={36} tint="light" style={styles.composerSheet}>
           <View style={styles.sheetHandle} />
           <Text style={styles.composerTitle}>Cambiar PIN</Text>
@@ -399,7 +399,7 @@ function ChangePinModal({
           {igualAlActual ? <Text style={styles.composerError}>El PIN nuevo debe ser distinto al actual.</Text> : null}
           {error ? <Text style={styles.composerError}>{error}</Text> : null}
 
-          <Pressable
+          <Pressable accessibilityRole="button"
             style={[styles.publishButton, !ready && styles.publishButtonDisabled]}
             onPress={submit}
             disabled={!ready || submitting}

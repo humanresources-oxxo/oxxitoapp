@@ -86,7 +86,7 @@ export function VacacionesScreen({
       <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
       <SafeAreaView edges={['top']} style={styles.safeTop}>
         <View style={styles.header}>
-          <Pressable style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
+          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
             <Icon name="chevL" size={20} color={colors.ink} />
           </Pressable>
           <View style={styles.headerCopy}>
@@ -232,7 +232,7 @@ function Aviso({ icono, titulo, texto, accion }: { icono: string; titulo: string
       <Text style={styles.avisoTitulo}>{titulo}</Text>
       <Text style={styles.avisoTexto}>{texto}</Text>
       {accion ? (
-        <Pressable style={styles.avisoBoton} onPress={accion.onPress}>
+        <Pressable accessibilityRole="button" style={styles.avisoBoton} onPress={accion.onPress}>
           <Text style={styles.avisoBotonTexto}>{accion.texto}</Text>
         </Pressable>
       ) : null}
@@ -383,7 +383,7 @@ function Equipo({ sesion, soloMisTiendas }: { sesion: Sesion; soloMisTiendas: bo
   const fila = (item: Vacacion, i: number, arr: Vacacion[]) => {
     const u = urgencia(item);
     return (
-      <Pressable key={item.numEmpleado} style={[styles.persona, i < arr.length - 1 && styles.linea]} onPress={() => setDetalle(item)}>
+      <Pressable accessibilityRole="button" key={item.numEmpleado} style={[styles.persona, i < arr.length - 1 && styles.linea]} onPress={() => setDetalle(item)}>
         <View style={[styles.personaBarra, { backgroundColor: u === 'vencido' ? TONO.rojo : u === 'pronto' ? '#F06A24' : colors.ok }]} />
         <View style={{ flex: 1 }}>
           <Text style={styles.personaNombre} numberOfLines={1}>
@@ -622,7 +622,7 @@ function Equipo({ sesion, soloMisTiendas }: { sesion: Sesion; soloMisTiendas: bo
         )}
       </ScrollView>
       <Modal visible={!!selector} transparent animationType="fade" onRequestClose={() => setSelector(null)}>
-        <Pressable style={styles.velo} onPress={() => setSelector(null)} accessibilityLabel="Cerrar" />
+        <Pressable accessibilityRole="button" style={styles.velo} onPress={() => setSelector(null)} accessibilityLabel="Cerrar" />
         <View style={styles.hoja}>
           <Text style={styles.hojaTitulo}>{selector === 'asesor' ? 'Filtrar por asesor' : 'Filtrar por puesto'}</Text>
           <ScrollView style={{ maxHeight: 420 }}>
@@ -660,7 +660,7 @@ function Equipo({ sesion, soloMisTiendas }: { sesion: Sesion; soloMisTiendas: bo
                 {detalle?.nombre}
               </Text>
             </View>
-            <Pressable style={styles.headerButton} onPress={() => setDetalle(null)} accessibilityLabel="Cerrar">
+            <Pressable accessibilityRole="button" style={styles.headerButton} onPress={() => setDetalle(null)} accessibilityLabel="Cerrar">
               <Icon name="close" size={20} color={colors.ink} />
             </Pressable>
           </View>
@@ -816,7 +816,7 @@ function Selector({ etiqueta, valor, onPress }: { etiqueta: string; valor: strin
 
 function Chip({ texto, activo, onPress }: { texto: string; activo: boolean; onPress: () => void }) {
   return (
-    <Pressable style={[styles.chip, activo && styles.chipActivo]} onPress={onPress} accessibilityState={{ selected: activo }}>
+    <Pressable accessibilityRole="button" style={[styles.chip, activo && styles.chipActivo]} onPress={onPress} accessibilityState={{ selected: activo }}>
       <Text style={[styles.chipText, activo && styles.chipTextActivo]}>{texto}</Text>
     </Pressable>
   );

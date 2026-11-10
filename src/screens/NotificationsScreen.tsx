@@ -145,11 +145,11 @@ export function NotificationsScreen() {
           </View>
           <View style={styles.headerActions}>
             {canPublish ? (
-              <Pressable style={[styles.headerAction, styles.headerActionMain]} onPress={() => setComposer(true)} accessibilityLabel="Nuevo aviso">
+              <Pressable accessibilityRole="button" style={[styles.headerAction, styles.headerActionMain]} onPress={() => setComposer(true)} accessibilityLabel="Nuevo aviso">
                 <Icon name="edit" size={19} color={colors.white} />
               </Pressable>
             ) : null}
-            <Pressable style={styles.headerAction} onPress={markAllRead} accessibilityLabel="Marcar todos como leídos">
+            <Pressable accessibilityRole="button" style={styles.headerAction} onPress={markAllRead} accessibilityLabel="Marcar todos como leídos">
               <Icon name="check" size={20} color={colors.oxRed} />
             </Pressable>
           </View>
@@ -170,7 +170,7 @@ export function NotificationsScreen() {
         {noticeFilters.map((item) => {
           const active = item.key === filter;
           return (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={item.key}
               style={[styles.filterChip, active && styles.filterChipActive]}
               onPress={() => setFilter(item.key)}
@@ -199,7 +199,7 @@ export function NotificationsScreen() {
 
       <Modal transparent visible={!!selected} animationType="fade" onRequestClose={closeDetail}>
         <View style={styles.modalBackdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={closeDetail} />
+          <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={closeDetail} />
           <BlurView intensity={36} tint="light" style={styles.detailSheet}>
             {selected ? (
               <NoticeDetail
@@ -235,7 +235,7 @@ function NoticeCard({ notice, onPress }: { notice: Notice; onPress: () => void }
   const meta = noticeKindMeta[notice.kind];
 
   return (
-    <Pressable style={[styles.card, !notice.read && styles.cardUnread]} onPress={onPress}>
+    <Pressable accessibilityRole="button" style={[styles.card, !notice.read && styles.cardUnread]} onPress={onPress}>
       <View style={styles.cardIconWrap}>
         <LinearGradient colors={gradients[meta.accent].colors} style={styles.cardIcon}>
           <Icon name={meta.icon} size={20} color="#fff" />
@@ -309,9 +309,9 @@ function NoticeImageView({
 function ImageViewer({ image, onClose }: { image: NoticeImage; onClose: () => void }) {
   return (
     <View style={styles.viewer}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={onClose} />
       <NoticeImageView image={image} style={styles.viewerImage} resizeMode="contain" />
-      <Pressable style={styles.viewerClose} onPress={onClose} accessibilityLabel="Cerrar imagen">
+      <Pressable accessibilityRole="button" style={styles.viewerClose} onPress={onClose} accessibilityLabel="Cerrar imagen">
         <Icon name="close" size={20} color={colors.white} />
       </Pressable>
     </View>
@@ -355,7 +355,7 @@ function NoticeDetail({
           <Text style={styles.priorityText}>Aviso prioritario para revisar antes del siguiente turno.</Text>
         </View>
       ) : null}
-      <Pressable style={styles.closeButton} onPress={onClose}>
+      <Pressable accessibilityRole="button" style={styles.closeButton} onPress={onClose}>
         <Text style={styles.closeButtonText}>Entendido</Text>
       </Pressable>
       {onDelete ? (

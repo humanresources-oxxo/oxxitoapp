@@ -56,7 +56,7 @@ export function PermissionsScreen({
             </View>
           </View>
 
-          <Pressable style={styles.check} onPress={() => setTerms(!terms)}>
+          <Pressable accessibilityRole="button" style={styles.check} onPress={() => setTerms(!terms)}>
             <View style={[styles.box, !terms && styles.boxEmpty]}>
               {terms ? <Icon name="check" size={15} color="#fff" strokeWidth={2.4} /> : null}
             </View>

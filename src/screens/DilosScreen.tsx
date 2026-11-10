@@ -108,7 +108,7 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
       <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
       <SafeAreaView edges={['top']} style={styles.safeTop}>
         <View style={styles.header}>
-          <Pressable style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
+          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
             <Icon name="chevL" size={20} color={colors.ink} />
           </Pressable>
           <View style={styles.headerCopy}>
@@ -152,7 +152,7 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
                 {promedio.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} días abiertos en promedio · el más antiguo, {casos[0].dias}
               </Text>
             </View>
-            <Pressable style={styles.heroLado} onPress={() => setFiltro('agendar')} accessibilityLabel={`${agendar} folios por agendar sesión de Nivel 1`}>
+            <Pressable accessibilityRole="button" style={styles.heroLado} onPress={() => setFiltro('agendar')} accessibilityLabel={`${agendar} folios por agendar sesión de Nivel 1`}>
               <Text style={styles.heroLadoNum}>{agendar}</Text>
               <Text style={styles.heroLadoTxt}>por agendar sesión N1</Text>
               <Text style={styles.heroLadoMini}>desde el día {DIA_AGENDAR_N1}</Text>
@@ -489,7 +489,7 @@ function TablaPlazas({ casos, plaza, onPlaza }: { casos: CasoDilos[]; plaza: str
           <View style={{ flexGrow: 1 }}>
             <View style={[styles.tFilaCab, { height: ALTO_CAB }]}>{COLS.map((c) => cabecera(c.col, c.titulo, c.ancho))}</View>
             {filas.map((f, i) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={f.plaza}
                 style={[styles.tFila, { height: ALTO_FILA }, i % 2 === 1 && styles.tAlterna, plaza === f.plaza && styles.tElegida]}
                 onPress={() => onPlaza(f.plaza)}
@@ -521,7 +521,7 @@ function TablaPlazas({ casos, plaza, onPlaza }: { casos: CasoDilos[]; plaza: str
 
 function Chip({ texto, activo, onPress }: { texto: string; activo: boolean; onPress: () => void }) {
   return (
-    <Pressable style={[styles.chip, activo && styles.chipActivo]} onPress={onPress} accessibilityState={{ selected: activo }}>
+    <Pressable accessibilityRole="button" style={[styles.chip, activo && styles.chipActivo]} onPress={onPress} accessibilityState={{ selected: activo }}>
       <Text style={[styles.chipText, activo && styles.chipTextActivo]}>{texto}</Text>
     </Pressable>
   );
@@ -534,7 +534,7 @@ function Aviso({ titulo, texto, accion }: { titulo: string; texto: string; accio
       <Text style={styles.avisoTitulo}>{titulo}</Text>
       <Text style={styles.avisoTexto}>{texto}</Text>
       {accion ? (
-        <Pressable style={styles.avisoBoton} onPress={accion.onPress}>
+        <Pressable accessibilityRole="button" style={styles.avisoBoton} onPress={accion.onPress}>
           <Text style={styles.avisoBotonTexto}>{accion.texto}</Text>
         </Pressable>
       ) : null}
