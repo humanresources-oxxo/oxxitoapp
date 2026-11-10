@@ -7,7 +7,8 @@
 // what the Ficha needs (its page, js, css and assets: code and the store
 // catalog). /api and every other dashboard page stay behind Access. The Ficha
 // reads its data with the app's session key (?embed=1), never through /api.
-import { chat } from './chat.js';
+import { chat, rpc } from './chat.js';
+import { redactar } from './redactar.js';
 
 const PERMITIDO = [/^\/dashboards\/ficha-plaza(\.html)?$/, /^\/js\/[\w./-]+\.js$/, /^\/css\/[\w./-]+\.css$/, /^\/assets\/[\w./-]+$/];
 
@@ -21,6 +22,16 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return Response.redirect(PANEL_CONOXXO, 302);
     // Prototype: chat answers with Workers AI, only for CHAT_IA_NUMEROS (worker/chat.js).
+    // "Mejorar redacción" of avisos with Claude Haiku (worker/redactar.js).
+    if (url.pathname === '/api/redactar') {
+      if (request.method !== 'POST') return new Response('Método no permitido', { status: 405 });
+      try {
+        return await redactar(request, env, rpc);
+      } catch (err) {
+        console.log(JSON.stringify({ redactar_ia: true, error: String((err && (err.status || err.message)) || err) }));
+        return new Response(JSON.stringify({ ok: false, error: 'error_servidor' }), { status: 502, headers: { 'content-type': 'application/json' } });
+      }
+    }
     if (url.pathname === '/api/chat') {
       if (request.method !== 'POST') return new Response('Método no permitido', { status: 405 });
       try {

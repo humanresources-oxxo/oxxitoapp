@@ -149,6 +149,23 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     artículo citado (Cloudflare → Workers → conoxxo → Observabilidad, buscar `chat_ia`).
   - Para abrirlo a todos: decidir con RH y quitar la lista (o cambiarla por puesto).
 
+🧪 **Claude Haiku 5.5 (etapa 1, `worker/claude.js`):** con el secreto `ANTHROPIC_API_KEY` en
+  Cloudflare (Workers → conoxxo → Settings → Variables and Secrets, tipo *Secret*; nunca en el
+  código ni en la app), el Worker usa Claude Haiku 5.5 con la librería oficial
+  `@anthropic-ai/sdk`. Sin el secreto todo sigue como antes. Cada llamada pide JSON con un
+  esquema fijo (salidas estructuradas) y esfuerzo `low`; si Haiku rechaza, se corta o falla,
+  se usa lo de antes.
+  - **Chat** (`CHAT_IA_PROVEEDOR`: `auto` = Haiku si hay llave, si no Workers AI): Haiku
+    convierte la pregunta en 1 a 3 búsquedas con las palabras del reglamento, se busca con
+    todas (`search_reglamento`, hasta 5 artículos) y Haiku contesta con ellos
+    (`{ respuesta, articulo }`). Si Haiku falla, contesta Workers AI.
+  - **Mejorar redacción** (`worker/redactar.js`, `POST /api/redactar`; botón en
+    `AvisoComposer`): para quien puede publicar avisos (`sesion_panel` → `avisos`). Corrige
+    ortografía y tono sin cambiar fechas, horas, nombres ni montos, y lo muestra como
+    propuesta: "Usar esta versión" o "Descartar". No publica ni guarda nada.
+  - No se registra el texto: solo modelo, tokens y tiempo (Observabilidad: `chat_ia`,
+    `redactar_ia`). Costo y límite de gasto: en la consola de Anthropic.
+
 ✅ **Casos DILOS (`src/screens/DilosScreen.tsx`):** dashboard **solo de la app**: casos
   abiertos de la **Zona Centro Sur** del "Reporte DILOS" que manda RH (hoja `ZCS`: caso,
   región, plaza, facilitador, estatus, días abiertos). Solo para los puestos de

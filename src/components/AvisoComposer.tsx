@@ -3,7 +3,8 @@
 // priority and up to 3 images, compressed on the phone before sending
 // (services/notices.ts prepararImagen). Goes with the session key; a session
 // from before the key existed asks for the PIN once. Used from Avisos and
-// from Perfil.
+// from Perfil. "Mejorar redacción" asks Claude Haiku for a cleaner title and
+// text (services/redactar.ts) and shows it as a suggestion to use or discard.
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { BlurView } from 'expo-blur';
@@ -11,6 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Icon } from './Icon';
 import { NoticeKind, noticeKindMeta } from '../data/notices';
 import { ImagenNueva, prepararImagen, publishNotice } from '../services/notices';
+import { mejorarRedaccion, Sugerencia } from '../services/redactar';
 import { leerLlave, obtenerLlave, olvidarLlave } from '../services/sesion';
 import { colors, radii, shadows, type } from '../theme/tokens';
 import { showAlert } from '../utils/alert';
@@ -39,6 +41,9 @@ export function AvisoComposer({
   const [sinLlave, setSinLlave] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [mejorando, setMejorando] = useState(false);
+  const [sugerencia, setSugerencia] = useState<Sugerencia | null>(null);
+  const [avisoIa, setAvisoIa] = useState('');
 
   useEffect(() => {
     if (visible) leerLlave().then((l) => setSinLlave(!l));
@@ -56,6 +61,29 @@ export function AvisoComposer({
     setImages([]);
     setPin('');
     setError('');
+    setSugerencia(null);
+    setAvisoIa('');
+  };
+
+  const mejorar = async () => {
+    if (mejorando || body.trim().length < 10) return;
+    setMejorando(true);
+    setAvisoIa('');
+    setSugerencia(null);
+    const r = await mejorarRedaccion(title.trim(), body.trim());
+    setMejorando(false);
+    if (r.ok) return setSugerencia(r.sugerencia);
+    setAvisoIa(
+      r.motivo === 'no_activa'
+        ? 'La ayuda de redacción todavía no está activa.'
+        : r.motivo === 'sin_sesion'
+          ? 'Confirma tu PIN publicando una vez y vuelve a intentarlo.'
+          : r.motivo === 'limite'
+            ? 'Llegaste al límite de mejoras de hoy.'
+            : r.motivo === 'no_habilitado'
+              ? 'Tu puesto no puede publicar avisos.'
+              : 'No pudimos mejorar la redacción. Intenta de nuevo.'
+    );
   };
 
   const addImages = async () => {
@@ -147,6 +175,41 @@ export function AvisoComposer({
               placeholderTextColor={colors.ink3}
               multiline
             />
+            <Pressable
+              style={[styles.mejorar, (mejorando || body.trim().length < 10) && { opacity: 0.5 }]}
+              onPress={mejorar}
+              disabled={mejorando || body.trim().length < 10}
+              accessibilityRole="button"
+              accessibilityLabel="Mejorar redacción con IA"
+            >
+              {mejorando ? <ActivityIndicator size="small" color={colors.oxBlue} /> : <Icon name="sparkle" size={15} color={colors.oxBlue} />}
+              <Text style={styles.mejorarTexto}>{mejorando ? 'Mejorando…' : 'Mejorar redacción'}</Text>
+            </Pressable>
+            {avisoIa ? <Text style={styles.avisoIa}>{avisoIa}</Text> : null}
+            {sugerencia ? (
+              <View style={styles.sugerencia}>
+                <Text style={styles.sugEtq}>Propuesta con IA · revísala antes de usarla</Text>
+                <Text style={styles.sugTitulo}>{sugerencia.titulo}</Text>
+                <Text style={styles.sugTexto}>{sugerencia.texto}</Text>
+                {sugerencia.cambios ? <Text style={styles.sugCambios}>{sugerencia.cambios}</Text> : null}
+                <View style={styles.sugBotones}>
+                  <Pressable
+                    style={styles.sugUsar}
+                    onPress={() => {
+                      setTitle(sugerencia.titulo.slice(0, 140));
+                      setBody(sugerencia.texto);
+                      setSugerencia(null);
+                    }}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.sugUsarTexto}>Usar esta versión</Text>
+                  </Pressable>
+                  <Pressable style={styles.sugDescartar} onPress={() => setSugerencia(null)} accessibilityRole="button">
+                    <Text style={styles.sugDescartarTexto}>Descartar</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
 
             <Text style={styles.label}>Imágenes (hasta {MAX_IMAGENES})</Text>
             <View style={styles.thumbs}>
@@ -219,6 +282,19 @@ export function AvisoComposer({
 }
 
 const styles = StyleSheet.create({
+  mejorar: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: '#E6EFF8' },
+  mejorarTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: colors.oxBlue },
+  avisoIa: { ...type.caption, color: colors.ink2, marginTop: 6 },
+  sugerencia: { marginTop: 10, padding: 12, borderRadius: radii.lg, backgroundColor: '#F2F7FC', borderWidth: 1, borderColor: '#CFE0F2', gap: 6 },
+  sugEtq: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 11, color: colors.oxBlue },
+  sugTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 15, color: colors.ink },
+  sugTexto: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13.5, lineHeight: 19, color: colors.ink },
+  sugCambios: { ...type.caption, color: colors.ink2, fontStyle: 'italic' },
+  sugBotones: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  sugUsar: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, backgroundColor: colors.oxBlue },
+  sugUsarTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: colors.white },
+  sugDescartar: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line },
+  sugDescartarTexto: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink2 },
   backdrop: { flex: 1, backgroundColor: 'rgba(36,26,23,.24)', justifyContent: 'flex-end', padding: 14 },
   handle: { alignSelf: 'center', width: 42, height: 5, borderRadius: radii.pill, backgroundColor: colors.line2, marginBottom: 14 },
   sheet: {
