@@ -168,8 +168,16 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     DashboardsOxxo) y Haiku escribe un titular y 2 a 4 puntos solo con ellos. Solo puestos
     con permisos. Con los mismos números no se vuelve a pedir (memoria del Worker y del
     teléfono), así que se paga una vez por corte. Si no está activo, la tarjeta no aparece.
+  - **Preguntas frecuentes del reglamento** (migración 44, `worker/faq.js`): en el Panel
+    Conoxxo (pestaña "Preguntas frecuentes"), RH genera propuestas: el Worker lee el RIT
+    por partes con la sesión (`sesion_reglamento_articulos`, solo RH y accesos especiales) y
+    Haiku escribe preguntas y respuestas solo con cada artículo; se guardan como propuesta
+    (`sesion_faq_proponer`). RH las aprueba, corrige o descarta. Las aprobadas salen como
+    sugerencias del chat (`faq_reglamento_aprobadas`) y Haiku las recibe como referencia al
+    contestar (`search_faq`). `/api/faq/generar` solo acepta llamadas del navegador desde el
+    panel (CORS para `dashboardsoxxo.plaza-oaxaca.workers.dev`).
   - No se registra el texto: solo modelo, tokens y tiempo (Observabilidad: `chat_ia`,
-    `redactar_ia`, `resumen_ia`). Costo y límite de gasto: en la consola de Anthropic.
+    `redactar_ia`, `resumen_ia`, `faq_ia`). Costo y límite de gasto: en la consola de Anthropic.
 
 ✅ **Casos DILOS (`src/screens/DilosScreen.tsx`):** dashboard **solo de la app**: casos
   abiertos de la **Zona Centro Sur** del "Reporte DILOS" que manda RH (hoja `ZCS`: caso,

@@ -10,6 +10,18 @@
 import { chat, rpc } from './chat.js';
 import { redactar } from './redactar.js';
 import { resumenFicha } from './resumen.js';
+import { generarFaq } from './faq.js';
+
+// The Panel Conoxxo lives on the dashboards site: only that origin may call
+// /api/faq/* from a browser (it still needs an RH session, checked by Supabase).
+const PANEL_ORIGEN = 'https://dashboardsoxxo.plaza-oaxaca.workers.dev';
+function conCors(request, respuesta) {
+  if (request.headers.get('origin') !== PANEL_ORIGEN) return respuesta;
+  const r = new Response(respuesta.body, respuesta);
+  r.headers.set('access-control-allow-origin', PANEL_ORIGEN);
+  r.headers.set('vary', 'origin');
+  return r;
+}
 
 const PERMITIDO = [/^\/dashboards\/ficha-plaza(\.html)?$/, /^\/js\/[\w./-]+\.js$/, /^\/css\/[\w./-]+\.css$/, /^\/assets\/[\w./-]+$/];
 
@@ -23,6 +35,23 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return Response.redirect(PANEL_CONOXXO, 302);
     // Prototype: chat answers with Workers AI, only for CHAT_IA_NUMEROS (worker/chat.js).
+    // Preguntas frecuentes of the reglamento, proposed by Haiku (worker/faq.js).
+    if (url.pathname === '/api/faq/generar') {
+      if (request.method === 'OPTIONS') {
+        if (request.headers.get('origin') !== PANEL_ORIGEN) return new Response(null, { status: 403 });
+        return new Response(null, {
+          status: 204,
+          headers: { 'access-control-allow-origin': PANEL_ORIGEN, 'access-control-allow-methods': 'POST', 'access-control-allow-headers': 'content-type', 'access-control-max-age': '86400', vary: 'origin' },
+        });
+      }
+      if (request.method !== 'POST') return new Response('Método no permitido', { status: 405 });
+      try {
+        return conCors(request, await generarFaq(request, env, rpc));
+      } catch (err) {
+        console.log(JSON.stringify({ faq_ia: true, error: String((err && (err.status || err.message)) || err) }));
+        return conCors(request, new Response(JSON.stringify({ ok: false, error: 'error_servidor' }), { status: 502, headers: { 'content-type': 'application/json' } }));
+      }
+    }
     // "Lo importante" of the Ficha de Plaza with Claude Haiku (worker/resumen.js).
     if (url.pathname === '/api/resumen-ficha') {
       if (request.method !== 'POST') return new Response('Método no permitido', { status: 405 });
