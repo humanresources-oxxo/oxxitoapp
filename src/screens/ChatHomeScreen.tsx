@@ -26,7 +26,7 @@ import {
   getReglamentoItem,
   getSancion,
   initialChatMessages,
-  matchQA,
+  answerQuestion,
 } from '../services/chatQa';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
@@ -66,7 +66,7 @@ export function ChatHomeScreen({ onQuestionAsked }: { onQuestionAsked?: (questio
     setTyping(true);
 
     try {
-      const result = await matchQA(question);
+      const result = await answerQuestion(question);
       const assistantMessage: ChatMessage = {
         id: `a-${Date.now()}`,
         role: 'assistant',
@@ -84,6 +84,7 @@ export function ChatHomeScreen({ onQuestionAsked }: { onQuestionAsked?: (questio
             },
         choices: result.choices,
         choiceKind: result.choiceKind,
+        ia: result.ia,
       };
       setMessages((current) => [...current, assistantMessage]);
     } catch {
@@ -256,6 +257,12 @@ function Bubble({
         <Icon name="chat" size={17} color={colors.oxRed} />
       </View>
       <BlurView intensity={28} tint="light" style={[styles.bubble, styles.assistantBubble]}>
+        {message.ia ? (
+          <View style={styles.iaBadge}>
+            <Icon name="sparkle" size={12} color={colors.oxBlue} />
+            <Text style={styles.iaBadgeText}>Respuesta con IA · prueba</Text>
+          </View>
+        ) : null}
         <Text style={styles.assistantText}>{message.text}</Text>
         {message.choices ? (
           <View style={styles.choiceList}>
@@ -459,6 +466,8 @@ const styles = StyleSheet.create({
     lineHeight: 17,
     color: colors.ink,
   },
+  iaBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: '#E6EFF8', marginBottom: 6 },
+  iaBadgeText: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 11, color: '#005AAE' },
   citation: {
     marginTop: 11,
     paddingTop: 10,

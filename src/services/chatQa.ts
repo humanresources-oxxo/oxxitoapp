@@ -1,5 +1,10 @@
 // src/services/chatQa.ts
-// Real-reglamento QA: full-text search over the RIT articles table (Supabase), no LLM.
+// Real-reglamento QA: full-text search over the RIT articles table (Supabase).
+// Prototype (answerQuestion): for the employee numbers enabled on the server,
+// a Workers AI model writes the answer from the articles that search finds
+// (worker/chat.js, POST /api/chat); otherwise, or if it fails, the search.
+import { Platform } from 'react-native';
+import { leerLlave } from './sesion';
 import { supabase } from './supabaseClient';
 
 export type ChatSource = {
@@ -25,6 +30,7 @@ export type ChatMessage = {
   source?: ChatSource;
   choices?: ChatChoice[];
   choiceKind?: ChoiceKind;
+  ia?: boolean; // written by the AI prototype
 };
 
 export type QAResult = {
@@ -36,6 +42,7 @@ export type QAResult = {
   contact?: { name: string; area: string };
   choices?: ChatChoice[];
   choiceKind?: ChoiceKind;
+  ia?: boolean;
 };
 
 const HR_CONTACT = { name: 'Recursos Humanos', area: 'Personas' };
@@ -101,6 +108,58 @@ export async function matchQA(question: string): Promise<QAResult> {
     nextStep: 'Si necesitas más detalle, contacta a Recursos Humanos o a tu líder directo.',
     contact: HR_CONTACT,
   };
+}
+
+// --- AI prototype -------------------------------------------------------
+const CHAT_PATH = '/api/chat';
+const CHAT_URL = Platform.OS === 'web' ? CHAT_PATH : 'https://conoxxo.plaza-oaxaca.workers.dev' + CHAT_PATH;
+// null = not asked yet; false = this account isn't enabled (don't ask again
+// until the app restarts).
+let iaHabilitada: boolean | null = null;
+
+async function preguntarIa(question: string): Promise<QAResult | null> {
+  if (iaHabilitada === false) return null;
+  const llave = await leerLlave();
+  if (!llave) return null;
+  const control = new AbortController();
+  const t = setTimeout(() => control.abort(), 20000);
+  try {
+    const r = await fetch(CHAT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pregunta: question, llave }),
+      signal: control.signal,
+    });
+    const d = await r.json().catch(() => null);
+    if (r.status === 403 && d?.error === 'no_habilitado') {
+      iaHabilitada = false;
+      return null;
+    }
+    if (!r.ok || !d?.ok || !d.respuesta) return null;
+    iaHabilitada = true;
+    const f = d.fuente as { article: string; number: number; body: string } | null;
+    return {
+      answer: String(d.respuesta),
+      article: f ? f.article : 'Reglamento',
+      title: f ? 'Reglamento Interior de Trabajo' : 'Sin artículo exacto',
+      summary: f ? f.body : 'La respuesta no se basó en un artículo específico del reglamento.',
+      nextStep: 'Respuesta de prueba escrita con IA a partir del reglamento. Si tu caso es delicado o algo no coincide, confírmalo con Recursos Humanos.',
+      contact: HR_CONTACT,
+      ia: true,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+// What the chat shows. The interactive flows (sanciones, articles with
+// items) stay as they are; for the rest, the AI answer when there is one.
+export async function answerQuestion(question: string): Promise<QAResult> {
+  const [busqueda, ia] = await Promise.all([matchQA(question), preguntarIa(question)]);
+  if (busqueda.choices || !ia) return busqueda;
+  return ia;
 }
 
 export async function getSancion(
