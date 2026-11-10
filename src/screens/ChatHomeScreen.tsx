@@ -197,7 +197,9 @@ export function ChatHomeScreen({ onQuestionAsked }: { onQuestionAsked?: (questio
       <View style={styles.suggestions}>
         {sugerencias.map((item) => (
           <Pressable key={item} style={styles.suggestion} onPress={() => send(item)}>
-            <Text style={styles.suggestionText}>{item}</Text>
+            <Text style={styles.suggestionText} numberOfLines={2}>
+              {item}
+            </Text>
           </Pressable>
         ))}
       </View>
@@ -515,6 +517,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   suggestion: {
+    maxWidth: '100%',
+    flexShrink: 1,
     borderRadius: radii.pill,
     paddingHorizontal: 12,
     paddingVertical: 9,

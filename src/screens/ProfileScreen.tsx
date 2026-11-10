@@ -156,14 +156,11 @@ function ProfileBody({
 
       <SafeAreaView edges={['top']} style={styles.safeTop}>
         <View style={styles.header}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.eyebrow}>Cuenta verificada</Text>
             <Text style={styles.title}>Perfil</Text>
             <Text style={styles.subtitle}>Datos del colaborador y preferencias de app.</Text>
           </View>
-          <Pressable style={styles.headerButton}>
-            <Icon name="settings" size={20} color={colors.ink} />
-          </Pressable>
         </View>
       </SafeAreaView>
 
