@@ -142,6 +142,12 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     escalamiento (`MATRIZ_DILOS`: en tiempo 0–19 días, Nivel 1 20–25, Nivel 2 26–50, Nivel 3
     51+), la tabla **"Folios por Plaza"** y la lista del más antiguo al más reciente con
     filtros por nivel, región y plaza.
+  - **Por escalar:** un aviso arriba con los folios a los que les faltan 3 días o menos para
+    subir de nivel (`porEscalar`, `DIAS_ALERTA_ESCALAR`, como el "Alerta si faltan 3 días"
+    del libro de RH); al tocarlo filtra la lista, donde esos días van en rojo.
+  - El panel también acepta la exportación del portal de Línea Ética (Case Number, Case
+    Status, Days Open…): solo carga los abiertos y limpia región y plaza. Como ese archivo no
+    trae fecha en el nombre, la pantalla muestra la fecha en que se cargó.
   - **Folios por Plaza** (como "Vacantes por Asesor" de los dashboards): folios con barra,
     días promedio, días máximo y folios en tiempo / N1 / N2 / N3 en pastillas del color de
     su nivel, con fila "Total general". Se ordena tocando el encabezado; en celular la

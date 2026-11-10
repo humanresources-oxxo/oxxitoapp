@@ -13,7 +13,7 @@ import { PinUnaVez } from '../components/PinUnaVez';
 import { getJson, storageKeys } from '../services/appStorage';
 import { esSinSesion } from '../services/sesion';
 import { Anillo, Desplegable, Leyenda } from '../components/Visual';
-import { accionDe, cargarDilos, CasoDilos, contarPor, DIA_AGENDAR_N1, diasParaSiguiente, Dilos, MATRIZ_DILOS, nivelDe, NivelDilos, porAgendar } from '../services/dilos';
+import { accionDe, cargarDilos, CasoDilos, contarPor, DIA_AGENDAR_N1, DIAS_ALERTA_ESCALAR, diasParaSiguiente, Dilos, MATRIZ_DILOS, nivelDe, NivelDilos, porAgendar, porEscalar } from '../services/dilos';
 import { normalizarNombre } from '../services/gviz';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
@@ -24,12 +24,16 @@ function fecha(iso?: string) {
 }
 // "ACAPULCO" -> "Acapulco"; acronyms like CDMX stay as they are.
 const SIGLAS = new Set(['CDMX', 'EDOMEX']);
+// "PLAYA DEL CARMEN" -> "Playa del Carmen".
+const MENORES = new Set(['DE', 'DEL', 'LA', 'LAS', 'LOS', 'Y']);
 const titulo = (s: string) =>
   s
     .split(' ')
-    .map((w) => (SIGLAS.has(w.toUpperCase()) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()))
+    .map((w, i) =>
+      SIGLAS.has(w.toUpperCase()) ? w.toUpperCase() : i > 0 && MENORES.has(w.toUpperCase()) ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+    )
     .join(' ');
-type Filtro = 'todos' | 'agendar' | NivelDilos;
+type Filtro = 'todos' | 'agendar' | 'escalar' | NivelDilos;
 // Traffic light of the matrix, as in RH's workbook: grey on time, then green,
 // yellow and red. fuerte = bar/dot, tinte = card, texto = text on the tint.
 const NIVEL_COLOR: Record<NivelDilos, { fuerte: string; tinte: string; texto: string }> = {
@@ -84,13 +88,15 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
     return m;
   }, [casos]);
   const agendar = casos.filter(porAgendar).length;
+  // About to move up a level (RH's workbook: "Alerta si faltan 3 días"), closest first.
+  const escalar = useMemo(() => casos.filter(porEscalar).sort((a, b) => (diasParaSiguiente(a) ?? 0) - (diasParaSiguiente(b) ?? 0)), [casos]);
   const pct = (n: number) => (casos.length ? `${((n / casos.length) * 100).toLocaleString('es-MX', { maximumFractionDigits: 1 })}%` : '0%');
   const regiones = useMemo(() => contarPor(casos, 'region'), [casos]);
 
   const lista = useMemo(() => {
     const n = normalizarNombre(texto);
     return casos.filter((c: CasoDilos) => {
-      if (filtro === 'agendar' ? !porAgendar(c) : filtro !== 'todos' && nivelDe(c.dias) !== filtro) return false;
+      if (filtro === 'agendar' ? !porAgendar(c) : filtro === 'escalar' ? !porEscalar(c) : filtro !== 'todos' && nivelDe(c.dias) !== filtro) return false;
       if (region && c.region !== region) return false;
       if (plaza && c.plaza !== plaza) return false;
       return !n || normalizarNombre(`${c.caso} ${c.plaza} ${c.region}`).includes(n);
@@ -106,7 +112,9 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
             <Icon name="chevL" size={20} color={colors.ink} />
           </Pressable>
           <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>Línea Ética · ZCS{dilos?.corte ? ` · corte ${fecha(dilos.corte)}` : ''}</Text>
+            <Text style={styles.eyebrow}>
+              Línea Ética · ZCS{dilos?.corte ? ` · corte ${fecha(dilos.corte)}` : dilos?.cargadoEl ? ` · cargado ${fecha(dilos.cargadoEl)}` : ''}
+            </Text>
             <Text style={styles.title}>Folios DILOS</Text>
           </View>
         </View>
@@ -150,6 +158,34 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
               <Text style={styles.heroLadoMini}>desde el día {DIA_AGENDAR_N1}</Text>
             </Pressable>
           </LinearGradient>
+
+          {escalar.length ? (
+            <Pressable
+              style={[styles.alerta, filtro === 'escalar' && styles.alertaActiva]}
+              onPress={() => setFiltro(filtro === 'escalar' ? 'todos' : 'escalar')}
+              accessibilityRole="button"
+              accessibilityLabel={`${escalar.length} folios suben de nivel en ${DIAS_ALERTA_ESCALAR} días o menos. Ver en el detalle`}
+            >
+              <Icon name="alert" size={20} color={colors.oxRed} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.alertaTitulo}>
+                  {escalar.length === 1 ? '1 folio sube' : `${escalar.length} folios suben`} de nivel en {DIAS_ALERTA_ESCALAR} días o menos
+                </Text>
+                <Text style={styles.alertaTexto} numberOfLines={2}>
+                  {escalar
+                    .slice(0, 3)
+                    .map((c) => {
+                      const faltan = diasParaSiguiente(c) ?? 0;
+                      const sig = MATRIZ_DILOS[MATRIZ_DILOS.findIndex((m) => m.nivel === nivelDe(c.dias)) + 1];
+                      return `${titulo(c.plaza)}: ${faltan === 0 ? 'hoy' : faltan === 1 ? '1 día' : `${faltan} días`} a ${sig.nombre}`;
+                    })
+                    .join(' · ')}
+                  {escalar.length > 3 ? ` · y ${escalar.length - 3} más` : ''}
+                </Text>
+              </View>
+              <Icon name="chevR" size={18} color={colors.oxRed} />
+            </Pressable>
+          ) : null}
 
           <View style={styles.kpis}>
             {MATRIZ_DILOS.map((m) => (
@@ -234,6 +270,7 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
                 [
                   ['todos', 'Todos'],
                   ['agendar', `Por agendar · ${agendar}`],
+                  ['escalar', `Por escalar · ${escalar.length}`],
                   ...MATRIZ_DILOS.map((m) => [m.nivel, `${m.nombre} · ${cuenta[m.nivel]}`]),
                 ] as Array<[Filtro, string]>
               ).map(([k, t]) => (
@@ -290,7 +327,11 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
                     <View style={styles.dias}>
                       <Text style={styles.diasNum}>{c.dias}</Text>
                       <Text style={styles.diasTxt}>días</Text>
-                      {faltan !== null && siguiente ? <Text style={styles.diasFalta}>{faltan === 1 ? '1 día' : `${faltan} días`} a {siguiente.nombre}</Text> : null}
+                      {faltan !== null && siguiente ? (
+                        <Text style={[styles.diasFalta, faltan <= DIAS_ALERTA_ESCALAR && styles.diasFaltaAlerta]}>
+                          {faltan === 1 ? '1 día' : `${faltan} días`} a {siguiente.nombre}
+                        </Text>
+                      ) : null}
                     </View>
                   </View>
                 );
@@ -336,7 +377,7 @@ const ORDEN_NIVEL: NivelDilos[] = ['tiempo', 'n1', 'n2', 'n3'];
 const ALTO_CAB = 40;
 const ALTO_FILA = 52;
 const ALTO_TOTAL = 46;
-const ANCHO_PLAZA = 136;
+const ANCHO_PLAZA = 160;
 const decimal = (n: number) => n.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 function TablaPlazas({ casos, plaza, onPlaza }: { casos: CasoDilos[]; plaza: string; onPlaza: (p: string) => void }) {
@@ -570,6 +611,11 @@ const styles = StyleSheet.create({
   nivelChip: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: radii.pill },
   nivelChipTxt: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 11.5 },
   casoAccion: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11.5, color: colors.ink2 },
+  diasFaltaAlerta: { fontFamily: 'PlusJakartaSans_800ExtraBold', color: colors.oxRed },
+  alerta: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: radii.xl, backgroundColor: '#FFF0EC', borderWidth: 1, borderColor: '#FFD2C4' },
+  alertaActiva: { borderColor: colors.oxRed, borderWidth: 2 },
+  alertaTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14, color: colors.ink },
+  alertaTexto: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12.5, lineHeight: 17, color: colors.ink2, marginTop: 2 },
   diasFalta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 10.5, color: colors.ink3, textAlign: 'center', marginTop: 2, maxWidth: 82 },
   barraFila: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 5 },
   barraEtq: { width: 96, fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12.5, color: colors.ink2 },
