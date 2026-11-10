@@ -178,7 +178,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
           />
         );
       case 'chat':
-        return <ChatHomeScreen onQuestionAsked={saveChatQuestion} />;
+        return <ChatHomeScreen onQuestionAsked={saveChatQuestion} onOpenAvisos={() => setActiveTab('notifications')} unreadNotices={unreadNotices} />;
       case 'directory':
         return <DirectoryScreen />;
       case 'notifications':

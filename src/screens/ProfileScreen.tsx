@@ -305,14 +305,19 @@ function ChangePinModal({
 }) {
   const [oldPin, setOldPin] = useState('');
   const [newPin, setNewPin] = useState('');
+  // Typed twice: a typo would leave the person with a PIN they don't know.
+  const [confirmPin, setConfirmPin] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  const ready = oldPin.length === 4 && newPin.length === 4;
+  const noCoinciden = confirmPin.length === 4 && newPin.length === 4 && confirmPin !== newPin;
+  const igualAlActual = newPin.length === 4 && newPin === oldPin;
+  const ready = oldPin.length === 4 && newPin.length === 4 && confirmPin === newPin && !igualAlActual;
 
   const reset = () => {
     setOldPin('');
     setNewPin('');
+    setConfirmPin('');
     setError('');
   };
 
@@ -362,6 +367,7 @@ function ChangePinModal({
             keyboardType="number-pad"
             secureTextEntry
             maxLength={4}
+            accessibilityLabel="PIN actual"
           />
 
           <Text style={styles.composerLabel}>PIN nuevo</Text>
@@ -374,7 +380,23 @@ function ChangePinModal({
             keyboardType="number-pad"
             secureTextEntry
             maxLength={4}
+            accessibilityLabel="PIN nuevo"
           />
+
+          <Text style={styles.composerLabel}>Confirma tu PIN nuevo</Text>
+          <TextInput
+            style={styles.composerInput}
+            value={confirmPin}
+            onChangeText={(v) => setConfirmPin(v.replace(/\D/g, '').slice(0, 4))}
+            placeholder="••••"
+            placeholderTextColor={colors.ink3}
+            keyboardType="number-pad"
+            secureTextEntry
+            maxLength={4}
+            accessibilityLabel="Confirma tu PIN nuevo"
+          />
+          {noCoinciden ? <Text style={styles.composerError}>Los dos PIN nuevos no coinciden.</Text> : null}
+          {igualAlActual ? <Text style={styles.composerError}>El PIN nuevo debe ser distinto al actual.</Text> : null}
           {error ? <Text style={styles.composerError}>{error}</Text> : null}
 
           <Pressable

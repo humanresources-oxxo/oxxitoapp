@@ -32,7 +32,15 @@ import {
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
 
-export function ChatHomeScreen({ onQuestionAsked }: { onQuestionAsked?: (question: string) => void }) {
+export function ChatHomeScreen({
+  onQuestionAsked,
+  onOpenAvisos,
+  unreadNotices = 0,
+}: {
+  onQuestionAsked?: (question: string) => void;
+  onOpenAvisos?: () => void;
+  unreadNotices?: number;
+}) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialChatMessages);
   const [sugerencias, setSugerencias] = useState<string[]>(chatSuggestions);
   useEffect(() => {
@@ -175,9 +183,17 @@ export function ChatHomeScreen({ onQuestionAsked }: { onQuestionAsked?: (questio
               <Text style={styles.subtitle}>{subtitle}</Text>
             </View>
           </View>
-          <Pressable style={styles.iconButton} accessibilityRole="button">
-            <Icon name="bell" size={20} color={colors.ink} />
-          </Pressable>
+          {onOpenAvisos ? (
+            <Pressable
+              style={styles.iconButton}
+              onPress={onOpenAvisos}
+              accessibilityRole="button"
+              accessibilityLabel={unreadNotices ? `Avisos: ${unreadNotices} sin leer` : 'Avisos'}
+            >
+              <Icon name="bell" size={20} color={colors.ink} />
+              {unreadNotices > 0 ? <View style={styles.bellDot} /> : null}
+            </Pressable>
+          ) : null}
         </View>
       </SafeAreaView>
 
@@ -206,9 +222,6 @@ export function ChatHomeScreen({ onQuestionAsked }: { onQuestionAsked?: (questio
 
       <SafeAreaView edges={['bottom']} style={styles.composerWrap}>
         <BlurView intensity={35} tint="light" style={styles.composerGlass}>
-          <Pressable style={styles.toolButton}>
-            <Icon name="clip" size={20} color={colors.ink2} />
-          </Pressable>
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -509,6 +522,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.oxRed,
   },
+  bellDot: { position: 'absolute', top: 10, right: 11, width: 9, height: 9, borderRadius: 5, backgroundColor: colors.oxRed, borderWidth: 1.5, borderColor: colors.white },
   suggestions: {
     paddingHorizontal: 16,
     paddingBottom: 10,
