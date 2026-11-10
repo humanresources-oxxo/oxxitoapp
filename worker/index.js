@@ -48,8 +48,9 @@ export default {
       try {
         return conCors(request, await generarFaq(request, env, rpc));
       } catch (err) {
+        const detalle = String((err && (err.status || err.name || err.message)) || err).slice(0, 60);
         console.log(JSON.stringify({ faq_ia: true, error: String((err && (err.status || err.message)) || err) }));
-        return conCors(request, new Response(JSON.stringify({ ok: false, error: 'error_servidor' }), { status: 502, headers: { 'content-type': 'application/json' } }));
+        return conCors(request, new Response(JSON.stringify({ ok: false, error: 'error_servidor', detalle }), { status: 502, headers: { 'content-type': 'application/json' } }));
       }
     }
     // "Lo importante" of the Ficha de Plaza with Claude Haiku (worker/resumen.js).

@@ -10,11 +10,12 @@ import Anthropic from '@anthropic-ai/sdk';
 
 export const MODELO_HAIKU = 'claude-haiku-5-5';
 
-export function clienteClaude(env) {
+// timeout in ms: short for the chat (fail fast and fall back); longer for
+// batch work like the preguntas frecuentes.
+export function clienteClaude(env, { timeout = 20000, maxRetries = 1 } = {}) {
   const apiKey = String(env.ANTHROPIC_API_KEY || '').trim();
   if (!apiKey) return null;
-  // Short tasks: fail fast and let the caller fall back.
-  return new Anthropic({ apiKey, maxRetries: 1, timeout: 20000 });
+  return new Anthropic({ apiKey, maxRetries, timeout });
 }
 
 export class SinRespuesta extends Error {}

@@ -10,7 +10,8 @@
 // approve, edit or discard; nothing reaches the app before that.
 import { clienteClaude, pedirJson } from './claude.js';
 
-const POR_LLAMADA = 6;
+// Few articles per call so each one finishes well within the timeout.
+const POR_LLAMADA = 4;
 
 const SISTEMA = `Eres Recursos Humanos de OXXO Plaza Oaxaca. Te paso artículos del Reglamento Interior de Trabajo (RIT).
 Para cada artículo que le importe a un empleado de tienda, escribe de 1 a 3 preguntas frecuentes como las haría un empleado (lenguaje sencillo, en primera persona: "¿Qué pasa si llego tarde?") y su respuesta.
@@ -43,7 +44,7 @@ export async function generarFaq(request, env, rpc) {
   const llave = String((pedido && pedido.llave) || '');
   const desde = Math.max(0, Number(pedido && pedido.desde) || 0);
   if (!/^[0-9a-f]{64}$/.test(llave)) return json({ ok: false, error: 'sesion_conoxxo' }, 401);
-  const cliente = clienteClaude(env);
+  const cliente = clienteClaude(env, { timeout: 90000, maxRetries: 0 });
   if (!cliente) return json({ ok: false, error: 'ia_no_configurada' }, 503);
 
   const r = await rpc(env, 'sesion_reglamento_articulos', { p_token: llave, p_desde: desde, p_limite: POR_LLAMADA });
