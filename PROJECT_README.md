@@ -138,9 +138,16 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     (`js/dilos-conoxxo.js`), con la sesión del panel. **El nombre del facilitador no se
     envía.** El Apps Script (`publicarDilos`, v64) lo guarda en un libro privado; la app lee
     `consultarDilos` (`src/services/dilos.ts`). La fecha del corte sale del nombre del archivo.
-  - **Pantalla:** casos abiertos, promedio y el más antiguo, cuántos llevan más de 15 días,
-    en atención de RH / Administración, región Tabasco, por plaza, y la lista del más antiguo
-    al más reciente con filtros por región, área y atraso.
+  - **Pantalla:** folios abiertos y por agendar, cuántos hay en cada nivel de la matriz de
+    escalamiento (`MATRIZ_DILOS`: en tiempo 0–19 días, Nivel 1 20–25, Nivel 2 26–50, Nivel 3
+    51+), la tabla **"Folios por Plaza"** y la lista del más antiguo al más reciente con
+    filtros por nivel, región y plaza.
+  - **Folios por Plaza** (como "Vacantes por Asesor" de los dashboards): folios con barra,
+    días promedio, días máximo y folios en tiempo / N1 / N2 / N3 en pastillas del color de
+    su nivel, con fila "Total general". Se ordena tocando el encabezado; en celular la
+    columna Plaza se queda fija y lo demás se desliza de lado. El punto y la barra de cada
+    plaza llevan el color de su folio más grave; Oaxaca dice "TU PLAZA". Tocar una plaza
+    filtra la lista de abajo. Reemplaza la tarjeta "Folios por región y nivel".
 
 ✅ **Contratos colectivos (`src/screens/CctScreen.tsx`):** dashboard **solo de la app** (no
   existe en DashboardsOxxo). Los datos salen del Excel de CCT de RH ("Data colectiva Tiendas

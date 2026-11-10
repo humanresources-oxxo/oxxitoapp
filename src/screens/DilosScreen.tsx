@@ -1,7 +1,8 @@
 // src/screens/DilosScreen.tsx
 // Casos DILOS, app only: open cases of the Zona Centro Sur at the report's
-// cut: who is handling them (ring RH / ADM), how long they have been open
-// (stacked bar), and, folded, by región and plaza and the list of cases.
+// cut: how many there are per level of the escalation matrix, a table by
+// plaza (folios, average and oldest days, and folios per level, like the
+// dashboards' "Vacantes por Asesor") and the list of cases.
 // No names: the facilitator never reaches the app (services/dilos.ts).
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -51,6 +52,7 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
   const [intento, setIntento] = useState(0);
   const [filtro, setFiltro] = useState<Filtro>('todos');
   const [region, setRegion] = useState('');
+  const [plaza, setPlaza] = useState('');
   const [texto, setTexto] = useState('');
 
   useEffect(() => {
@@ -83,18 +85,6 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
   }, [casos]);
   const agendar = casos.filter(porAgendar).length;
   const pct = (n: number) => (casos.length ? `${((n / casos.length) * 100).toLocaleString('es-MX', { maximumFractionDigits: 1 })}%` : '0%');
-  // Region x level, regions with more cases first.
-  const porRegion = useMemo(() => {
-    const m = new Map<string, Record<NivelDilos, number>>();
-    casos.forEach((c) => {
-      const r = c.region || 'Sin dato';
-      if (!m.has(r)) m.set(r, { tiempo: 0, n1: 0, n2: 0, n3: 0 });
-      m.get(r)![nivelDe(c.dias)] += 1;
-    });
-    const total = (x: Record<NivelDilos, number>) => x.tiempo + x.n1 + x.n2 + x.n3;
-    return [...m].map(([region, n]) => ({ region, n, total: total(n) })).sort((a, b) => b.total - a.total || a.region.localeCompare(b.region, 'es'));
-  }, [casos]);
-  const maxRegion = Math.max(1, ...porRegion.map((r) => r.total));
   const regiones = useMemo(() => contarPor(casos, 'region'), [casos]);
 
   const lista = useMemo(() => {
@@ -102,9 +92,10 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
     return casos.filter((c: CasoDilos) => {
       if (filtro === 'agendar' ? !porAgendar(c) : filtro !== 'todos' && nivelDe(c.dias) !== filtro) return false;
       if (region && c.region !== region) return false;
+      if (plaza && c.plaza !== plaza) return false;
       return !n || normalizarNombre(`${c.caso} ${c.plaza} ${c.region}`).includes(n);
     });
-  }, [casos, filtro, region, texto]);
+  }, [casos, filtro, region, plaza, texto]);
 
   return (
     <View style={styles.screen}>
@@ -201,32 +192,14 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
             </View>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Folios por región y nivel</Text>
-            <View style={{ gap: 12 }}>
-              {porRegion.map((r) => (
-                <View key={r.region} style={styles.regionFila}>
-                  <View style={styles.regionCab}>
-                    <Text style={styles.regionNombre}>{titulo(r.region)}</Text>
-                    {normalizarNombre(r.region) === 'TABASCO' ? <Text style={styles.tuRegion}>TU REGIÓN</Text> : null}
-                    <Text style={styles.regionTotal}>{r.total}</Text>
-                  </View>
-                  <View style={styles.regionPista}>
-                    <View style={[styles.regionBarra, { width: `${(r.total / maxRegion) * 100}%` }]}>
-                      {MATRIZ_DILOS.filter((m) => r.n[m.nivel] > 0).map((m) => (
-                        <View key={m.nivel} style={{ flex: r.n[m.nivel], backgroundColor: NIVEL_COLOR[m.nivel].fuerte }} />
-                      ))}
-                    </View>
-                  </View>
-                  <Text style={styles.regionDetalle}>
-                    {MATRIZ_DILOS.filter((m) => r.n[m.nivel] > 0)
-                      .map((m) => `${m.nombre} ${r.n[m.nivel]}`)
-                      .join(' · ')}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
+          <TablaPlazas
+            casos={casos}
+            plaza={plaza}
+            onPlaza={(p) => {
+              setPlaza(p === plaza ? '' : p);
+              setRegion('');
+            }}
+          />
 
           <Desplegable titulo="Matriz de escalamiento" icono="shield" resumen="Días, sesión y participantes de cada nivel">
             <View style={{ gap: 10 }}>
@@ -273,6 +246,12 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
                 <Chip key={r} texto={`${titulo(r)} · ${n}`} activo={region === r} onPress={() => setRegion(region === r ? '' : r)} />
               ))}
             </ScrollView>
+            {plaza ? (
+              <Pressable style={styles.plazaFiltro} onPress={() => setPlaza('')} accessibilityRole="button" accessibilityLabel={`Quitar el filtro de plaza ${titulo(plaza)}`}>
+                <Text style={styles.plazaFiltroTxt}>Plaza: {titulo(plaza)}</Text>
+                <Icon name="close" size={14} color={colors.oxRed} />
+              </Pressable>
+            ) : null}
             <View style={styles.buscador}>
               <Icon name="search" size={18} color={colors.ink3} />
               <TextInput
@@ -335,6 +314,166 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
           }}
         />
       ) : null}
+    </View>
+  );
+}
+
+// "Folios por Plaza", like the dashboards' "Vacantes por Asesor": the Plaza
+// column stays put and the rest slides sideways on a phone. Tapping a header
+// sorts by it (again, the other way); tapping a plaza filters the list below.
+type ColPlaza = 'plaza' | 'folios' | 'prom' | 'max' | NivelDilos;
+type FilaPlaza = { plaza: string; region: string; folios: number; prom: number; max: number; peor: NivelDilos } & Record<NivelDilos, number>;
+const COLS: Array<{ col: Exclude<ColPlaza, 'plaza'>; titulo: string; ancho: number }> = [
+  { col: 'folios', titulo: 'Folios', ancho: 108 },
+  { col: 'prom', titulo: 'Días prom.', ancho: 100 },
+  { col: 'max', titulo: 'Días máx.', ancho: 92 },
+  { col: 'tiempo', titulo: 'En tiempo', ancho: 92 },
+  { col: 'n1', titulo: 'N1', ancho: 52 },
+  { col: 'n2', titulo: 'N2', ancho: 52 },
+  { col: 'n3', titulo: 'N3', ancho: 52 },
+];
+const ORDEN_NIVEL: NivelDilos[] = ['tiempo', 'n1', 'n2', 'n3'];
+const ALTO_CAB = 40;
+const ALTO_FILA = 52;
+const ALTO_TOTAL = 46;
+const ANCHO_PLAZA = 136;
+const decimal = (n: number) => n.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+function TablaPlazas({ casos, plaza, onPlaza }: { casos: CasoDilos[]; plaza: string; onPlaza: (p: string) => void }) {
+  const [orden, setOrden] = useState<{ col: ColPlaza; desc: boolean }>({ col: 'folios', desc: true });
+  const filas = useMemo(() => {
+    const m = new Map<string, FilaPlaza & { suma: number }>();
+    casos.forEach((c) => {
+      const k = c.plaza || 'Sin dato';
+      const f = m.get(k) || { plaza: k, region: c.region, folios: 0, prom: 0, max: 0, suma: 0, peor: 'tiempo' as NivelDilos, tiempo: 0, n1: 0, n2: 0, n3: 0 };
+      const n = nivelDe(c.dias);
+      f.folios += 1;
+      f.suma += c.dias;
+      f.max = Math.max(f.max, c.dias);
+      f[n] += 1;
+      if (ORDEN_NIVEL.indexOf(n) > ORDEN_NIVEL.indexOf(f.peor)) f.peor = n;
+      m.set(k, f);
+    });
+    const lista = [...m.values()].map((f) => ({ ...f, prom: f.suma / f.folios }));
+    const signo = orden.desc ? -1 : 1;
+    return lista.sort((a, b) =>
+      orden.col === 'plaza'
+        ? signo * b.plaza.localeCompare(a.plaza, 'es')
+        : signo * (a[orden.col] - b[orden.col]) || b.folios - a.folios || a.plaza.localeCompare(b.plaza, 'es')
+    );
+  }, [casos, orden]);
+  const maxFolios = Math.max(1, ...filas.map((f) => f.folios));
+  const total = useMemo(() => {
+    const t: Record<NivelDilos, number> = { tiempo: 0, n1: 0, n2: 0, n3: 0 };
+    casos.forEach((c) => (t[nivelDe(c.dias)] += 1));
+    return { ...t, folios: casos.length, prom: casos.length ? casos.reduce((s, c) => s + c.dias, 0) / casos.length : 0, max: Math.max(0, ...casos.map((c) => c.dias)) };
+  }, [casos]);
+  const ordenar = (col: ColPlaza) => setOrden((o) => (o.col === col ? { col, desc: !o.desc } : { col, desc: col !== 'plaza' }));
+  const flecha = (col: ColPlaza) => (orden.col === col ? (orden.desc ? ' ↓' : ' ↑') : ' ⇅');
+  const cabecera = (col: ColPlaza, texto: string, ancho?: number, izquierda?: boolean) => (
+    <Pressable
+      key={col}
+      style={[styles.tCab, ancho ? { width: ancho } : { flex: 1 }, izquierda ? { alignItems: 'flex-start', paddingLeft: 12 } : null]}
+      onPress={() => ordenar(col)}
+      accessibilityRole="button"
+      accessibilityLabel={`Ordenar por ${texto}`}
+    >
+      <Text style={[styles.tCabTxt, orden.col === col && { color: colors.oxRed }]} numberOfLines={1}>
+        {texto}
+        <Text style={styles.tFlecha}>{flecha(col)}</Text>
+      </Text>
+    </Pressable>
+  );
+  const pastilla = (nivel: NivelDilos, n: number) =>
+    n ? (
+      <View style={[styles.tPastilla, { backgroundColor: NIVEL_COLOR[nivel].tinte }]}>
+        <Text style={[styles.tPastillaTxt, { color: NIVEL_COLOR[nivel].texto }]}>{n}</Text>
+      </View>
+    ) : (
+      <Text style={styles.tGuion}>–</Text>
+    );
+  const celda = (f: FilaPlaza, col: Exclude<ColPlaza, 'plaza'>) => {
+    if (col === 'folios')
+      return (
+        <View style={styles.tFolios}>
+          <Text style={styles.tFoliosNum}>{f.folios}</Text>
+          <View style={styles.tPista}>
+            <View style={[styles.tBarra, { width: `${(f.folios / maxFolios) * 100}%`, backgroundColor: NIVEL_COLOR[f.peor].fuerte }]} />
+          </View>
+        </View>
+      );
+    if (col === 'prom') return <Text style={styles.tNum}>{decimal(f.prom)}</Text>;
+    if (col === 'max') return <Text style={styles.tNum}>{f.max}</Text>;
+    return pastilla(col, f[col]);
+  };
+
+  return (
+    <View style={[styles.card, { paddingHorizontal: 0, paddingBottom: 0, overflow: 'hidden' }]}>
+      <View style={styles.tTitulo}>
+        <Text style={[styles.cardTitle, { marginBottom: 0, flexShrink: 1 }]}>Folios por Plaza</Text>
+        <Text style={styles.tBadge} numberOfLines={1}>
+          {filas.length} {filas.length === 1 ? 'plaza' : 'plazas'} · ZCS
+        </Text>
+      </View>
+      <View style={{ flexDirection: 'row' }}>
+        {/* Columna fija: plaza */}
+        <View style={[styles.tFija, { width: ANCHO_PLAZA }]}>
+          <View style={[styles.tFilaCab, { height: ALTO_CAB }]}>{cabecera('plaza', 'Plaza', ANCHO_PLAZA, true)}</View>
+          {filas.map((f, i) => (
+            <Pressable
+              key={f.plaza}
+              style={[styles.tPlaza, { height: ALTO_FILA }, i % 2 === 1 && styles.tAlterna, plaza === f.plaza && styles.tElegida]}
+              onPress={() => onPlaza(f.plaza)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: plaza === f.plaza }}
+              accessibilityLabel={`${titulo(f.plaza)}: ${f.folios} folios. Ver sus folios`}
+            >
+              <View style={[styles.punto, { backgroundColor: NIVEL_COLOR[f.peor].fuerte }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.tPlazaTxt, plaza === f.plaza && { color: colors.oxRed }]} numberOfLines={1}>
+                  {titulo(f.plaza)}
+                </Text>
+                <Text style={[styles.tRegionTxt, normalizarNombre(f.plaza) === 'OAXACA' && { color: colors.oxRed }]} numberOfLines={1}>
+                  {normalizarNombre(f.plaza) === 'OAXACA' ? 'TU PLAZA' : titulo(f.region)}
+                </Text>
+              </View>
+            </Pressable>
+          ))}
+          <View style={[styles.tTotal, { height: ALTO_TOTAL, paddingLeft: 12, alignItems: 'flex-start' }]}>
+            <Text style={styles.tTotalTxt}>Total general</Text>
+          </View>
+        </View>
+        {/* Lo demás se desliza de lado */}
+        <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={{ flexGrow: 1 }}>
+          <View style={{ flexGrow: 1 }}>
+            <View style={[styles.tFilaCab, { height: ALTO_CAB }]}>{COLS.map((c) => cabecera(c.col, c.titulo, c.ancho))}</View>
+            {filas.map((f, i) => (
+              <Pressable
+                key={f.plaza}
+                style={[styles.tFila, { height: ALTO_FILA }, i % 2 === 1 && styles.tAlterna, plaza === f.plaza && styles.tElegida]}
+                onPress={() => onPlaza(f.plaza)}
+                accessible={false}
+              >
+                {COLS.map((c) => (
+                  <View key={c.col} style={[styles.tCelda, { width: c.ancho }]}>
+                    {celda(f, c.col)}
+                  </View>
+                ))}
+              </Pressable>
+            ))}
+            <View style={[styles.tFila, styles.tTotal, { height: ALTO_TOTAL }]}>
+              {COLS.map((c) => (
+                <View key={c.col} style={[styles.tCelda, { width: c.ancho }]}>
+                  <Text style={styles.tTotalTxt}>
+                    {c.col === 'prom' ? decimal(total.prom) : String(total[c.col])}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+      <Text style={styles.tNota}>Desliza la tabla para ver los niveles. Toca una plaza para ver sus folios abajo; el punto marca su folio más grave.</Text>
     </View>
   );
 }
@@ -417,14 +556,6 @@ const styles = StyleSheet.create({
   kpiValor: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 30, lineHeight: 36, color: colors.ink, marginTop: 6 },
   kpiNota: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11.5, color: colors.ink2, marginTop: 1 },
   heroLadoMini: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 10.5, color: 'rgba(255,255,255,.8)', marginTop: 2, textAlign: 'center' },
-  regionFila: { gap: 6 },
-  regionCab: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  regionNombre: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14, color: colors.ink },
-  tuRegion: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 10, color: colors.oxRed, letterSpacing: 0.6 },
-  regionTotal: { marginLeft: 'auto', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink },
-  regionPista: { height: 12, borderRadius: 6, backgroundColor: colors.field, overflow: 'hidden' },
-  regionBarra: { height: 12, flexDirection: 'row', borderRadius: 6, overflow: 'hidden' },
-  regionDetalle: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11.5, color: colors.ink2 },
   matriz: { flexDirection: 'row', gap: 12, padding: 12, borderRadius: radii.md },
   matrizBarra: { width: 5, borderRadius: 3 },
   matrizCab: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
@@ -447,6 +578,33 @@ const styles = StyleSheet.create({
   barraValor: { width: 26, textAlign: 'right', fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12.5, color: colors.ink },
   chips: { flexDirection: 'row', gap: 8 },
   chipsFila: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tTitulo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, paddingHorizontal: 16, marginBottom: 12 },
+  tBadge: { flexShrink: 0, fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11.5, color: colors.ink2, backgroundColor: colors.field, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, overflow: 'hidden' },
+  tFija: { borderRightWidth: 1, borderRightColor: colors.line, backgroundColor: colors.white, zIndex: 1 },
+  tFilaCab: { flexDirection: 'row', backgroundColor: '#F7F1EC', borderBottomWidth: 1, borderBottomColor: colors.line },
+  tCab: { justifyContent: 'center', alignItems: 'center', paddingHorizontal: 6 },
+  tCabTxt: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 10.5, letterSpacing: 0.5, textTransform: 'uppercase', color: colors.ink2 },
+  tFlecha: { color: colors.ink3, fontSize: 10 },
+  tPlaza: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 12, paddingRight: 8, borderBottomWidth: 1, borderBottomColor: colors.line },
+  tPlazaTxt: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink },
+  tRegionTxt: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 10, letterSpacing: 0.3, color: colors.ink3, marginTop: 1 },
+  tFila: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.line },
+  tAlterna: { backgroundColor: '#FCF9F6' },
+  tElegida: { backgroundColor: '#FFF0EC' },
+  tCelda: { justifyContent: 'center', alignItems: 'center' },
+  tFolios: { flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%', paddingHorizontal: 10 },
+  tFoliosNum: { minWidth: 18, textAlign: 'right', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 15, color: colors.ink },
+  tPista: { flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.field, overflow: 'hidden' },
+  tBarra: { height: 8, borderRadius: 4 },
+  tNum: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink },
+  tPastilla: { minWidth: 26, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 7, alignItems: 'center' },
+  tPastillaTxt: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12.5 },
+  tGuion: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink3 },
+  tTotal: { justifyContent: 'center', backgroundColor: '#F7F1EC', borderTopWidth: 2, borderTopColor: colors.ink, borderBottomWidth: 0 },
+  tTotalTxt: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: colors.ink },
+  tNota: { ...type.caption, color: colors.ink3, paddingHorizontal: 16, paddingVertical: 12 },
+  plazaFiltro: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 8, borderRadius: radii.pill, backgroundColor: '#FFF0EC', borderWidth: 1, borderColor: colors.oxRed },
+  plazaFiltroTxt: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: colors.oxRed },
   chip: { paddingHorizontal: 13, paddingVertical: 9, borderRadius: radii.pill, backgroundColor: colors.field, borderWidth: 1, borderColor: colors.line },
   chipActivo: { backgroundColor: colors.oxRed, borderColor: colors.oxRed },
   chipText: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink2 },
