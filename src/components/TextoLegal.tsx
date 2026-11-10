@@ -10,7 +10,7 @@ export function TextoLegal({ titulo, parrafos, onClose }: { titulo: string; parr
   return (
     <Modal transparent visible animationType="fade" onRequestClose={onClose}>
       <View style={styles.fondo}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={onClose} />
         <BlurView intensity={36} tint="light" style={styles.hoja}>
           <View style={styles.asa} />
           <Text style={styles.titulo}>{titulo}</Text>

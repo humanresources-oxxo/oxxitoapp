@@ -124,7 +124,7 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
       <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
       <SafeAreaView edges={['top']} style={styles.safeTop}>
         <View style={styles.header}>
-          <Pressable style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
+          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
             <Icon name="chevL" size={20} color={colors.ink} />
           </Pressable>
           <View style={styles.headerCopy}>
@@ -151,7 +151,7 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
                 <>
                   <Text style={styles.avisoTitulo}>{a.titulo}</Text>
                   <Text style={styles.avisoTexto}>{a.texto}</Text>
-                  <Pressable style={styles.avisoBoton} onPress={a.accion.onPress}>
+                  <Pressable accessibilityRole="button" style={styles.avisoBoton} onPress={a.accion.onPress}>
                     <Text style={styles.avisoBotonTexto}>{a.accion.texto}</Text>
                   </Pressable>
                 </>
@@ -237,7 +237,7 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
           {conHuecos.length ? (
             <Desplegable titulo="Tiendas con vacantes" icono="alert" inicial resumen={`${plural(conHuecos.length, 'tienda', 'tiendas')} · toca una para ver sus posiciones`}>
               {conHuecos.map((x, i) => (
-                <Pressable key={x.cr || x.tienda} style={[styles.tiendaFila, i < conHuecos.length - 1 && styles.posLinea]} onPress={() => setDetalle(x)}>
+                <Pressable accessibilityRole="button" key={x.cr || x.tienda} style={[styles.tiendaFila, i < conHuecos.length - 1 && styles.posLinea]} onPress={() => setDetalle(x)}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.tiendaNombre} numberOfLines={1}>
                       {x.tienda}
@@ -273,7 +273,7 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
             </View>
             {resultado.length ? (
               resultado.slice(0, MAX_LISTA).map((x, i, arr) => (
-                <Pressable key={x.cr || x.tienda} style={[styles.tiendaFila, i < arr.length - 1 && styles.posLinea]} onPress={() => setDetalle(x)}>
+                <Pressable accessibilityRole="button" key={x.cr || x.tienda} style={[styles.tiendaFila, i < arr.length - 1 && styles.posLinea]} onPress={() => setDetalle(x)}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.tiendaNombre} numberOfLines={1}>
                       {x.tienda}
@@ -307,7 +307,7 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
                 {detalle?.tienda}
               </Text>
             </View>
-            <Pressable style={styles.headerButton} onPress={() => setDetalle(null)} accessibilityLabel="Cerrar">
+            <Pressable accessibilityRole="button" style={styles.headerButton} onPress={() => setDetalle(null)} accessibilityLabel="Cerrar">
               <Icon name="close" size={20} color={colors.ink} />
             </Pressable>
           </View>
@@ -387,7 +387,7 @@ function DetalleTienda({ t }: { t: TiendaEstructura }) {
 
 function Chip({ texto, activo, onPress }: { texto: string; activo: boolean; onPress: () => void }) {
   return (
-    <Pressable style={[styles.chip, activo && styles.chipActivo]} onPress={onPress} accessibilityState={{ selected: activo }}>
+    <Pressable accessibilityRole="button" style={[styles.chip, activo && styles.chipActivo]} onPress={onPress} accessibilityState={{ selected: activo }}>
       <Text style={[styles.chipText, activo && styles.chipTextActivo]}>{texto}</Text>
     </Pressable>
   );

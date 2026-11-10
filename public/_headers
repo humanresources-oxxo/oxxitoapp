@@ -1,0 +1,11 @@
+# Security headers for the app's static files (Cloudflare Workers static
+# assets read this file; worker routes like /api and /DashboardsOxxo set
+# their own). frame-ancestors 'self': nobody can put the app (and its PIN
+# keypad) inside a frame on another site; the Ficha of the Resumen tab is
+# same-origin and keeps working.
+/*
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: frame-ancestors 'self'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), payment=(), usb=()

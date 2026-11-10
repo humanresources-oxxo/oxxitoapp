@@ -72,7 +72,7 @@ export function AltasScreen({ onBack, onCambio }: { onBack: () => void; onCambio
       <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
       <SafeAreaView edges={['top']} style={styles.safeTop}>
         <View style={styles.header}>
-          <Pressable style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
+          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
             <Icon name="chevL" size={20} color={colors.ink} />
           </Pressable>
           <View style={{ flex: 1 }}>
@@ -87,7 +87,7 @@ export function AltasScreen({ onBack, onCambio }: { onBack: () => void; onCambio
           <View style={[styles.card, styles.aviso]}>
             <Icon name="alert" size={26} color={colors.oxRed} />
             <Text style={styles.avisoTitulo}>No se pudieron cargar</Text>
-            <Pressable style={styles.boton} onPress={cargar}>
+            <Pressable accessibilityRole="button" style={styles.boton} onPress={cargar}>
               <Text style={styles.botonTexto}>Reintentar</Text>
             </Pressable>
           </View>

@@ -363,7 +363,7 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
             maxLength={c.key === 'cp' ? 5 : c.tipo === 'fecha' ? 10 : c.tipo === 'hora' ? 5 : undefined}
           />
           {c.key === 'numEmpleado' && !bloqueado ? (
-            <Pressable style={styles.inputBoton} onPress={buscarTrabajador} accessibilityLabel="Buscar en la nómina">
+            <Pressable accessibilityRole="button" style={styles.inputBoton} onPress={buscarTrabajador} accessibilityLabel="Buscar en la nómina">
               {buscando ? <ActivityIndicator color={colors.oxRed} /> : <Icon name="search" size={19} color={colors.oxRed} />}
             </Pressable>
           ) : null}
@@ -406,14 +406,14 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
       <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
       <SafeAreaView edges={['top']} style={styles.safeTop}>
         <View style={styles.header}>
-          <Pressable style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
+          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
             <Icon name="chevL" size={20} color={colors.ink} />
           </Pressable>
           <View style={styles.headerCopy}>
             <Text style={styles.eyebrow}>Relaciones laborales</Text>
             <Text style={styles.title}>Actas y Formatos</Text>
           </View>
-          <Pressable style={styles.headerButton} onPress={() => setVista(true)} accessibilityLabel="Vista previa">
+          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={() => setVista(true)} accessibilityLabel="Vista previa">
             <Icon name="eye" size={20} color={colors.ink} />
           </Pressable>
         </View>
@@ -471,7 +471,7 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
           {hayFirmas ? (
             <View style={styles.bloqueo}>
               <Text style={styles.bloqueoText}>El documento ya tiene firmas: sus datos quedan bloqueados para que nadie cambie lo que se firmó.</Text>
-              <Pressable
+              <Pressable accessibilityRole="button"
                 style={styles.botonSuave}
                 onPress={() =>
                   confirmar('Borrar firmas', '¿Borrar todas las firmas para poder corregir el documento? Tendrán que volver a firmar.', 'Borrar', () => {
@@ -507,11 +507,11 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
                     <Text style={styles.firmaEstado}>
                       {s && 'trazos' in s ? `Firmado · ${s.cuando}` : s ? `Se negó a firmar · ${s.cuando}` : 'Sin firmar'}
                     </Text>
-                    <Pressable onPress={() => setFirma(i, null)} hitSlop={8}>
+                    <Pressable accessibilityRole="button" onPress={() => setFirma(i, null)} hitSlop={8}>
                       <Text style={styles.firmaAccion}>Borrar</Text>
                     </Pressable>
                     {!m.carta ? (
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         hitSlop={8}
                         onPress={() => setFirma(i, s && 'negada' in s ? null : { clave: claves[i], negada: true, cuando: ahora() })}
                       >
@@ -530,18 +530,18 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
           {renderCampo({ key: 'copia', label: 'Enviar copia a (opcional)', tipo: 'correo', placeholder: 'tu.correo@empresa.com' })}
           <Text style={styles.ayuda}>El documento siempre se envía al correo de RH. Aquí puedes agregar tu correo para recibir copia.</Text>
 
-          <Pressable onPress={enviar} disabled={enviando} style={({ pressed }) => [styles.botonPrincipalWrap, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" onPress={enviar} disabled={enviando} style={({ pressed }) => [styles.botonPrincipalWrap, pressed && styles.pressed]}>
             <LinearGradient colors={gradients.oxGrad.colors} start={gradients.oxGrad.start} end={gradients.oxGrad.end} style={[styles.botonPrincipal, enviando && styles.botonDeshabilitado]}>
               {enviando ? <ActivityIndicator color="#fff" /> : <Icon name="send" size={19} color="#fff" />}
               <Text style={styles.botonPrincipalText}>Enviar a RH</Text>
             </LinearGradient>
           </Pressable>
           <View style={styles.botonesFila}>
-            <Pressable style={[styles.botonSecundario, { flex: 1 }]} onPress={compartir}>
+            <Pressable accessibilityRole="button" style={[styles.botonSecundario, { flex: 1 }]} onPress={compartir}>
               <Icon name="doc" size={18} color={colors.oxRedDark} />
               <Text style={styles.botonSecundarioText}>{Platform.OS === 'web' ? 'Descargar Word' : 'Compartir Word'}</Text>
             </Pressable>
-            <Pressable
+            <Pressable accessibilityRole="button"
               style={styles.botonSecundario}
               onPress={() =>
                 confirmar(
@@ -573,7 +573,7 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
         <SafeAreaView style={styles.vistaScreen} edges={['top', 'bottom']}>
           <View style={styles.vistaHeader}>
             <Text style={styles.vistaTitulo}>Vista previa</Text>
-            <Pressable style={styles.headerButton} onPress={() => setVista(false)} accessibilityLabel="Cerrar vista previa">
+            <Pressable accessibilityRole="button" style={styles.headerButton} onPress={() => setVista(false)} accessibilityLabel="Cerrar vista previa">
               <Icon name="check" size={20} color={colors.ink} />
             </Pressable>
           </View>

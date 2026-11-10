@@ -42,7 +42,7 @@ export function ResumenScreen() {
             <Text style={styles.eyebrow}>Plaza Oaxaca · ficha</Text>
             <Text style={styles.title}>Resumen</Text>
           </View>
-          <Pressable style={styles.headerButton} onPress={() => setRecarga((n) => n + 1)} accessibilityLabel="Actualizar">
+          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={() => setRecarga((n) => n + 1)} accessibilityLabel="Actualizar">
             <Icon name="history" size={20} color={colors.ink} />
           </Pressable>
         </View>
@@ -70,7 +70,7 @@ export function ResumenScreen() {
       ) : (
         <View style={styles.centro}>
           <Text style={styles.texto}>La ficha se abre en el navegador.</Text>
-          <Pressable style={styles.boton} onPress={() => Linking.openURL(FICHA_URL)}>
+          <Pressable accessibilityRole="button" style={styles.boton} onPress={() => Linking.openURL(FICHA_URL)}>
             <Text style={styles.botonTexto}>Abrir ficha</Text>
           </Pressable>
         </View>

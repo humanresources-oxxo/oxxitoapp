@@ -126,7 +126,12 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, s
               <Text style={styles.subtitle}>Todo lo importante de Conoxxo en un solo lugar.</Text>
             </View>
           </View>
-          <Pressable style={styles.headerButton} onPress={() => onOpenTab('notifications')}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={unreadNotices > 0 ? `Avisos: ${unreadNotices} sin leer` : 'Avisos'}
+            style={styles.headerButton}
+            onPress={() => onOpenTab('notifications')}
+          >
             <Icon name="bell" size={20} color={colors.ink} />
             {unreadNotices > 0 ? <View style={styles.headerBadge} /> : null}
           </Pressable>
@@ -165,7 +170,7 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, s
           </>
         }
         renderItem={({ item }) => (
-          <Pressable style={styles.actionCard} onPress={() => onOpenTab(item.target)}>
+          <Pressable accessibilityRole="button" style={styles.actionCard} onPress={() => onOpenTab(item.target)}>
             <LinearGradient colors={gradients[item.accent].colors} style={styles.actionIcon}>
               <Icon name={item.icon} size={22} color="#fff" />
             </LinearGradient>
@@ -186,7 +191,7 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, s
             </View>
             {history.length ? (
               history.map((item) => (
-                <Pressable key={item.id} style={styles.recentItem} onPress={() => onOpenTab('chat')}>
+                <Pressable accessibilityRole="button" key={item.id} style={styles.recentItem} onPress={() => onOpenTab('chat')}>
                   <Icon name="history" size={18} color={colors.oxRed} />
                   <View style={styles.recentCopy}>
                     <Text style={styles.recentText}>{item.question}</Text>
@@ -196,7 +201,7 @@ export function HomeScreen({ onOpenTab, history, firstName, unreadNotices = 0, s
                 </Pressable>
               ))
             ) : (
-              <Pressable style={styles.emptyRecent} onPress={() => onOpenTab('chat')}>
+              <Pressable accessibilityRole="button" style={styles.emptyRecent} onPress={() => onOpenTab('chat')}>
                 <Icon name="chat" size={20} color={colors.oxRed} />
                 <View style={styles.recentCopy}>
                   <Text style={styles.recentText}>Haz tu primera consulta</Text>

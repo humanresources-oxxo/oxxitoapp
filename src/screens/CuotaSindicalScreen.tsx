@@ -106,7 +106,7 @@ export function CuotaSindicalScreen({ onBack, soloMisTiendas = false }: { onBack
       <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
       <SafeAreaView edges={['top']} style={styles.safeTop}>
         <View style={styles.header}>
-          <Pressable style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
+          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
             <Icon name="chevL" size={20} color={colors.ink} />
           </Pressable>
           <View style={styles.headerCopy}>
@@ -267,7 +267,7 @@ function Aviso({ titulo, texto, accion }: { titulo: string; texto: string; accio
       <Text style={styles.avisoTitulo}>{titulo}</Text>
       <Text style={styles.avisoTexto}>{texto}</Text>
       {accion ? (
-        <Pressable style={styles.avisoBoton} onPress={accion.onPress}>
+        <Pressable accessibilityRole="button" style={styles.avisoBoton} onPress={accion.onPress}>
           <Text style={styles.avisoBotonTexto}>{accion.texto}</Text>
         </Pressable>
       ) : null}

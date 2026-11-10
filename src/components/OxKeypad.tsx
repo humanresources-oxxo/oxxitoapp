@@ -23,7 +23,7 @@ function Key({ k, onKey, onDel }: { k: string; onKey: OxKeypadProps['onKey']; on
   const pressOut = () => Animated.timing(scale, { toValue: 1, duration: 120, useNativeDriver: true }).start();
 
   return (
-    <Pressable
+    <Pressable accessibilityRole="button"
       onPress={() => (k === 'del' ? onDel() : onKey(k))}
       onPressIn={pressIn}
       onPressOut={pressOut}

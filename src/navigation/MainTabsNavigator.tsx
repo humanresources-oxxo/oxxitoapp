@@ -97,6 +97,12 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
     });
     getJson<Sesion | null>(storageKeys.session, null).then((session) => {
       if (!active) return;
+      // Onboarding marked done but no saved session (storage partly cleared):
+      // back to the login instead of an anonymous Inicio.
+      if (!session?.numeroEmpleado) {
+        onLogout();
+        return;
+      }
       setFirstName(session?.nombre?.split(' ')[0] ?? '');
       setCanUseActas(puedeLevantarActas(session?.puesto));
       setOnlyOwnStores(soloSusTiendas(session?.puesto));
