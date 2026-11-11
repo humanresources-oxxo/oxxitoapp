@@ -34,7 +34,7 @@ set pregunta = 'Si trabajo en tienda, ¿pueden cambiarme los días de descanso?'
 where id = 107 and articulo = 87;
 
 update reglamento_faq
-set respuesta = 'Eres responsable del cuidado del efectivo que manejas en la tienda. Si hay un faltante, se aplican las medidas disciplinarias del Reglamento y, según el texto del artículo, el faltante "se deberá reponer en un lapso mayor a setenta y dos (72) horas". (Art. 90)',
+set respuesta = 'Eres responsable del cuidado del efectivo que manejas en la tienda. Si hay un faltante, se aplican las medidas disciplinarias del Reglamento y, según el texto del artículo, el faltante se debe reponer "en un lapso mayor a setenta y dos (72) horas". (Art. 90)',
     estado = 'aprobada', revisado_por = 'ajuste-sql-48', revisado_en = now()
 where id = 110 and articulo = 90;
 
