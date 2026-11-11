@@ -19,7 +19,7 @@
   // numbers until it is opened to everyone. The model can be changed here.
   "ai": { "binding": "AI" },
   "vars": {
-    "CHAT_IA_NUMEROS": "5843652,1599067",
+    "CHAT_IA_NUMEROS": "*",
     "CHAT_IA_MODELO": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
     "CHAT_IA_LIMITE_DIA": "40",
     // "auto": Claude Haiku 5.5 when the ANTHROPIC_API_KEY secret is set

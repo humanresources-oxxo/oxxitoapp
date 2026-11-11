@@ -2,10 +2,10 @@
 // Prototype: chat answers written by a Workers AI model, only from the
 // reglamento (RIT). POST /api/chat { pregunta, llave }.
 //
-// 1. The Conoxxo session key is checked with Supabase (sesion_validar), and
-//    only the employee numbers in CHAT_IA_NUMEROS can use it (prototype: not
-//    open to everyone yet). Everyone else gets 403 no_habilitado and the app
-//    keeps the keyword search.
+// 1. The Conoxxo session key is checked with Supabase (sesion_validar).
+//    CHAT_IA_NUMEROS = "*" lets every employee with a valid session use it;
+//    a list of employee numbers limits it to those (anyone else gets 403
+//    no_habilitado and the app keeps the keyword search).
 // 2. The same search the app already uses (search_reglamento) picks the 3
 //    closest articles; only those go to the model, never the whole RIT.
 // 3. The model answers only from them and names the article it used. Its last
@@ -173,7 +173,8 @@ export async function chat(request, env) {
   const sesion = await rpc(env, 'sesion_validar', { p_token: llave });
   if (!sesion || sesion.estado !== 'ok') return json({ ok: false, error: 'sesion_conoxxo' }, 401);
   const numero = String(sesion.numero || '');
-  if (!habilitados(env).includes(numero)) return json({ ok: false, error: 'no_habilitado' }, 403);
+  const lista = habilitados(env);
+  if (!lista.includes('*') && !lista.includes(numero)) return json({ ok: false, error: 'no_habilitado' }, 403);
   const proveedor = String(env.CHAT_IA_PROVEEDOR || 'auto');
   const cliente = proveedor === 'workers-ai' ? null : clienteClaude(env);
   if (!env.AI && !cliente) return json({ ok: false, error: 'ia_no_configurada' }, 503);
