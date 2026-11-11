@@ -210,15 +210,18 @@ export function ChatHomeScreen({
         ListFooterComponent={typing ? <TypingBubble pulse={pulse} /> : null}
       />
 
-      <View style={styles.suggestions}>
-        {sugerencias.map((item) => (
-          <Pressable accessibilityRole="button" key={item} style={styles.suggestion} onPress={() => send(item)}>
-            <Text style={styles.suggestionText} numberOfLines={2}>
-              {item}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      {/* Suggested questions only until the first question is sent. */}
+      {messages.some((m) => m.role === 'user') ? null : (
+        <View style={styles.suggestions}>
+          {sugerencias.map((item) => (
+            <Pressable accessibilityRole="button" key={item} style={styles.suggestion} onPress={() => send(item)}>
+              <Text style={styles.suggestionText} numberOfLines={2}>
+                {item}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
 
       <SafeAreaView edges={['bottom']} style={styles.composerWrap}>
         <BlurView intensity={35} tint="light" style={styles.composerGlass}>
