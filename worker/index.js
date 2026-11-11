@@ -34,7 +34,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === '/admin' || url.pathname.startsWith('/admin/')) return Response.redirect(PANEL_CONOXXO, 302);
-    // Prototype: chat answers with Workers AI, only for CHAT_IA_NUMEROS (worker/chat.js).
+    // Chat answers with AI for the employees CHAT_IA_NUMEROS allows ("*" = everyone; worker/chat.js).
     // Preguntas frecuentes of the reglamento, proposed by Haiku (worker/faq.js).
     if (url.pathname === '/api/faq/generar') {
       if (request.method === 'OPTIONS') {

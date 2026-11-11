@@ -134,8 +134,9 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   el chat del reglamento puede contestar con un modelo de **Cloudflare Workers AI** (gratis
   hasta 10,000 neuronas al día) en lugar de solo mostrar el artículo encontrado.
   - La app manda la pregunta y la llave de sesión a `POST /api/chat` del Worker de la app. El
-    Worker valida la sesión (`sesion_validar`), deja pasar **solo los números de
-    `CHAT_IA_NUMEROS`** (`wrangler.jsonc`; por ahora 5843652 y la cuenta de prueba), con un
+    Worker valida la sesión (`sesion_validar`), deja pasar a quien diga
+    `CHAT_IA_NUMEROS` (`wrangler.jsonc`; desde el 2026-11-11 es `"*"`: **todos** los que tienen
+    sesión; una lista de números lo limita a esos), con un
     tope aproximado de `CHAT_IA_LIMITE_DIA` preguntas por persona al día.
   - Busca los 3 artículos más cercanos con la misma `search_reglamento` de siempre y **solo
     esos** van al modelo (`CHAT_IA_MODELO`, hoy `@cf/meta/llama-3.3-70b-instruct-fp8-fast`),

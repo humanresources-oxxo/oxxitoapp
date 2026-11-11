@@ -158,7 +158,7 @@ async function preguntarIa(question: string): Promise<QAResult | null> {
       article: f ? f.article : 'Reglamento',
       title: f ? 'Reglamento Interior de Trabajo' : 'Sin artículo exacto',
       summary: f ? f.body : 'La respuesta no se basó en un artículo específico del reglamento.',
-      nextStep: 'Respuesta de prueba escrita con IA a partir del reglamento. Si tu caso es delicado o algo no coincide, confírmalo con Recursos Humanos.',
+      nextStep: 'Respuesta escrita con IA a partir del reglamento. Si tu caso es delicado o algo no coincide, confírmalo con Recursos Humanos.',
       contact: HR_CONTACT,
       ia: true,
       articuloNumero: f ? f.number : undefined,
