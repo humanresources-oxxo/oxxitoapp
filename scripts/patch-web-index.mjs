@@ -19,7 +19,11 @@ html = html.replace(
   [
     `  <link rel="icon" href="${BASE}/icon-192.png" />`,
     `  <link rel="manifest" href="${BASE}/manifest.json" />`,
-    `  <link rel="apple-touch-icon" href="${BASE}/apple-touch-icon.png" /></head>`,
+    `  <link rel="apple-touch-icon" href="${BASE}/apple-touch-icon.png" />`,
+    // iPhone Safari zooms the page in when a field with text under 16px gets
+    // focus, and does not zoom back out. Touch screens get 16px fields; pinch
+    // zoom stays available (no maximum-scale in the viewport).
+    `  <style>@media (hover: none) and (pointer: coarse) { input, textarea, select { font-size: 16px !important; } }</style></head>`,
   ].join('\n')
 );
 writeFileSync(file, html);
