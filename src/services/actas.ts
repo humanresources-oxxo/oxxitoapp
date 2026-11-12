@@ -40,6 +40,15 @@ export function puedeLevantarActas(puesto?: string) {
   return !!p && PUESTOS_ACTAS.some((permitido) => p.startsWith(normalizar(permitido)));
 }
 
+// Resumen (the Ficha de Plaza and its chatbot): the puestos above plus every
+// office puesto, i.e. any puesto that is set and is not a store one (migration
+// 57, puesto_ve_ficha; the ficha and the Apps Script check it again).
+const PUESTOS_TIENDA = ['LIDER TIENDA', 'ENCARGADO TURNO', 'AYUDANTE TIENDA'];
+export function veFicha(puesto?: string) {
+  const p = normalizar(puesto);
+  return puedeLevantarActas(puesto) || (!!p && !PUESTOS_TIENDA.some((t) => p.startsWith(t)));
+}
+
 let logo: Uint8Array | null = null;
 const logoActa = () => (logo ??= deBase64(ACTA_LOGO_BASE64));
 

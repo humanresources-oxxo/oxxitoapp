@@ -3,7 +3,7 @@
 // { llave, datos }. The Ficha (DashboardsOxxo js/ficha-plaza.js datosResumen)
 // sends the numbers it already shows; Claude Haiku 5.5 turns them into a
 // headline and 2-4 points, using only those numbers. Only for puestos with
-// permisos (the ones that see the Ficha). Same numbers -> same summary: it is
+// permisos or "ficha" (migration 57: the ones that see the Ficha). Same numbers -> same summary: it is
 // kept in memory here and in the phone, so it is paid once per cut.
 import { clienteClaude, pedirJson } from './claude.js';
 import { contarUso } from './limite.js';
@@ -46,7 +46,7 @@ export async function resumenFicha(request, env, rpc) {
 
   const sesion = await rpc(env, 'sesion_validar', { p_token: llave });
   if (!sesion || sesion.estado !== 'ok') return json({ ok: false, error: 'sesion_conoxxo' }, 401);
-  if (!sesion.permisos) return json({ ok: false, error: 'no_habilitado' }, 403);
+  if (!sesion.permisos && !sesion.ficha) return json({ ok: false, error: 'no_habilitado' }, 403);
   const cliente = clienteClaude(env);
   if (!cliente) return json({ ok: false, error: 'ia_no_configurada' }, 503);
 
