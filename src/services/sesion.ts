@@ -4,7 +4,7 @@
 // managing votaciones don't ask for a passcode or PIN. The server only keeps
 // its hash; a PIN change or reset ends it. Sessions from before the key
 // existed get one the first time they need it (PIN once).
-import { getJson, removeItem, setJson, storageKeys } from './appStorage';
+import { borrarDatosLocales, getJson, removeItem, setJson, storageKeys } from './appStorage';
 import { supabase } from './supabaseClient';
 
 // Puestos that publish avisos and create, close and delete votaciones: RH and
@@ -66,9 +66,10 @@ export async function rpcSesion<T = any>(fn: string, args: Record<string, unknow
   return data as T;
 }
 
-// Logout: ends the key on the server too (best effort) and forgets it.
+// Logout: forgets everything this employee left on the phone (the key
+// included) and ends the key on the server too (best effort).
 export async function cerrarSesion() {
-  const llave = await leerLlave();
-  await olvidarLlave();
+  const llave = await leerLlave().catch(() => null);
+  await borrarDatosLocales().catch(() => olvidarLlave());
   if (llave) await supabase.rpc('cerrar_sesion', { p_token: llave }).then(() => {}, () => {});
 }
