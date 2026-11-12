@@ -106,6 +106,10 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   la llave en el servidor. En la web, además, la página se recarga para soltar lo que las
   pantallas guardan en memoria.
 
+✅ **Revisión automática (`.github/workflows/revisar.yml`):** cada pull request y cada push a
+  `main` corre `npm run typecheck` (TypeScript), `npm run check:worker` (sintaxis de `worker/`) y
+  `npm run build:cloudflare` (la misma compilación que hace Cloudflare). No usa secretos.
+
 ✅ **Votaciones (`src/screens/VotacionesScreen.tsx`):** votaciones secretas para lugares,
   fechas y decisiones del equipo (no sindicales). Supabase, migración 34
   (`supabase/migration_34_votaciones.sql`); servicio `src/services/votaciones.ts`.

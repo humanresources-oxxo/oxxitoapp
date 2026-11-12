@@ -37,7 +37,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build:cloudflare": "node scripts/build-cloudflare.mjs"
+    "build:cloudflare": "node scripts/build-cloudflare.mjs",
+    "typecheck": "tsc --noEmit",
+    "check:worker": "node scripts/check-worker.mjs"
   },
   "private": true
 }
