@@ -1,37 +1,58 @@
 // src/services/auth.ts
 // Employee login backed by Supabase RPCs against the real roster (employees table).
+import { leerLlave } from './sesion';
 import { supabase } from './supabaseClient';
 
+// What the login screen may know from a number alone (acceso_empleado,
+// migration 52): where to go next and the first name for the greeting. The
+// rest of the profile needs the session key (miPerfil).
 export type EmployeeLookup = {
   exists: boolean;
-  nombre?: string;
+  primerNombre?: string;
   hasPin?: boolean;
-  tienda?: string;
-  plaza?: string;
-  asesor?: string;
-  puesto?: string;
-  createdAt?: string;
   // RH loaded the birth date: the first registration asks for it (migration 38).
   pideFecha?: boolean;
 };
 export type Employee = { numeroEmpleado: string; nombre: string };
 
 export async function lookupEmployee(numeroEmpleado: string): Promise<EmployeeLookup> {
-  const { data, error } = await supabase.rpc('employee_lookup', { p_numero: numeroEmpleado });
+  const { data, error } = await supabase.rpc('acceso_empleado', { p_numero: numeroEmpleado });
   if (error) throw error;
   const row = data?.[0];
   if (!row) return { exists: false };
+  return { exists: true, primerNombre: row.primer_nombre, hasPin: row.has_pin, pideFecha: !!row.pide_fecha };
+}
+
+export type Perfil = { numeroEmpleado: string; nombre: string; tienda?: string; plaza?: string; asesor?: string; puesto?: string; createdAt?: string };
+
+// One's own data, with the session key (sesion_mi_perfil, migration 52).
+// null: there is no key, or the server no longer accepts it.
+export async function miPerfil(): Promise<Perfil | null> {
+  const llave = await leerLlave();
+  if (!llave) return null;
+  const { data, error } = await supabase.rpc('sesion_mi_perfil', { p_token: llave });
+  if (error) throw error;
+  if (data?.estado !== 'ok') return null;
   return {
-    exists: true,
-    nombre: row.nombre,
-    hasPin: row.has_pin,
-    tienda: row.tienda,
-    plaza: row.plaza,
-    asesor: row.asesor,
-    puesto: row.puesto,
-    createdAt: row.created_at,
-    pideFecha: !!row.pide_fecha,
+    numeroEmpleado: data.numero,
+    nombre: data.nombre,
+    tienda: data.tienda ?? undefined,
+    plaza: data.plaza ?? undefined,
+    asesor: data.asesor ?? undefined,
+    puesto: data.puesto ?? undefined,
+    createdAt: data.created_at ?? undefined,
   };
+}
+
+// Another employee's name, puesto and tienda, for the acta administrativa
+// (sesion_buscar_empleado, migration 52: only puestos with permisos).
+// 'not_found' | 'not_allowed' | 'no_session' when there is nothing to show.
+export async function buscarEmpleado(numeroEmpleado: string): Promise<{ estado: string; nombre?: string; puesto?: string; tienda?: string }> {
+  const llave = await leerLlave();
+  if (!llave) return { estado: 'no_session' };
+  const { data, error } = await supabase.rpc('sesion_buscar_empleado', { p_token: llave, p_numero: numeroEmpleado });
+  if (error) throw error;
+  return data ?? { estado: 'not_found' };
 }
 
 // First PIN (migration 38): needs the birth date RH loaded ('YYYY-MM-DD').

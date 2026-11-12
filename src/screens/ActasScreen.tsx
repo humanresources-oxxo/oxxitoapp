@@ -25,7 +25,7 @@ import { Icon } from '../components/Icon';
 import { SignaturePad, SignatureStrokes } from '../components/SignaturePad';
 import { getJson, removeItem, setJson, storageKeys } from '../services/appStorage';
 import { compartirWord, enviarActa, RegistroActa } from '../services/actas';
-import { lookupEmployee } from '../services/auth';
+import { buscarEmpleado } from '../services/auth';
 import { buscarTienda, cargarTiendas, sugerirTiendas, Tienda } from '../services/tiendas';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 import { showAlert } from '../utils/alert';
@@ -265,8 +265,9 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
     if (!numero) return showAlert('Número de empleado', 'Escribe el número de empleado del trabajador.');
     setBuscando(true);
     try {
-      const r = await lookupEmployee(numero);
-      if (!r.exists) return showAlert('No encontrado', `No hay nadie con el número ${numero} en la nómina. Llena los datos a mano.`);
+      const r = await buscarEmpleado(numero);
+      if (r.estado === 'not_found') return showAlert('No encontrado', `No hay nadie con el número ${numero} en la nómina. Llena los datos a mano.`);
+      if (r.estado !== 'ok') return showAlert('No se pudo consultar', 'No pudimos confirmar tu sesión para consultar la nómina. Cierra sesión, vuelve a entrar e intenta de nuevo, o llena los datos a mano.');
       setForm((f) => ({
         ...f,
         trabajador: r.nombre || f.trabajador || '',
