@@ -91,6 +91,15 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   **Orden:** correr la 49 → publicar la app → correr la 50 (cierra las funciones viejas; antes,
   revisar que el Panel Conoxxo no las use).
 
+✅ **El número de empleado ya no entrega datos personales (migraciones 52 y 53):** antes
+  `employee_lookup` devolvía nombre completo, tienda, plaza, asesor y puesto con solo el número
+  y sin sesión. Ahora la pantalla de acceso usa `acceso_empleado` (solo si existe, si tiene PIN,
+  si el registro pide fecha y el primer nombre para el saludo; mismo tope de 20 por minuto). El
+  perfil propio se lee con la llave de sesión (`sesion_mi_perfil`: al terminar el acceso y en cada
+  apertura) y buscar a otro empleado por número, para un acta, es `sesion_buscar_empleado`, solo
+  para puestos con permisos. **Orden:** correr la 52 → publicar la app → correr la 53 (cierra
+  `employee_lookup`).
+
 ✅ **Votaciones (`src/screens/VotacionesScreen.tsx`):** votaciones secretas para lugares,
   fechas y decisiones del equipo (no sindicales). Supabase, migración 34
   (`supabase/migration_34_votaciones.sql`); servicio `src/services/votaciones.ts`.

@@ -23,7 +23,7 @@ import { VotacionesScreen } from '../screens/VotacionesScreen';
 import { AltasScreen } from '../screens/AltasScreen';
 import { getJson, setJson, storageKeys } from '../services/appStorage';
 import { puedeLevantarActas, soloSusTiendas } from '../services/actas';
-import { lookupEmployee } from '../services/auth';
+import { lookupEmployee, miPerfil } from '../services/auth';
 import { fetchNotices } from '../services/notices';
 import { contarPendientes } from '../services/votaciones';
 import { listarAltas, puedoAprobarAltas } from '../services/altas';
@@ -132,14 +132,22 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
   }, []);
 
   // The session is saved at login; check it against the roster on every open
-  // so a puesto change takes effect and someone removed from the roster is
-  // logged out. Network or rate-limit errors keep the saved session.
+  // (sesion_mi_perfil, with the session key) so a puesto change takes effect
+  // and someone removed from the roster is logged out. Network or rate-limit
+  // errors keep the saved session.
   const revalidarSesion = (session: Sesion | null) => {
     if (!session?.numeroEmpleado) return;
-    lookupEmployee(session.numeroEmpleado)
-      .then((r) => {
-        if (!r.exists) return onLogout();
-        const nueva = { ...session, nombre: r.nombre ?? session.nombre, tienda: r.tienda, plaza: r.plaza, puesto: r.puesto };
+    miPerfil()
+      .then(async (r) => {
+        if (!r) {
+          // No key, or the server no longer accepts it. Gone from the roster:
+          // out. Still there (PIN changed, key from before): PIN once.
+          const acceso = await lookupEmployee(session.numeroEmpleado!);
+          if (!acceso.exists) return onLogout();
+          setPedirPin(true);
+          return;
+        }
+        const nueva = { ...session, nombre: r.nombre ?? session.nombre, tienda: r.tienda, plaza: r.plaza, puesto: r.puesto, createdAt: r.createdAt ?? session.createdAt };
         setJson(storageKeys.session, nueva);
         setFirstName(nueva.nombre?.split(' ')[0] ?? '');
         setCanUseActas(puedeLevantarActas(nueva.puesto));
@@ -238,6 +246,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
             setPedirPin(false);
             setVersionSesion((v) => v + 1);
             refreshUnreadNotices();
+            getJson<Sesion | null>(storageKeys.session, null).then(revalidarSesion);
           }}
         />
       ) : null}

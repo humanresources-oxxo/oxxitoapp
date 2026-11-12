@@ -44,11 +44,13 @@ export function LoginScreen({
         setError('No encontramos ese número de empleado. Verifica tu gafete o contacta a Recursos Humanos.');
         return;
       }
-      setVerifiedName(result.nombre ?? '');
-      setTienda(result.tienda ?? '');
-      setPlaza(result.plaza ?? '');
-      setPuesto(result.puesto ?? '');
-      setCreatedAt(result.createdAt ?? '');
+      // Only the first name before the PIN (migration 52); the profile is
+      // read with the session key once inside (PermissionsScreen).
+      setVerifiedName(result.primerNombre ?? '');
+      setTienda('');
+      setPlaza('');
+      setPuesto('');
+      setCreatedAt('');
       setPideFecha(!!result.pideFecha);
       if (result.hasPin) {
         onContinue();

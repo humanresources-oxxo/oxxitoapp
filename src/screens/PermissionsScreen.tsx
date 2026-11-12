@@ -11,6 +11,7 @@ import { useOnboarding } from '../context/OnboardingContext';
 import { TextoLegal } from '../components/TextoLegal';
 import { AVISO_PRIVACIDAD, TERMINOS_USO } from '../data/legal';
 import { setJson, storageKeys } from '../services/appStorage';
+import { miPerfil } from '../services/auth';
 import { colors, gradients, radii, type } from '../theme/tokens';
 
 export function PermissionsScreen({
@@ -25,9 +26,22 @@ export function PermissionsScreen({
 
   const [legal, setLegal] = useState<'privacidad' | 'terminos' | null>(null);
 
-  const finish = () => {
-    if (!terms) return;
-    setJson(storageKeys.session, { numeroEmpleado: empNum, nombre: verifiedName, tienda, plaza, puesto, createdAt });
+  const [guardando, setGuardando] = useState(false);
+  const finish = async () => {
+    if (!terms || guardando) return;
+    setGuardando(true);
+    // The profile comes with the session key (migration 52). If it cannot be
+    // read now, the session starts with the first name and the app completes
+    // it on open (MainTabsNavigator revalidarSesion).
+    const p = await miPerfil().catch(() => null);
+    await setJson(storageKeys.session, {
+      numeroEmpleado: empNum,
+      nombre: p?.nombre ?? verifiedName,
+      tienda: p?.tienda ?? tienda,
+      plaza: p?.plaza ?? plaza,
+      puesto: p?.puesto ?? puesto,
+      createdAt: p?.createdAt ?? createdAt,
+    });
     onContinue();
   };
 
