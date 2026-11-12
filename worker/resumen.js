@@ -10,11 +10,12 @@ import { contarUso } from './limite.js';
 
 const MAX_DATOS = 12000; // characters of JSON
 const LIMITE_DIA = 20;
+const VERSION = 'v2-corto:';
 
 const SISTEMA = `Eres analista de Recursos Humanos de OXXO. Recibes en JSON los indicadores del último corte de una plaza (aprovechamiento de estructura, vacantes, bajas contra su compromiso del mes, los asesores con menor aprovechamiento y el comparativo con las otras plazas de la región).
 Escribe para el gerente de plaza y RH lo más importante de esos números:
-- "titular": una frase de máximo 90 caracteres con lo principal.
-- "puntos": de 2 a 4 puntos, cada uno de máximo 25 palabras, con cifras concretas y, cuando aplique, el nombre del asesor o la tienda.
+- "titular": una frase de máximo 60 caracteres con lo principal.
+- "puntos": 2 o 3 puntos, cada uno de máximo 15 palabras: una sola idea con su cifra clave y, cuando aplique, el nombre del asesor o la tienda. No repitas lo que ya dice el titular ni enumeres todos los números: elige lo que más importa.
 Usa SOLO los datos que recibes: no inventes causas, tendencias ni cifras que no estén. Si algo va bien, dilo también. Español de México, directo, sin emojis.
 Glosario: "aprovechamiento" = % de tiendas con el equipo completo; "desfase" de bajas positivo = más bajas que el compromiso (malo), negativo = menos (bueno); "más antigua" = la vacante con más días abierta.`;
 
@@ -50,7 +51,8 @@ export async function resumenFicha(request, env, rpc) {
   const cliente = clienteClaude(env);
   if (!cliente) return json({ ok: false, error: 'ia_no_configurada' }, 503);
 
-  const clave = await huella(texto);
+  // The prompt version is part of the key, so a new prompt does not reuse old summaries.
+  const clave = await huella(VERSION + texto);
   const previo = guardados.get(clave);
   if (previo && previo.vence > Date.now()) return json({ ok: true, ...previo.resumen, guardado: true });
   if (!(await contarUso(env, rpc, llave, 'resumen', LIMITE_DIA, String(sesion.numero || '')))) return json({ ok: false, error: 'limite_diario' }, 429);
@@ -58,8 +60,8 @@ export async function resumenFicha(request, env, rpc) {
   const inicio = Date.now();
   const { datos: r, uso, modelo } = await pedirJson(cliente, { system: SISTEMA, usuario: texto, schema: ESQUEMA, maxTokens: 2048 });
   const resumen = {
-    titular: String(r.titular || '').trim().slice(0, 140),
-    puntos: (Array.isArray(r.puntos) ? r.puntos : []).map((p) => String(p || '').trim()).filter(Boolean).slice(0, 4),
+    titular: String(r.titular || '').trim().slice(0, 100),
+    puntos: (Array.isArray(r.puntos) ? r.puntos : []).map((p) => String(p || '').trim()).filter(Boolean).slice(0, 3),
   };
   if (!resumen.titular && !resumen.puntos.length) return json({ ok: false, error: 'sin_respuesta' }, 502);
   guardados.set(clave, { resumen, vence: Date.now() + 6 * 3600 * 1000 });
