@@ -4,6 +4,7 @@
 // and managing them with the session key, migration_35_sesiones.sql. RH and
 // Gerente de plaza create them from the app (services/sesion.ts). Counts are hidden while open unless the votación shows
 // live results (after voting) or the viewer is RH.
+import { rpcSesion } from './sesion';
 import { supabase } from './supabaseClient';
 
 export type OpcionVoto = { id: string; texto: string; votos: number | null };
@@ -55,9 +56,11 @@ export const MENSAJE_VOTO: Record<EstadoVoto, string> = {
   bad_date: 'El cierre debe ser entre 10 minutos y 90 días a partir de ahora.',
 };
 
-export async function listarVotaciones(numeroEmpleado: string): Promise<ListaVotaciones> {
-  const { data, error } = await supabase.rpc('list_votaciones', { p_numero: numeroEmpleado });
-  if (error) throw error;
+// Read with the session key (sesion_votaciones, migration 54): the list says
+// whether this employee already voted, so a number alone must not get it.
+// avisar: false for the Inicio badge, which must not open the PIN prompt.
+export async function listarVotaciones(avisar = true): Promise<ListaVotaciones> {
+  const data = await rpcSesion<any[]>('sesion_votaciones', {}, avisar);
   const filas = (data ?? []) as any[];
   return {
     puedeAdministrar: filas.some((r) => r.puede_administrar),
@@ -79,8 +82,8 @@ export async function listarVotaciones(numeroEmpleado: string): Promise<ListaVot
 }
 
 // Open votaciones the employee hasn't voted in (the badge on Inicio).
-export async function contarPendientes(numeroEmpleado: string): Promise<number> {
-  const { votaciones } = await listarVotaciones(numeroEmpleado);
+export async function contarPendientes(): Promise<number> {
+  const { votaciones } = await listarVotaciones(false);
   return votaciones.filter((v) => v.abierta && v.puedeVotar && !v.yaVoto).length;
 }
 

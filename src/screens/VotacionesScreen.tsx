@@ -84,7 +84,7 @@ export function VotacionesScreen({ onBack, onCambio }: { onBack: () => void; onC
     if (!numero) return;
     let activo = true;
     setError(false);
-    listarVotaciones(numero)
+    listarVotaciones()
       .then((l) => activo && setLista(l))
       .catch(() => activo && setError(true));
     return () => {

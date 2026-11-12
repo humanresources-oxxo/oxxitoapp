@@ -87,7 +87,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
 
   const refreshPendingVotes = (numero = numeroEmpleado) => {
     if (!numero) return;
-    contarPendientes(numero).then(setPendingVotes).catch(() => {});
+    contarPendientes().then(setPendingVotes).catch(() => {});
   };
 
   const refreshUnreadNotices = () => {
@@ -247,6 +247,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
             setVersionSesion((v) => v + 1);
             refreshUnreadNotices();
             getJson<Sesion | null>(storageKeys.session, null).then(revalidarSesion);
+            refreshPendingVotes();
           }}
         />
       ) : null}
