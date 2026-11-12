@@ -6,6 +6,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const storageKeys = {
   onboardingDone: 'oxxito:onboardingDone',
   chatHistory: 'oxxito:chatHistory',
+  // The chat conversation itself (ChatHomeScreen), so it survives a tab change.
+  chatMessages: 'oxxito:chatMessages',
   noticeReadState: 'oxxito:noticeReadState',
   profilePrefs: 'oxxito:profilePrefs',
   session: 'oxxito:session',

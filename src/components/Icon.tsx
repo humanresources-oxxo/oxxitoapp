@@ -2,6 +2,7 @@
 // Stroke icon set (24-grid), ported 1:1 from oxxito-ui.jsx ICONS map.
 import React from 'react';
 import Svg, { Path } from 'react-native-svg';
+import { colors } from '../theme/tokens';
 
 export const ICONS: Record<string, string> = {
   badge: 'M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2zM8 9.5h3M8 13h5M15.5 9.2a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2z',
@@ -49,6 +50,8 @@ export const ICONS: Record<string, string> = {
   chat: 'M5 5h14a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 3.5V6a1 1 0 0 1 1-1zM9 10h6M9 12.5h3',
   copy: 'M9 9h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1zM6 15H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v1',
   whatsapp: 'M12 4a8 8 0 0 0-6.9 12L4 20l4.1-1.1A8 8 0 1 0 12 4zM9 9c.2-.5.4-.5.7-.5h.5c.2 0 .4 0 .6.5l.6 1.4c.1.2 0 .4-.1.5l-.4.5c-.1.1-.2.3 0 .6a5 5 0 0 0 2.3 2c.3.2.5.1.6 0l.5-.6c.2-.2.3-.1.5-.1l1.3.7c.2.1.3.2.3.3 0 .4-.2 1-.5 1.2-.3.3-.9.5-1.4.4a7 7 0 0 1-5.6-5.2c-.1-.5 0-1 .3-1.4z',
+  refresh: 'M20 11a8 8 0 0 0-14.3-4M4 4v3.5h3.5M4 13a8 8 0 0 0 14.3 4M20 20v-3.5h-3.5',
+  grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
   clockRing: 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM12 8v4.5l3 2',
 };
 
@@ -60,7 +63,7 @@ type IconProps = {
   fill?: boolean;
 };
 
-export function Icon({ name, size = 22, color = '#241A17', strokeWidth = 1.8, fill = false }: IconProps) {
+export function Icon({ name, size = 22, color = colors.ink, strokeWidth = 1.8, fill = false }: IconProps) {
   const d = ICONS[name];
   if (!d) return null;
   return (

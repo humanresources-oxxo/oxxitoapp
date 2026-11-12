@@ -1,9 +1,9 @@
-﻿// src/navigation/MainTabsNavigator.tsx
+// src/navigation/MainTabsNavigator.tsx
 // Lightweight post-login tabs without adding a navigation dependency.
 import React, { useEffect, useMemo, useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BackHandler, Linking, Platform, StyleSheet, Text, View } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { Icon } from '../components/Icon';
@@ -17,7 +17,7 @@ import { DirectoryScreen } from '../screens/DirectoryScreen';
 import { EstructuraScreen } from '../screens/EstructuraScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
-import { ResumenScreen } from '../screens/ResumenScreen';
+import { FICHA_URL, ResumenScreen } from '../screens/ResumenScreen';
 import { VacacionesScreen } from '../screens/VacacionesScreen';
 import { VotacionesScreen } from '../screens/VotacionesScreen';
 import { AltasScreen } from '../screens/AltasScreen';
@@ -26,10 +26,11 @@ import { puedeLevantarActas, soloSusTiendas, veFicha } from '../services/actas';
 import { lookupEmployee, miPerfil } from '../services/auth';
 import { fetchNotices } from '../services/notices';
 import { contarPendientes } from '../services/votaciones';
+import { cargarMiVacacion } from '../services/vacaciones';
 import { listarAltas, puedoAprobarAltas } from '../services/altas';
 import { alPedirPin, leerLlave } from '../services/sesion';
 import { PinUnaVez } from '../components/PinUnaVez';
-import { colors, gradients, radii, shadows, type } from '../theme/tokens';
+import { colors, fontFamily, shadows } from '../theme/tokens';
 
 // 'actas', 'vacaciones', 'estructura', 'cuota', 'cct', 'dilos' and 'votaciones' are not in the tab
 // bar: they open from Inicio. Actas, Estructura, Cuota sindical, Contratos colectivos,
@@ -38,28 +39,60 @@ type TabKey = 'home' | 'chat' | 'directory' | 'notifications' | 'profile' | 'act
 
 type Sesion = { numeroEmpleado?: string; nombre?: string; tienda?: string; plaza?: string; puesto?: string; createdAt?: string };
 
-type TabItem = {
-  key: TabKey;
-  label: string;
-  icon: string;
-  external?: string;
-};
+type TabItem = { key: TabKey; label: string; icon: string };
 
-// The old "Dashboard" tab (opened the DashboardsOxxo site) is replaced by
-// "Resumen" (the Ficha de Plaza inside the app), only for roles with
-// permissions; the rest see 5 tabs.
-const TABS_BASE: TabItem[] = [
+// Five tabs for everyone. Everything else (Vacaciones, Votaciones, Resumen and
+// the management tools) opens from Inicio as a screen of its own, without the
+// tab bar and with a back button.
+const TABS: TabItem[] = [
   { key: 'home', label: 'Inicio', icon: 'home' },
   { key: 'chat', label: 'Chat', icon: 'chat' },
-  { key: 'directory', label: 'Directorio', icon: 'headset' },
   { key: 'notifications', label: 'Avisos', icon: 'bell' },
+  { key: 'directory', label: 'Directorio', icon: 'headset' },
   { key: 'profile', label: 'Perfil', icon: 'user' },
 ];
-const RESUMEN_TAB: TabItem = { key: 'resumen', label: 'Resumen', icon: 'chart' };
-const tabsPara = (conResumen: boolean) => (conResumen ? [...TABS_BASE.slice(0, 4), RESUMEN_TAB, TABS_BASE[4]] : TABS_BASE);
+const esPestana = (k: TabKey) => TABS.some((t) => t.key === k);
 
 export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState<TabKey>('home');
+  // A question picked on Inicio, for the chat to ask when it opens.
+  const [preguntaChat, setPreguntaChat] = useState<string | undefined>();
+  const [vacationDays, setVacationDays] = useState<number | null>(null);
+
+  // Back goes to Inicio instead of leaving the app: the hardware button on
+  // Android, the browser's back on the web (one history entry while away
+  // from Inicio).
+  const ir = (tab: TabKey) => {
+    if (tab === 'resumen' && Platform.OS !== 'web') {
+      // The ficha is a web page: on the phone it opens in the browser.
+      Linking.openURL(FICHA_URL);
+      return;
+    }
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const fuera = !!window.history.state?.conoxxoTab;
+      if (tab === 'home') {
+        if (fuera) return window.history.back(); // popstate sets the tab
+      } else if (fuera) window.history.replaceState({ conoxxoTab: tab }, '');
+      else window.history.pushState({ conoxxoTab: tab }, '');
+    }
+    setActiveTab(tab);
+  };
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    // A reload keeps the history entry but the app starts on Inicio.
+    if (window.history.state?.conoxxoTab) window.history.replaceState(null, '');
+    const alVolver = (e: PopStateEvent) => setActiveTab((e.state?.conoxxoTab as TabKey) ?? 'home');
+    window.addEventListener('popstate', alVolver);
+    return () => window.removeEventListener('popstate', alVolver);
+  }, []);
+  useEffect(() => {
+    if (activeTab === 'home') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setActiveTab('home');
+      return true;
+    });
+    return () => sub.remove();
+  }, [activeTab]);
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const [firstName, setFirstName] = useState('');
   const [canUseActas, setCanUseActas] = useState(false);
@@ -118,6 +151,9 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       setOnlyOwnStores(soloSusTiendas(session?.puesto));
       setNumeroEmpleado(session?.numeroEmpleado ?? '');
       refreshPendingVotes(session?.numeroEmpleado ?? '');
+      cargarMiVacacion(session.numeroEmpleado)
+        .then((r) => active && setVacationDays(r.vacacion ? r.vacacion.diasRestantes : null))
+        .catch(() => {});
       leerLlave()
         .then((llave) => puedoAprobarAltas(session?.puesto, llave))
         .then((si) => {
@@ -192,18 +228,24 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       case 'home':
         return (
           <HomeScreen
-            onOpenTab={setActiveTab}
+            onOpenTab={ir}
+            onAsk={(pregunta) => {
+              setPreguntaChat(pregunta);
+              ir('chat');
+            }}
             history={chatHistory}
             firstName={firstName}
             unreadNotices={unreadNotices}
             showActas={canUseActas}
+            showResumen={canSeeFicha}
             pendingVotes={pendingVotes}
             showAltas={canApprove}
             pendingAltas={pendingAltas}
+            vacationDays={vacationDays}
           />
         );
       case 'chat':
-        return <ChatHomeScreen onQuestionAsked={saveChatQuestion} onOpenAvisos={() => setActiveTab('notifications')} unreadNotices={unreadNotices} />;
+        return <ChatHomeScreen onQuestionAsked={saveChatQuestion} preguntaInicial={preguntaChat} onPreguntaUsada={() => setPreguntaChat(undefined)} />;
       case 'directory':
         return <DirectoryScreen />;
       case 'notifications':
@@ -211,36 +253,36 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       case 'profile':
         return <ProfileScreen onLogout={onLogout} />;
       case 'actas':
-        return canUseActas ? <ActasScreen onBack={() => setActiveTab('home')} /> : null;
+        return canUseActas ? <ActasScreen onBack={() => ir('home')} /> : null;
       case 'estructura':
-        return canUseActas ? <EstructuraScreen onBack={() => setActiveTab('home')} soloMisTiendas={onlyOwnStores} /> : null;
+        return canUseActas ? <EstructuraScreen onBack={() => ir('home')} soloMisTiendas={onlyOwnStores} /> : null;
       case 'cuota':
-        return canUseActas ? <CuotaSindicalScreen onBack={() => setActiveTab('home')} soloMisTiendas={onlyOwnStores} /> : null;
+        return canUseActas ? <CuotaSindicalScreen onBack={() => ir('home')} soloMisTiendas={onlyOwnStores} /> : null;
       case 'dilos':
-        return canUseActas ? <DilosScreen onBack={() => setActiveTab('home')} /> : null;
+        return canUseActas ? <DilosScreen onBack={() => ir('home')} /> : null;
       case 'cct':
-        return canUseActas ? <CctScreen onBack={() => setActiveTab('home')} /> : null;
+        return canUseActas ? <CctScreen onBack={() => ir('home')} /> : null;
       case 'resumen':
-        return canSeeFicha ? <ResumenScreen /> : null;
+        return canSeeFicha ? <ResumenScreen onBack={() => ir('home')} /> : null;
       case 'altas':
-        return canApprove ? <AltasScreen onBack={() => setActiveTab('home')} onCambio={refreshAltas} /> : null;
+        return canApprove ? <AltasScreen onBack={() => ir('home')} onCambio={refreshAltas} /> : null;
       case 'votaciones':
-        return <VotacionesScreen onBack={() => setActiveTab('home')} onCambio={() => refreshPendingVotes()} />;
+        return <VotacionesScreen onBack={() => ir('home')} onCambio={() => refreshPendingVotes()} />;
       case 'vacaciones':
-        return <VacacionesScreen onBack={() => setActiveTab('home')} conEquipo={canUseActas} soloMisTiendas={onlyOwnStores} />;
+        return <VacacionesScreen onBack={() => ir('home')} conEquipo={canUseActas} soloMisTiendas={onlyOwnStores} />;
       default:
         return null;
     }
-  }, [activeTab, chatHistory, firstName, unreadNotices, canUseActas, canSeeFicha, onlyOwnStores, pendingVotes, numeroEmpleado, canApprove, pendingAltas]);
+  }, [activeTab, chatHistory, firstName, unreadNotices, canUseActas, canSeeFicha, onlyOwnStores, pendingVotes, numeroEmpleado, canApprove, pendingAltas, preguntaChat, vacationDays]);
 
   return (
     <View style={styles.shell}>
-      <View style={styles.content}>
+      <SafeAreaView edges={esPestana(activeTab) ? [] : ['bottom']} style={styles.content}>
         {/* A screen that fails shows a message; switching tabs (key) clears it. */}
-        <ErrorBoundary key={`${activeTab}-${versionSesion}`} onReset={() => setActiveTab('home')}>
+        <ErrorBoundary key={`${activeTab}-${versionSesion}`} onReset={() => ir('home')}>
           {content}
         </ErrorBoundary>
-      </View>
+      </SafeAreaView>
       {pedirPin && numeroEmpleado ? (
         <PinUnaVez
           numero={numeroEmpleado}
@@ -254,74 +296,33 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
           }}
         />
       ) : null}
-      <SafeAreaView edges={['bottom']} style={styles.tabSafe}>
-        <BlurView intensity={38} tint="light" style={styles.tabBar}>
-          {tabsPara(canSeeFicha).map((tab) => {
-            const active = tab.key === activeTab;
-            return (
-              <Pressable
-                key={tab.key}
-                style={styles.tabButton}
-                onPress={() => (tab.external ? Linking.openURL(tab.external) : setActiveTab(tab.key))}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-              >
-                <View style={[styles.tabIconWrap, active && styles.tabIconWrapActive]}>
-                  <Icon name={tab.icon} size={20} color={active ? colors.white : colors.ink2} />
-                  {tab.key === 'notifications' && unreadNotices > 0 && !active ? <View style={styles.tabBadge} /> : null}
-                </View>
-                <Text style={[styles.tabLabel, active && styles.tabLabelActive]} numberOfLines={1}>
-                  {tab.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </BlurView>
-      </SafeAreaView>
-    </View>
-  );
-}
-
-function PlaceholderScreen({
-  icon,
-  title,
-  eyebrow,
-  body,
-  items,
-}: {
-  icon: string;
-  title: string;
-  eyebrow: string;
-  body: string;
-  items: string[];
-}) {
-  return (
-    <View style={styles.placeholderScreen}>
-      <LinearGradient
-        colors={['#FFF7F0', colors.bg, '#FFFFFF']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <SafeAreaView edges={['top']} style={styles.placeholderTop}>
-        <View style={styles.placeholderHead}>
-          <LinearGradient colors={gradients.oxGrad.colors} style={styles.placeholderIcon}>
-            <Icon name={icon} size={26} color="#fff" />
-          </LinearGradient>
-          <Text style={styles.placeholderEyebrow}>{eyebrow}</Text>
-          <Text style={styles.placeholderTitle}>{title}</Text>
-          <Text style={styles.placeholderBody}>{body}</Text>
-        </View>
-      </SafeAreaView>
-
-      <View style={styles.placeholderCards}>
-        {items.map((item) => (
-          <View style={styles.placeholderCard} key={item}>
-            <Icon name="check" size={18} color={colors.ok} />
-            <Text style={styles.placeholderCardText}>{item}</Text>
-          </View>
-        ))}
-      </View>
+      {esPestana(activeTab) ? (
+        <SafeAreaView edges={['bottom']} style={styles.tabSafe}>
+          <BlurView intensity={38} tint="light" style={styles.tabBar} accessibilityRole="tablist">
+            {TABS.map((tab) => {
+              const active = tab.key === activeTab;
+              return (
+                <Pressable
+                  key={tab.key}
+                  style={styles.tabButton}
+                  onPress={() => ir(tab.key)}
+                  accessibilityRole="tab"
+                  accessibilityLabel={tab.key === 'notifications' && unreadNotices > 0 ? `Avisos: ${unreadNotices} sin leer` : tab.label}
+                  accessibilityState={{ selected: active }}
+                >
+                  <View style={[styles.tabIconWrap, active && styles.tabIconWrapActive]}>
+                    <Icon name={tab.icon} size={21} color={active ? colors.white : colors.ink2} />
+                    {tab.key === 'notifications' && unreadNotices > 0 && !active ? <View style={styles.tabBadge} /> : null}
+                  </View>
+                  <Text style={[styles.tabLabel, active && styles.tabLabelActive]} numberOfLines={1}>
+                    {tab.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </BlurView>
+        </SafeAreaView>
+      ) : null}
     </View>
   );
 }
@@ -352,7 +353,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 8,
+    paddingHorizontal: 2,
     paddingTop: 8,
     paddingBottom: 8,
     ...shadows.card,
@@ -365,7 +366,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   tabIconWrap: {
-    width: 34,
+    width: 44,
     height: 32,
     borderRadius: 13,
     alignItems: 'center',
@@ -386,70 +387,15 @@ const styles = StyleSheet.create({
     borderColor: colors.white,
   },
   tabLabel: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    fontSize: 10.5,
+    fontFamily: fontFamily.bold,
+    fontSize: 12,
+    letterSpacing: -0.3,
     color: colors.ink2,
   },
   tabLabelActive: {
     color: colors.oxRed,
   },
-  placeholderScreen: {
-    flex: 1,
-    backgroundColor: colors.bg,
-    paddingBottom: 108,
-  },
-  placeholderTop: {
-    paddingHorizontal: 22,
-    paddingTop: 18,
-  },
-  placeholderHead: {
-    paddingTop: 18,
-  },
-  placeholderIcon: {
-    width: 58,
-    height: 58,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 18,
-  },
-  placeholderEyebrow: {
-    ...type.eyebrowSm,
-    color: colors.oxRed,
-    marginBottom: 8,
-  },
-  placeholderTitle: {
-    ...type.title,
-    color: colors.ink,
-  },
-  placeholderBody: {
-    ...type.body,
-    color: colors.ink2,
-    marginTop: 12,
-    maxWidth: 330,
-  },
-  placeholderCards: {
-    paddingHorizontal: 22,
-    paddingTop: 22,
-    gap: 10,
-  },
-  placeholderCard: {
-    minHeight: 58,
-    borderRadius: radii.xl,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  placeholderCardText: {
-    flex: 1,
-    fontFamily: 'PlusJakartaSans_700Bold',
-    fontSize: 14.5,
-    color: colors.ink,
-  },
+
 });
 
 

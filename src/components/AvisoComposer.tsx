@@ -6,15 +6,15 @@
 // from Perfil. "Mejorar redacción" asks Claude Haiku for a cleaner title and
 // text (services/redactar.ts) and shows it as a suggestion to use or discard.
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { ActivityIndicator, Image, Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable } from './Pressable';
 import * as ImagePicker from 'expo-image-picker';
 import { Icon } from './Icon';
 import { NoticeKind, noticeKindMeta } from '../data/notices';
 import { ImagenNueva, prepararImagen, publishNotice } from '../services/notices';
 import { mejorarRedaccion, Sugerencia } from '../services/redactar';
 import { leerLlave, obtenerLlave, olvidarLlave } from '../services/sesion';
-import { colors, radii, shadows, type } from '../theme/tokens';
+import { colors, radii, shadows, type, fontFamily, hoja } from '../theme/tokens';
 import { showAlert } from '../utils/alert';
 
 const KINDS: NoticeKind[] = ['policy', 'training', 'schedule', 'benefit'];
@@ -151,7 +151,7 @@ export function AvisoComposer({
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={onClose} />
-        <BlurView intensity={36} tint="light" style={styles.sheet}>
+        <View style={[styles.sheet, hoja]}>
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <View style={styles.handle} />
             <Text style={styles.sheetTitle}>Publicar aviso</Text>
@@ -162,7 +162,7 @@ export function AvisoComposer({
               value={title}
               onChangeText={setTitle}
               placeholder="Ej. Actualización de puntualidad"
-              placeholderTextColor={colors.ink3}
+              placeholderTextColor={colors.placeholder}
               maxLength={140}
             />
 
@@ -172,7 +172,7 @@ export function AvisoComposer({
               value={body}
               onChangeText={setBody}
               placeholder="Escribe el comunicado completo"
-              placeholderTextColor={colors.ink3}
+              placeholderTextColor={colors.placeholder}
               multiline
             />
             <Pressable
@@ -249,7 +249,7 @@ export function AvisoComposer({
             </View>
 
             <Pressable style={styles.priorityRow} onPress={() => setPriority(!priority)} accessibilityRole="checkbox" accessibilityState={{ checked: priority }}>
-              <View style={[styles.checkBox, !priority && styles.checkBoxEmpty]}>{priority ? <Icon name="check" size={14} color="#fff" /> : null}</View>
+              <View style={[styles.checkBox, !priority && styles.checkBoxEmpty]}>{priority ? <Icon name="check" size={14} color={colors.white} /> : null}</View>
               <Text style={styles.priorityText}>Marcar como prioritario</Text>
             </Pressable>
 
@@ -261,7 +261,7 @@ export function AvisoComposer({
                   value={pin}
                   onChangeText={(v) => setPin(v.replace(/\D/g, '').slice(0, 4))}
                   placeholder="••••"
-                  placeholderTextColor={colors.ink3}
+                  placeholderTextColor={colors.placeholder}
                   keyboardType="number-pad"
                   secureTextEntry
                   maxLength={4}
@@ -275,7 +275,7 @@ export function AvisoComposer({
               <Text style={styles.publishText}>{submitting ? 'Publicando...' : 'Publicar'}</Text>
             </Pressable>
           </ScrollView>
-        </BlurView>
+        </View>
       </View>
     </Modal>
   );
@@ -283,19 +283,19 @@ export function AvisoComposer({
 
 const styles = StyleSheet.create({
   mejorar: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: '#E6EFF8' },
-  mejorarTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: colors.oxBlue },
+  mejorarTexto: { fontFamily: fontFamily.extrabold, fontSize: 13, color: colors.oxBlue },
   avisoIa: { ...type.caption, color: colors.ink2, marginTop: 6 },
   sugerencia: { marginTop: 10, padding: 12, borderRadius: radii.lg, backgroundColor: '#F2F7FC', borderWidth: 1, borderColor: '#CFE0F2', gap: 6 },
-  sugEtq: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 11, color: colors.oxBlue },
-  sugTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 15, color: colors.ink },
-  sugTexto: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13.5, lineHeight: 19, color: colors.ink },
+  sugEtq: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.oxBlue },
+  sugTitulo: { fontFamily: fontFamily.extrabold, fontSize: 15, color: colors.ink },
+  sugTexto: { fontFamily: fontFamily.semibold, fontSize: 13.5, lineHeight: 19, color: colors.ink },
   sugCambios: { ...type.caption, color: colors.ink2, fontStyle: 'italic' },
   sugBotones: { flexDirection: 'row', gap: 8, marginTop: 4 },
   sugUsar: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, backgroundColor: colors.oxBlue },
-  sugUsarTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: colors.white },
+  sugUsarTexto: { fontFamily: fontFamily.extrabold, fontSize: 13, color: colors.white },
   sugDescartar: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line },
-  sugDescartarTexto: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink2 },
-  backdrop: { flex: 1, backgroundColor: 'rgba(36,26,23,.24)', justifyContent: 'flex-end', padding: 14 },
+  sugDescartarTexto: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink2 },
+  backdrop: { flex: 1, backgroundColor: colors.velo, justifyContent: 'flex-end', padding: 14 },
   handle: { alignSelf: 'center', width: 42, height: 5, borderRadius: radii.pill, backgroundColor: colors.line2, marginBottom: 14 },
   sheet: {
     maxHeight: '90%',
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     paddingBottom: 22,
     ...shadows.sheet,
   },
-  sheetTitle: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 20, color: colors.ink, marginBottom: 6 },
+  sheetTitle: { fontFamily: fontFamily.extrabold, fontSize: 20, color: colors.ink, marginBottom: 6 },
   label: { ...type.label, color: colors.ink, marginBottom: 8, marginTop: 14 },
   input: {
     minHeight: 50,
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line2,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fontFamily.semibold,
     fontSize: 14.5,
     color: colors.ink,
   },
@@ -339,11 +339,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   thumbAdd: { alignItems: 'center', justifyContent: 'center', gap: 4, borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#F3B8B0', backgroundColor: '#FFF7F5' },
-  thumbAddText: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.oxRed },
+  thumbAddText: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.oxRed },
   kindRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   kindChip: { borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line },
   kindChipActive: { backgroundColor: colors.oxRed, borderColor: colors.oxRed },
-  kindChipText: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12.5, color: colors.ink2 },
+  kindChipText: { fontFamily: fontFamily.bold, fontSize: 12.5, color: colors.ink2 },
   kindChipTextActive: { color: colors.white },
   priorityRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16 },
   priorityText: { ...type.label, color: colors.ink },
@@ -352,5 +352,6 @@ const styles = StyleSheet.create({
   error: { ...type.caption, color: colors.oxRed, marginTop: 10 },
   publish: { minHeight: 52, borderRadius: 16, backgroundColor: colors.oxRed, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
   publishDisabled: { opacity: 0.5 },
-  publishText: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14.5, color: colors.white },
+  publishText: { fontFamily: fontFamily.extrabold, fontSize: 14.5, color: colors.white },
+
 });

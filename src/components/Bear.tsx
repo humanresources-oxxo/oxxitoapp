@@ -93,4 +93,5 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,.7)',
   },
+
 });

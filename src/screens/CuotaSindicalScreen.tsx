@@ -4,16 +4,18 @@
 // month's amount, a tappable column per month, a ring by puesto and, folded,
 // by AT and by store. Asesores de Tienda only see their own stores.
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Esqueleto } from '../components/Estado';
+import { Encabezado } from '../components/Encabezado';
 import { Icon } from '../components/Icon';
 import { usePinDeSesion } from '../components/PinDeSesion';
 import { Anillo, Barras, Columnas, Delta, Desplegable, Leyenda } from '../components/Visual';
 import { getJson, storageKeys } from '../services/appStorage';
 import { agrupar, cargarCuota, Cuota, suma } from '../services/cuotaSindical';
 import { normalizarNombre } from '../services/gviz';
-import { colors, gradients, radii, shadows, type } from '../theme/tokens';
+import { colors, gradients, radii, shadows, type, fontFamily } from '../theme/tokens';
 
 type Sesion = { nombre?: string } | null;
 
@@ -103,18 +105,8 @@ export function CuotaSindicalScreen({ onBack, soloMisTiendas = false }: { onBack
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
-            <Icon name="chevL" size={20} color={colors.ink} />
-          </Pressable>
-          <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>Plaza Oaxaca{cuota?.cargadoEl ? ` · ${cuota.cargadoEl}` : ''}</Text>
-            <Text style={styles.title}>Cuota sindical</Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Encabezado titulo="Cuota sindical" eyebrow={`Plaza Oaxaca${cuota?.cargadoEl ? ` · ${cuota.cargadoEl}` : ''}`} onBack={onBack} />
 
       {error ? (
         <View style={styles.content}>
@@ -127,8 +119,8 @@ export function CuotaSindicalScreen({ onBack, soloMisTiendas = false }: { onBack
           />
         </View>
       ) : !cuota ? (
-        <View style={styles.cargando}>
-          <ActivityIndicator color={colors.oxRed} />
+        <View style={{ padding: 16 }}>
+          <Esqueleto />
         </View>
       ) : !meses.length ? (
         <View style={styles.content}>
@@ -214,7 +206,7 @@ export function CuotaSindicalScreen({ onBack, soloMisTiendas = false }: { onBack
                 value={texto}
                 onChangeText={setTexto}
                 placeholder={soloMisTiendas ? 'Buscar tienda' : 'Tienda o asesor'}
-                placeholderTextColor={colors.ink3}
+                placeholderTextColor={colors.placeholder}
                 autoCorrect={false}
                 returnKeyType="search"
               />
@@ -277,40 +269,19 @@ function Aviso({ titulo, texto, accion }: { titulo: string; texto: string; accio
 
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg, paddingBottom: 108 },
-  safeTop: { backgroundColor: 'rgba(255,255,255,.56)' },
-  header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerCopy: { flex: 1 },
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  eyebrow: { ...type.eyebrowSm, color: colors.oxRed, marginBottom: 3 },
-  title: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 25, lineHeight: 29, color: colors.ink },
+  screen: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 12 },
-  cargando: { paddingVertical: 48, alignItems: 'center' },
   nota: { ...type.caption, color: colors.ink2 },
-  chips: { flexDirection: 'row', gap: 8 },
-  chip: { paddingHorizontal: 13, paddingVertical: 9, borderRadius: radii.pill, backgroundColor: colors.field, borderWidth: 1, borderColor: colors.line },
-  chipActivo: { backgroundColor: colors.oxRed, borderColor: colors.oxRed },
-  chipText: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink2 },
-  chipTextActivo: { color: colors.white },
   hero: { borderRadius: 24, padding: 20, ...shadows.hero },
-  heroKicker: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
-  heroNumero: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 40, lineHeight: 48, color: colors.white, marginTop: 4 },
-  heroBody: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13.5, color: 'rgba(255,255,255,.92)', marginTop: 2 },
+  heroKicker: { fontFamily: fontFamily.extrabold, fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
+  heroNumero: { fontFamily: fontFamily.extrabold, fontSize: 40, lineHeight: 48, color: colors.white, marginTop: 4 },
+  heroBody: { fontFamily: fontFamily.bold, fontSize: 13.5, color: 'rgba(255,255,255,.92)', marginTop: 2 },
   fila: { flexDirection: 'row', gap: 10 },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  cardHint: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11.5, color: colors.ink3 },
+  cardHint: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink3 },
   anilloFila: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  anilloNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink },
-  anilloTxt: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11, color: colors.ink3 },
+  anilloNum: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink },
+  anilloTxt: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink3 },
   linea: { borderBottomWidth: 1, borderBottomColor: colors.line },
   card: {
     borderRadius: radii.xl,
@@ -320,23 +291,11 @@ const styles = StyleSheet.create({
     padding: 16,
     ...shadows.card,
   },
-  cardTitle: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink, marginBottom: 10 },
+  cardTitle: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink, marginBottom: 10 },
   dato: { flex: 1, padding: 12 },
-  datoTitulo: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink2 },
-  datoValor: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 19, color: colors.ink, marginTop: 4 },
-  datoNota: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11, color: colors.ink3, marginTop: 2 },
-  barraFila: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 5 },
-  barraEtq: { width: 52, fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink2 },
-  barraEtqActiva: { color: colors.oxRed },
-  barraFondo: { flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.field, overflow: 'hidden' },
-  barraLlena: { height: 8, borderRadius: 4, backgroundColor: '#F3A39C' },
-  barraActiva: { backgroundColor: colors.oxRed },
-  barraValor: { width: 64, textAlign: 'right', fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink },
-  grupo: { paddingVertical: 7, gap: 5 },
-  grupoTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
-  grupoNombre: { flex: 1, fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13.5, color: colors.ink },
-  grupoValor: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13.5, color: colors.ink },
-  grupoDetalle: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11.5, color: colors.ink3 },
+  datoTitulo: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink2 },
+  datoValor: { fontFamily: fontFamily.extrabold, fontSize: 19, color: colors.ink, marginTop: 4 },
+  datoNota: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink3, marginTop: 2 },
   buscador: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -348,15 +307,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     minHeight: 50,
   },
-  buscadorInput: { flex: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 15, color: colors.ink, paddingVertical: 12 },
-  resumen: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink3 },
+  buscadorInput: { flex: 1, fontFamily: fontFamily.semibold, fontSize: 15, color: colors.ink, paddingVertical: 12 },
   tienda: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
-  tiendaNombre: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14.5, color: colors.ink },
-  tiendaMeta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink2, marginTop: 2 },
-  tiendaImporte: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 15, color: colors.oxRed },
+  tiendaNombre: { fontFamily: fontFamily.extrabold, fontSize: 14.5, color: colors.ink },
+  tiendaMeta: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink2, marginTop: 2 },
+  tiendaImporte: { fontFamily: fontFamily.extrabold, fontSize: 15, color: colors.oxRed },
   aviso: { alignItems: 'center', gap: 8, paddingVertical: 28 },
-  avisoTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink, textAlign: 'center' },
+  avisoTitulo: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink, textAlign: 'center' },
   avisoTexto: { ...type.caption, color: colors.ink2, textAlign: 'center', maxWidth: 300 },
   avisoBoton: { marginTop: 6, paddingHorizontal: 18, paddingVertical: 10, borderRadius: radii.pill, backgroundColor: colors.oxRed },
-  avisoBotonTexto: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13.5, color: colors.white },
+  avisoBotonTexto: { fontFamily: fontFamily.bold, fontSize: 13.5, color: colors.white },
+
 });

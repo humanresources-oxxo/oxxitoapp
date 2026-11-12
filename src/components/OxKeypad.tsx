@@ -1,9 +1,10 @@
 // src/components/OxKeypad.tsx
 // Numeric keypad — ported from OxKeypad in screens-proto.jsx + .ox-keys/.ox-key CSS.
 import React, { useRef } from 'react';
-import { View, Text, Pressable, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
+import { Pressable } from './Pressable';
 import { Icon } from './Icon';
-import { colors, radii } from '../theme/tokens';
+import { colors, radii, fontFamily } from '../theme/tokens';
 
 type OxKeypadProps = {
   onKey: (digit: string) => void;
@@ -85,8 +86,9 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   keyText: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fontFamily.semibold,
     fontSize: 26,
     color: colors.ink,
   },
+
 });

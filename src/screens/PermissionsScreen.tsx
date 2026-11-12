@@ -1,7 +1,8 @@
 // src/screens/PermissionsScreen.tsx
 // Ported from PPermissions in screens-proto.jsx.
 import React, { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StepsHeader } from '../components/StepsHeader';
@@ -10,9 +11,8 @@ import { Icon } from '../components/Icon';
 import { useOnboarding } from '../context/OnboardingContext';
 import { TextoLegal } from '../components/TextoLegal';
 import { AVISO_PRIVACIDAD, TERMINOS_USO } from '../data/legal';
-import { setJson, storageKeys } from '../services/appStorage';
-import { miPerfil } from '../services/auth';
-import { colors, gradients, radii, type } from '../theme/tokens';
+import { guardarSesionLocal, recordarTerminos } from '../services/auth';
+import { colors, gradients, radii, type, fontFamily } from '../theme/tokens';
 
 export function PermissionsScreen({
   onBack,
@@ -33,22 +33,15 @@ export function PermissionsScreen({
     // The profile comes with the session key (migration 52). If it cannot be
     // read now, the session starts with the first name and the app completes
     // it on open (MainTabsNavigator revalidarSesion).
-    const p = await miPerfil().catch(() => null);
-    await setJson(storageKeys.session, {
-      numeroEmpleado: empNum,
-      nombre: p?.nombre ?? verifiedName,
-      tienda: p?.tienda ?? tienda,
-      plaza: p?.plaza ?? plaza,
-      puesto: p?.puesto ?? puesto,
-      createdAt: p?.createdAt ?? createdAt,
-    });
+    await guardarSesionLocal({ numeroEmpleado: empNum, nombre: verifiedName, tienda, plaza, puesto, createdAt });
+    await recordarTerminos(empNum);
     onContinue();
   };
 
   return (
     <View style={styles.screen}>
       <View style={[styles.body, { paddingTop: Platform.OS === 'ios' ? 8 : 4 }]}>
-        <StepsHeader active={3} onBack={onBack} />
+        <StepsHeader active={2} onBack={onBack} />
 
         <View style={styles.head}>
           <Text style={styles.kicker}>Casi listo</Text>
@@ -60,7 +53,7 @@ export function PermissionsScreen({
           <View style={styles.card}>
             <View style={styles.perm}>
               <LinearGradient colors={gradients.dark.colors} style={styles.permIcon}>
-                <Icon name="shield" size={22} color="#fff" />
+                <Icon name="shield" size={22} color={colors.white} />
               </LinearGradient>
               <View style={{ flex: 1 }}>
                 <Text style={styles.permTitle}>Privacidad de datos</Text>
@@ -72,7 +65,7 @@ export function PermissionsScreen({
 
           <Pressable accessibilityRole="button" style={styles.check} onPress={() => setTerms(!terms)}>
             <View style={[styles.box, !terms && styles.boxEmpty]}>
-              {terms ? <Icon name="check" size={15} color="#fff" strokeWidth={2.4} /> : null}
+              {terms ? <Icon name="check" size={15} color={colors.white} strokeWidth={2.4} /> : null}
             </View>
             <Text style={styles.checkText}>
               Acepto los{' '}
@@ -93,7 +86,7 @@ export function PermissionsScreen({
         <OxButton
           disabled={!terms}
           onPress={finish}
-          icon={<Icon name="arrowR" size={19} color="#fff" />}
+          icon={<Icon name="arrowR" size={19} color={colors.white} />}
         >
           Aceptar y entrar
         </OxButton>
@@ -154,11 +147,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     padding: 16,
   },
-  permDivider: {
-    height: 1,
-    backgroundColor: colors.line,
-    marginHorizontal: 16,
-  },
   permIcon: {
     width: 44,
     height: 44,
@@ -167,30 +155,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   permTitle: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 15,
     color: colors.ink,
   },
   permDesc: {
-    fontFamily: 'PlusJakartaSans_500Medium',
+    fontFamily: fontFamily.medium,
     fontSize: 13,
     color: colors.ink2,
     marginTop: 4,
     lineHeight: 18,
-  },
-  toggle: {
-    width: 46,
-    height: 28,
-    borderRadius: radii.pill,
-    marginTop: 2,
-  },
-  toggleKnob: {
-    position: 'absolute',
-    top: 3,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#fff',
   },
   check: {
     flexDirection: 'row',
@@ -209,23 +183,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   boxEmpty: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     borderWidth: 1.5,
     borderColor: colors.line2,
   },
   checkText: {
     flex: 1,
-    fontFamily: 'PlusJakartaSans_500Medium',
+    fontFamily: fontFamily.medium,
     fontSize: 13.5,
     color: colors.ink2,
     lineHeight: 19,
   },
   checkLink: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     color: colors.oxRed,
   },
   cta: {
     paddingHorizontal: 24,
     paddingTop: 16,
   },
+
 });

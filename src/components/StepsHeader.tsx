@@ -1,23 +1,26 @@
 // src/components/StepsHeader.tsx
 // Top progress header — ported from PSteps in screens-proto.jsx + .ox-top/.ox-back/.ox-steps CSS.
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Pressable } from './Pressable';
 import { Icon } from './Icon';
-import { colors, radii } from '../theme/tokens';
+import { colors, radii, fontFamily } from '../theme/tokens';
 
 type StepsHeaderProps = {
-  active: number; // 0-3
+  active: number; // 0-based
+  // Login -> PIN (or create PIN) -> terms: three steps in every path.
+  total?: number;
   onBack?: () => void;
 };
 
-export function StepsHeader({ active, onBack }: StepsHeaderProps) {
+export function StepsHeader({ active, onBack, total = 3 }: StepsHeaderProps) {
   return (
     <View style={styles.top}>
       <Pressable accessibilityRole="button" accessibilityLabel="Regresar" onPress={onBack} style={styles.back}>
         <Icon name="chevL" size={20} color={colors.ink} />
       </Pressable>
       <View style={styles.steps}>
-        {[0, 1, 2, 3].map((i) => (
+        {Array.from({ length: total }, (_, i) => i).map((i) => (
           <View
             key={i}
             style={[
@@ -28,7 +31,9 @@ export function StepsHeader({ active, onBack }: StepsHeaderProps) {
           />
         ))}
       </View>
-      <Text style={styles.stepNum}>{active + 1}/4</Text>
+      <Text style={styles.stepNum} accessibilityLabel={`Paso ${active + 1} de ${total}`}>
+        {active + 1}/{total}
+      </Text>
     </View>
   );
 }
@@ -43,8 +48,8 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   back: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
@@ -71,8 +76,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.oxRed,
   },
   stepNum: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fontFamily.semibold,
     fontSize: 13,
     color: colors.ink3,
   },
+
 });

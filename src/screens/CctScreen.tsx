@@ -8,9 +8,11 @@
 // Below, folded, Plaza Oaxaca's own contract and every plaza.
 // Data uploaded by RH from DashboardsOxxo's admin panel (services/cct.ts).
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Esqueleto } from '../components/Estado';
+import { Encabezado } from '../components/Encabezado';
 import { Icon } from '../components/Icon';
 import { PinUnaVez } from '../components/PinUnaVez';
 import { getJson, storageKeys } from '../services/appStorage';
@@ -18,7 +20,7 @@ import { esSinSesion } from '../services/sesion';
 import { Anillo, ColumnasApiladas, Desplegable, Indicador, Leyenda } from '../components/Visual';
 import { cargarCct, Cct, CctDatos, esOaxaca } from '../services/cct';
 import { normalizarNombre, sinAcentos } from '../services/gviz';
-import { colors, radii, shadows, type } from '../theme/tokens';
+import { colors, radii, shadows, type, fontFamily, gradients } from '../theme/tokens';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 function fecha(iso?: string) {
@@ -183,18 +185,8 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
-            <Icon name="chevL" size={20} color={colors.ink} />
-          </Pressable>
-          <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>OXXO · todas las plazas{cargado ? ` · ${cargado}` : ''}</Text>
-            <Text style={styles.title}>Contratos colectivos</Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Encabezado titulo="Contratos colectivos" eyebrow={`OXXO · todas las plazas${cargado ? ` · ${cargado}` : ''}`} onBack={onBack} />
 
       {error ? (
         <View style={styles.content}>
@@ -211,8 +203,8 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
           )}
         </View>
       ) : !cct ? (
-        <View style={styles.cargando}>
-          <ActivityIndicator color={colors.oxRed} />
+        <View style={{ padding: 16 }}>
+          <Esqueleto />
         </View>
       ) : !anios.length ? (
         <View style={styles.content}>
@@ -390,7 +382,7 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
                 value={texto}
                 onChangeText={setTexto}
                 placeholder="Plaza, estado o sindicato"
-                placeholderTextColor={colors.ink3}
+                placeholderTextColor={colors.placeholder}
                 autoCorrect={false}
               />
             </View>
@@ -496,24 +488,8 @@ function Aviso({ titulo, texto, accion }: { titulo: string; texto: string; accio
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg, paddingBottom: 108 },
-  safeTop: { backgroundColor: 'rgba(255,255,255,.56)' },
-  header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerCopy: { flex: 1 },
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  eyebrow: { ...type.eyebrowSm, color: colors.oxRed, marginBottom: 3 },
-  title: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 25, lineHeight: 29, color: colors.ink },
+  screen: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 12 },
-  cargando: { paddingVertical: 48, alignItems: 'center' },
   nota: { ...type.caption, color: colors.ink2 },
   fila: { flexDirection: 'row', gap: 10 },
   franja: { gap: 10, padding: 10, borderRadius: radii.xl, backgroundColor: '#F6C9CC' },
@@ -526,31 +502,31 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   banda: { alignSelf: 'stretch', borderRadius: 10, backgroundColor: '#D8B200', paddingVertical: 7, marginBottom: 12 },
-  bandaTxt: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: colors.ink, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.4 },
+  bandaTxt: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.ink, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.4 },
   mini: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.line },
-  miniNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 24, color: colors.ink },
-  miniTxt: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink2, marginTop: 2 },
+  miniNum: { fontFamily: fontFamily.extrabold, fontSize: 24, color: colors.ink },
+  miniTxt: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink2, marginTop: 2 },
   anilloFila: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  anilloNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 22, color: colors.ink },
+  anilloNum: { fontFamily: fontFamily.extrabold, fontSize: 22, color: colors.ink },
   leyendaFila: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 10 },
   leyendaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   leyendaPunto: { width: 10, height: 10, borderRadius: 5 },
-  leyendaTxt: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink2 },
+  leyendaTxt: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink2 },
   compliance: { alignItems: 'center', borderColor: '#8FE39A', borderWidth: 2 },
-  complianceTit: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: colors.ink2, textTransform: 'uppercase', letterSpacing: 0.6 },
-  complianceNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 36, color: colors.ink, marginTop: 4 },
+  complianceTit: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.ink2, textTransform: 'uppercase', letterSpacing: 0.6 },
+  complianceNum: { fontFamily: fontFamily.extrabold, fontSize: 36, color: colors.ink, marginTop: 4 },
   limpiar: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: '#FFF0EC' },
-  limpiarTxt: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: colors.oxRed },
-  subTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: colors.ink3, textTransform: 'uppercase', letterSpacing: 0.8 },
+  limpiarTxt: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.oxRed },
+  subTitulo: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.ink3, textTransform: 'uppercase', letterSpacing: 0.8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 13, paddingVertical: 8, borderRadius: radii.pill, backgroundColor: colors.field, borderWidth: 1, borderColor: colors.line },
   chipActivo: { backgroundColor: colors.oxRed, borderColor: colors.oxRed },
-  chipText: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink2 },
+  chipText: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink2 },
   chipTextActivo: { color: colors.white },
   datoFila: { paddingVertical: 10, flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   linea: { borderBottomWidth: 1, borderBottomColor: colors.line },
-  datoEtq: { flexShrink: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13, color: colors.ink2 },
-  datoValor: { flexShrink: 1, textAlign: 'right', fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink },
+  datoEtq: { flexShrink: 1, fontFamily: fontFamily.semibold, fontSize: 13, color: colors.ink2 },
+  datoValor: { flexShrink: 1, textAlign: 'right', fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink },
   buscador: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -562,15 +538,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     minHeight: 50,
   },
-  buscadorInput: { flex: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 15, color: colors.ink, paddingVertical: 12 },
+  buscadorInput: { flex: 1, fontFamily: fontFamily.semibold, fontSize: 15, color: colors.ink, paddingVertical: 12 },
   plaza: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.line },
   plazaOax: { backgroundColor: '#FFF6F4' },
-  plazaNombre: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14, color: colors.ink },
-  plazaMeta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink2, marginTop: 2 },
-  plazaPct: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.oxRed },
+  plazaNombre: { fontFamily: fontFamily.extrabold, fontSize: 14, color: colors.ink },
+  plazaMeta: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink2, marginTop: 2 },
+  plazaPct: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.oxRed },
   aviso: { alignItems: 'center', gap: 8, paddingVertical: 28 },
-  avisoTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink, textAlign: 'center' },
+  avisoTitulo: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink, textAlign: 'center' },
   avisoTexto: { ...type.caption, color: colors.ink2, textAlign: 'center', maxWidth: 300 },
   avisoBoton: { marginTop: 6, paddingHorizontal: 18, paddingVertical: 10, borderRadius: radii.pill, backgroundColor: colors.oxRed },
-  avisoBotonTexto: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13.5, color: colors.white },
+  avisoBotonTexto: { fontFamily: fontFamily.bold, fontSize: 13.5, color: colors.white },
+
 });

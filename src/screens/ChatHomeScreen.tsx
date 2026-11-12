@@ -7,13 +7,12 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BearAvatar } from '../components/Bear';
@@ -29,19 +28,49 @@ import {
   initialChatMessages,
   answerQuestion,
 } from '../services/chatQa';
-import { colors, gradients, radii, shadows, type } from '../theme/tokens';
+import { getJson, setJson, storageKeys } from '../services/appStorage';
+import { colors, gradients, radii, shadows, type, fontFamily, solida, hoja } from '../theme/tokens';
 
+
+// The conversation stays on the phone (removed on logout): changing tabs or
+// closing the app must not lose what was already answered.
+const MAX_GUARDADOS = 40;
 
 export function ChatHomeScreen({
   onQuestionAsked,
-  onOpenAvisos,
-  unreadNotices = 0,
+  preguntaInicial,
+  onPreguntaUsada,
 }: {
   onQuestionAsked?: (question: string) => void;
-  onOpenAvisos?: () => void;
-  unreadNotices?: number;
+  // A question picked on Inicio: asked as soon as the chat opens.
+  preguntaInicial?: string;
+  onPreguntaUsada?: () => void;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialChatMessages);
+  const [cargado, setCargado] = useState(false);
+  useEffect(() => {
+    let activo = true;
+    getJson<ChatMessage[] | null>(storageKeys.chatMessages, null).then((guardados) => {
+      if (!activo) return;
+      if (guardados?.length) setMessages(guardados);
+      setCargado(true);
+    });
+    return () => {
+      activo = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (cargado) setJson(storageKeys.chatMessages, messages.slice(-MAX_GUARDADOS));
+  }, [messages, cargado]);
+  useEffect(() => {
+    if (!cargado || !preguntaInicial) return;
+    onPreguntaUsada?.();
+    send(preguntaInicial);
+  }, [cargado, preguntaInicial]);
+  const nuevaConversacion = () => {
+    if (typing) return;
+    setMessages(initialChatMessages);
+  };
   const [sugerencias, setSugerencias] = useState<string[]>(chatSuggestions);
   useEffect(() => {
     let activo = true;
@@ -167,7 +196,7 @@ export function ChatHomeScreen({
       keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
     >
       <LinearGradient
-        colors={['#FFF7F0', colors.bg, '#FFFFFF']}
+        colors={gradients.fondo.colors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -183,15 +212,9 @@ export function ChatHomeScreen({
               <Text style={styles.subtitle}>{subtitle}</Text>
             </View>
           </View>
-          {onOpenAvisos ? (
-            <Pressable
-              style={styles.iconButton}
-              onPress={onOpenAvisos}
-              accessibilityRole="button"
-              accessibilityLabel={unreadNotices ? `Avisos: ${unreadNotices} sin leer` : 'Avisos'}
-            >
-              <Icon name="bell" size={20} color={colors.ink} />
-              {unreadNotices > 0 ? <View style={styles.bellDot} /> : null}
+          {messages.some((m) => m.role === 'user') ? (
+            <Pressable style={styles.iconButton} onPress={nuevaConversacion} accessibilityRole="button" accessibilityLabel="Nueva conversación">
+              <Icon name="edit" size={20} color={colors.ink} />
             </Pressable>
           ) : null}
         </View>
@@ -224,13 +247,13 @@ export function ChatHomeScreen({
       )}
 
       <SafeAreaView edges={['bottom']} style={styles.composerWrap}>
-        <BlurView intensity={35} tint="light" style={styles.composerGlass}>
+        <View style={[styles.composerGlass, solida]}>
           <TextInput
             value={draft}
             onChangeText={setDraft}
             onSubmitEditing={() => send()}
             placeholder="Pregunta sobre el reglamento..."
-            placeholderTextColor={colors.ink3}
+            placeholderTextColor={colors.placeholder}
             returnKeyType="send"
             style={styles.input}
           />
@@ -238,19 +261,19 @@ export function ChatHomeScreen({
             style={[styles.sendButton, !draft.trim() && styles.sendButtonDisabled]}
             onPress={() => send()}
           >
-            <Icon name="send" size={19} color="#fff" />
+            <Icon name="send" size={19} color={colors.white} />
           </Pressable>
-        </BlurView>
+        </View>
       </SafeAreaView>
 
       <Modal transparent visible={!!selectedSource} animationType="fade" onRequestClose={() => setSelectedSource(null)}>
         <View style={styles.modalBackdrop}>
           <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={() => setSelectedSource(null)} />
-          <BlurView intensity={38} tint="light" style={styles.sourceSheet}>
+          <View style={[styles.sourceSheet, hoja]}>
             {selectedSource ? (
               <SourceDetail source={selectedSource} onClose={() => setSelectedSource(null)} />
             ) : null}
-          </BlurView>
+          </View>
         </View>
       </Modal>
     </KeyboardAvoidingView>
@@ -280,10 +303,8 @@ function Bubble({
 
   return (
     <View style={styles.bubbleRow}>
-      <View style={styles.avatarMini}>
-        <Icon name="chat" size={17} color={colors.oxRed} />
-      </View>
-      <BlurView intensity={28} tint="light" style={[styles.bubble, styles.assistantBubble]}>
+      <BearAvatar size={32} />
+      <View style={[[styles.bubble, styles.assistantBubble], solida]}>
         {message.ia ? (
           <View style={styles.iaBadge}>
             <Icon name="sparkle" size={12} color={colors.oxBlue} />
@@ -312,14 +333,14 @@ function Bubble({
             </View>
             <View style={styles.citationCopy}>
               <Text style={styles.citationText}>
-                {message.source.article} - {message.source.title}
+                {message.source.article === message.source.title ? message.source.article : `${message.source.article} · ${message.source.title}`}
               </Text>
               <Text style={styles.citationHint}>Ver fuente y siguiente paso</Text>
             </View>
             <Icon name="chevR" size={16} color={colors.ink3} />
           </Pressable>
         ) : null}
-      </BlurView>
+      </View>
     </View>
   );
 }
@@ -329,7 +350,7 @@ function SourceDetail({ source, onClose }: { source: ChatSource; onClose: () => 
     <>
       <View style={styles.sheetHandle} />
       <LinearGradient colors={gradients.oxGrad.colors} style={styles.sourceIcon}>
-        <Icon name="doc" size={25} color="#fff" />
+        <Icon name="doc" size={25} color={colors.white} />
       </LinearGradient>
       <Text style={styles.sourceEyebrow}>{source.article}</Text>
       <Text style={styles.sourceTitle}>{source.title}</Text>
@@ -360,9 +381,7 @@ function TypingBubble({ pulse }: { pulse: Animated.Value }) {
   const opacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] });
   return (
     <View style={styles.bubbleRow}>
-      <View style={styles.avatarMini}>
-        <Icon name="chat" size={17} color={colors.oxRed} />
-      </View>
+      <BearAvatar size={32} />
       <View style={[styles.bubble, styles.typingBubble]}>
         <Animated.View style={[styles.dot, { opacity }]} />
         <Animated.View style={[styles.dot, { opacity }]} />
@@ -400,7 +419,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   title: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 25,
     lineHeight: 28,
     color: colors.ink,
@@ -434,16 +453,6 @@ const styles = StyleSheet.create({
   userRow: {
     justifyContent: 'flex-end',
   },
-  avatarMini: {
-    width: 32,
-    height: 32,
-    borderRadius: 12,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   bubble: {
     maxWidth: '82%',
     borderRadius: 18,
@@ -466,7 +475,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   userText: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 14.5,
     lineHeight: 20,
     color: colors.white,
@@ -488,13 +497,13 @@ const styles = StyleSheet.create({
   },
   choiceText: {
     flex: 1,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fontFamily.semibold,
     fontSize: 12.5,
     lineHeight: 17,
     color: colors.ink,
   },
   iaBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: '#E6EFF8', marginBottom: 6 },
-  iaBadgeText: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 11, color: '#005AAE' },
+  iaBadgeText: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.oxBlue },
   citation: {
     marginTop: 11,
     paddingTop: 10,
@@ -505,7 +514,7 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   citationText: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 12.5,
     color: colors.oxRed,
     flex: 1,
@@ -525,7 +534,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.oxRed,
   },
-  bellDot: { position: 'absolute', top: 10, right: 11, width: 9, height: 9, borderRadius: 5, backgroundColor: colors.oxRed, borderWidth: 1.5, borderColor: colors.white },
   suggestions: {
     paddingHorizontal: 16,
     paddingBottom: 10,
@@ -544,7 +552,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
   },
   suggestionText: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 12.5,
     color: colors.ink,
   },
@@ -567,18 +575,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     ...shadows.card,
   },
-  toolButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.field,
-  },
   input: {
     flex: 1,
     minHeight: 40,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fontFamily.semibold,
     fontSize: 14.5,
     color: colors.ink,
     paddingHorizontal: 2,
@@ -606,14 +606,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   citationHint: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    fontSize: 11.5,
+    fontFamily: fontFamily.bold,
+    fontSize: 12,
     color: colors.ink3,
     marginTop: 2,
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(36,26,23,.24)',
+    backgroundColor: colors.velo,
     justifyContent: 'flex-end',
     padding: 14,
   },
@@ -650,7 +650,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sourceTitle: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 22,
     lineHeight: 27,
     color: colors.ink,
@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
   },
   nextText: {
     flex: 1,
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 12.5,
     lineHeight: 18,
     color: colors.ink,
@@ -705,19 +705,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactLabel: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    fontSize: 11.5,
+    fontFamily: fontFamily.bold,
+    fontSize: 12,
     color: colors.ink3,
     textTransform: 'uppercase',
   },
   contactName: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 14.5,
     color: colors.ink,
     marginTop: 3,
   },
   contactArea: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 12.5,
     color: colors.oxRed,
     marginTop: 2,
@@ -732,10 +732,11 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   closeButtonText: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 14.5,
     color: colors.white,
   },
+
 });
 
 

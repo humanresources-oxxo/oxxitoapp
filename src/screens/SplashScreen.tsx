@@ -4,7 +4,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Image, StyleSheet, Animated, Easing, AccessibilityInfo } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { gradients, colors } from '../theme/tokens';
+import { gradients, colors, fontFamily } from '../theme/tokens';
 
 const BEAR_GIF = require('../../assets/images/osito_saludando.gif');
 const LOGO = require('../../assets/images/conoxxo-logo.png');
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   bubble: {
     position: 'absolute',
     top: '32%',
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     paddingVertical: 9,
     paddingHorizontal: 14,
     borderRadius: 16,
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   bubbleText: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 15,
     color: colors.ink,
   },
@@ -249,11 +249,12 @@ const styles = StyleSheet.create({
     height: 102, // conoxxo-logo.png is 1000x408
   },
   tagline: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 15,
     letterSpacing: 1.3,
     textTransform: 'uppercase',
     color: colors.ink2,
     marginTop: 12,
   },
+
 });

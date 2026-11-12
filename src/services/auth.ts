@@ -1,5 +1,6 @@
 // src/services/auth.ts
 // Employee login backed by Supabase RPCs against the real roster (employees table).
+import { getJson, setJson, storageKeys } from './appStorage';
 import { leerLlave } from './sesion';
 import { supabase } from './supabaseClient';
 
@@ -107,4 +108,32 @@ export async function verifyPin(numeroEmpleado: string, pin: string): Promise<Ve
   if (row.status === 'ok')
     return { status: 'ok', numeroEmpleado: row.numero_empleado, nombre: row.nombre, pinIsTemporary: !!row.pin_is_temporary };
   return { status: 'wrong_pin' };
+}
+
+// Saves the session on the phone at the end of the login. The profile comes
+// with the session key (migration 52); if it cannot be read now, the session
+// starts with what the login knows (the first name) and the app completes it
+// on open (MainTabsNavigator revalidarSesion).
+export async function guardarSesionLocal(base: { numeroEmpleado: string; nombre: string; tienda?: string; plaza?: string; puesto?: string; createdAt?: string }) {
+  const p = await miPerfil().catch(() => null);
+  await setJson(storageKeys.session, {
+    numeroEmpleado: base.numeroEmpleado,
+    nombre: p?.nombre ?? base.nombre,
+    tienda: p?.tienda ?? base.tienda,
+    plaza: p?.plaza ?? base.plaza,
+    puesto: p?.puesto ?? base.puesto,
+    createdAt: p?.createdAt ?? base.createdAt,
+  });
+}
+
+// Who already accepted the terms on this phone: they are not asked again at
+// every login. Only employee numbers; kept through a logout on purpose (it is
+// not in storageKeys, which the logout erases).
+const TERMINOS_ACEPTADOS = 'oxxito:terminosAceptados';
+export async function yaAceptoTerminos(numeroEmpleado: string) {
+  return (await getJson<string[]>(TERMINOS_ACEPTADOS, [])).includes(numeroEmpleado);
+}
+export async function recordarTerminos(numeroEmpleado: string) {
+  const lista = await getJson<string[]>(TERMINOS_ACEPTADOS, []);
+  if (!lista.includes(numeroEmpleado)) await setJson(TERMINOS_ACEPTADOS, [...lista, numeroEmpleado].slice(-50));
 }

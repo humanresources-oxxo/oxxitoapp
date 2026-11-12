@@ -3,7 +3,7 @@
 import React from 'react';
 import { Pressable, Text, View, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, gradients, radii, type } from '../theme/tokens';
+import { colors, gradients, radii, type, fontFamily } from '../theme/tokens';
 
 type Variant = 'primary' | 'ghost' | 'light' | 'outline';
 
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ghostText: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fontFamily.semibold,
     fontSize: 14.5,
     color: colors.ink2,
   },
@@ -133,9 +133,10 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
     opacity: 0.96,
   },
+
 });
 
 /** Bold accent span for use inside ghost-button text, e.g. "¿Ya tienes cuenta? <b>Inicia sesión</b>" */
 export function GhostAccent({ children }: { children: React.ReactNode }) {
-  return <Text style={{ fontFamily: 'PlusJakartaSans_700Bold', color: colors.oxRed }}>{children}</Text>;
+  return <Text style={{ fontFamily: fontFamily.bold, color: colors.oxRed }}>{children}</Text>;
 }

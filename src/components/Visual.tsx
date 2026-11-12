@@ -4,10 +4,11 @@
 // tappable column chart, a stacked bar with legend and a delta pill. No chart
 // library: Views and react-native-svg, same on iOS, Android and web.
 import React, { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Pressable } from './Pressable';
 import Svg, { Circle } from 'react-native-svg';
 import { Icon } from './Icon';
-import { colors, radii, shadows } from '../theme/tokens';
+import { colors, radii, shadows, fontFamily } from '../theme/tokens';
 
 // Card with a header that opens and closes the detail. The summary line says
 // what is inside, so the screen can stay short while closed.
@@ -302,36 +303,37 @@ const styles = StyleSheet.create({
   },
   desHead: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
   desIcono: { width: 36, height: 36, borderRadius: 12, backgroundColor: '#FFF0EC', alignItems: 'center', justifyContent: 'center' },
-  desTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 15.5, color: colors.ink },
-  desResumen: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12.5, color: colors.ink2, marginTop: 2 },
+  desTitulo: { fontFamily: fontFamily.extrabold, fontSize: 15.5, color: colors.ink },
+  desResumen: { fontFamily: fontFamily.semibold, fontSize: 12.5, color: colors.ink2, marginTop: 2 },
   desCuerpo: { paddingHorizontal: 16, paddingBottom: 16, gap: 10 },
-  anilloPie: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink2, marginTop: 8, textAlign: 'center' },
+  anilloPie: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink2, marginTop: 8, textAlign: 'center' },
   leyFila: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   leyPunto: { width: 10, height: 10, borderRadius: 5 },
-  leyEtq: { flex: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13, color: colors.ink2 },
-  leyValor: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: colors.ink },
-  colValor: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: colors.oxRed, textAlign: 'right', marginBottom: 6 },
+  leyEtq: { flex: 1, fontFamily: fontFamily.semibold, fontSize: 13, color: colors.ink2 },
+  leyValor: { fontFamily: fontFamily.extrabold, fontSize: 13, color: colors.ink },
+  colValor: { fontFamily: fontFamily.extrabold, fontSize: 13, color: colors.oxRed, textAlign: 'right', marginBottom: 6 },
   colFila: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
   colToque: { flex: 1, height: '100%', justifyContent: 'flex-end' },
   col: { borderTopLeftRadius: 6, borderTopRightRadius: 6, backgroundColor: '#F6C4BE' },
   colActiva: { backgroundColor: colors.oxRed },
   colEtqs: { flexDirection: 'row', gap: 4, marginTop: 6 },
-  colEtq: { flex: 1, textAlign: 'center', fontFamily: 'PlusJakartaSans_700Bold', fontSize: 9.5, color: colors.ink3 },
+  colEtq: { flex: 1, textAlign: 'center', fontFamily: fontFamily.bold, fontSize: 9.5, color: colors.ink3 },
   colEtqActiva: { color: colors.oxRed },
-  colTotal: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 10, color: colors.ink2, textAlign: 'center', marginBottom: 3 },
+  colTotal: { fontFamily: fontFamily.extrabold, fontSize: 10, color: colors.ink2, textAlign: 'center', marginBottom: 3 },
   colPila: { borderTopLeftRadius: 5, borderTopRightRadius: 5, overflow: 'hidden', minHeight: 3 },
   indicador: { flex: 1, paddingVertical: 14, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', minHeight: 84 },
-  indValor: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 24, color: colors.ink },
-  indEtq: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11.5, color: colors.ink2, textAlign: 'center', marginTop: 4 },
+  indValor: { fontFamily: fontFamily.extrabold, fontSize: 24, color: colors.ink },
+  indEtq: { fontFamily: fontFamily.bold, fontSize: 11.5, color: colors.ink2, textAlign: 'center', marginTop: 4 },
   apilada: { flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', backgroundColor: colors.field },
   delta: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: radii.pill, backgroundColor: 'rgba(255,255,255,.22)', marginTop: 8 },
-  deltaTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12.5, color: colors.white },
+  deltaTexto: { fontFamily: fontFamily.extrabold, fontSize: 12.5, color: colors.white },
   barTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
-  barEtq: { flex: 1, fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink },
-  barValor: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: colors.ink },
+  barEtq: { flex: 1, fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink },
+  barValor: { fontFamily: fontFamily.extrabold, fontSize: 13, color: colors.ink },
   barFondo: { height: 8, borderRadius: 4, backgroundColor: colors.field, overflow: 'hidden' },
   barLlena: { height: 8, borderRadius: 4, backgroundColor: '#F3A39C' },
-  barDetalle: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11.5, color: colors.ink3 },
+  barDetalle: { fontFamily: fontFamily.semibold, fontSize: 11.5, color: colors.ink3 },
   verMas: { alignSelf: 'flex-start', paddingVertical: 6 },
-  verMasTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: colors.oxRed },
+  verMasTexto: { fontFamily: fontFamily.extrabold, fontSize: 13, color: colors.oxRed },
+
 });

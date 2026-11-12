@@ -10,29 +10,34 @@ export const colors = {
   oxBlue: '#005AAE',
   ink: '#241A17',
   ink2: '#6E605B',
-  ink3: '#A2948D',
+  // 4.7:1 on bg: dates, hints and placeholders must stay readable in a bright store.
+  ink3: '#7A6C66',
+  // Only for the hint inside an empty field, so it is not mistaken for a value.
+  placeholder: '#A2948D',
   bg: '#FBF6F2',
   card: '#FFFFFF',
   line: '#EFE5DE',
   line2: '#E6D9D0',
   cream: '#FCEFE0',
   field: '#F5EEE8',
-  ok: '#2E9E6B',
+  ok: '#1F7F54',
   white: '#FFFFFF',
+  // Backdrop behind sheets and dialogs.
+  velo: 'rgba(36,26,23,.5)',
 };
 
 // Gradient stop arrays for expo-linear-gradient (colors, locations, angle handled via start/end points)
 export const gradients = {
   // Logo red, a little deeper at the start and warmer at the end.
   oxGrad: {
-    colors: ['#C8000F', '#E30613', '#F2412A'] as const,
+    colors: ['#C8000F', '#E30613', '#E8301F'] as const,
     locations: [0, 0.52, 1] as const,
     start: { x: 0.1, y: 0 },
     end: { x: 0.85, y: 1 },
   },
   // Welcome hero (same reds, near identical angle)
   oxGradHero: {
-    colors: ['#C8000F', '#E30613', '#F2412A'] as const,
+    colors: ['#C8000F', '#E30613', '#E8301F'] as const,
     locations: [0, 0.5, 1] as const,
     start: { x: 0.08, y: 0 },
     end: { x: 0.86, y: 1 },
@@ -43,11 +48,13 @@ export const gradients = {
     end: { x: 0.85, y: 1 },
   },
   // category accent gradients (icons)
-  blue: { colors: ['#005AAE', '#2B7FD4'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
-  green: { colors: ['#2E9E6B', '#46B883'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
-  purple: { colors: ['#8A4FD8', '#A875E8'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
+  blue: { colors: ['#005AAE', '#1F6FC2'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
+  green: { colors: ['#1F7F54', '#2A9463'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
+  purple: { colors: ['#7A3FCB', '#8F5BDC'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
   dark: { colors: ['#34324A', '#5A5570'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
   alertRed: { colors: ['#E0453B', '#FF6A4D'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
+  // Page background behind every screen.
+  fondo: { colors: ['#FFF7F0', '#FBF6F2', '#FFFFFF'] as const, start: { x: 0, y: 0 }, end: { x: 1, y: 1 } },
   // Splash background: light, so the logo's red sign stands out.
   splash: {
     colors: ['#FFFFFF', '#FFFAEC', '#FFF1CC'] as const,
@@ -56,6 +63,9 @@ export const gradients = {
     end: { x: 0.9, y: 1 },
   },
 };
+
+// Text colour of each category accent (same family as gradients[accent]).
+export const acento = { oxGrad: colors.oxRed, blue: colors.oxBlue, green: colors.ok, purple: '#7A3FCB', dark: colors.ink2 };
 
 export const radii = {
   sm: 12,
@@ -140,3 +150,12 @@ export const shadows = {
 };
 
 export const minTapTarget = 44;
+
+// Sheets and bubbles are solid: text behind them must not show through.
+export const solida = { backgroundColor: colors.card, borderColor: colors.line };
+
+// The web app on a tablet or a computer stays a centered column.
+export const anchoMaximo = 560;
+
+// A bottom sheet: solid, and no wider than the column.
+export const hoja = { ...solida, width: '100%' as const, maxWidth: anchoMaximo, alignSelf: 'center' as const };
