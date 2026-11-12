@@ -5,6 +5,7 @@
 // It returns a suggestion; the app shows it and the person decides whether
 // to use it. Nothing is published or stored here, and the text is not logged.
 import { clienteClaude, pedirJson } from './claude.js';
+import { contarUso } from './limite.js';
 
 const MAX_TITULO = 140;
 const MAX_TEXTO = 4000;
@@ -30,16 +31,6 @@ const ESQUEMA = {
 const json = (cuerpo, status = 200) =>
   new Response(JSON.stringify(cuerpo), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 
-const usos = new Map();
-function contar(numero) {
-  const dia = new Date().toISOString().slice(0, 10);
-  const u = usos.get(numero);
-  const n = u && u.dia === dia ? u.n : 0;
-  if (n >= LIMITE_DIA) return false;
-  usos.set(numero, { dia, n: n + 1 });
-  return true;
-}
-
 export async function redactar(request, env, rpc) {
   const pedido = await request.json().catch(() => null);
   const llave = String((pedido && pedido.llave) || '');
@@ -53,7 +44,7 @@ export async function redactar(request, env, rpc) {
   if (!panel.avisos) return json({ ok: false, error: 'no_habilitado' }, 403);
   const cliente = clienteClaude(env);
   if (!cliente) return json({ ok: false, error: 'ia_no_configurada' }, 503);
-  if (!contar(llave.slice(0, 16))) return json({ ok: false, error: 'limite_diario' }, 429);
+  if (!(await contarUso(env, rpc, llave, 'redactar', LIMITE_DIA, llave.slice(0, 16)))) return json({ ok: false, error: 'limite_diario' }, 429);
 
   const inicio = Date.now();
   const { datos, uso, modelo } = await pedirJson(cliente, {

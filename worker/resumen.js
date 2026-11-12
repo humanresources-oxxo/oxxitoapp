@@ -6,6 +6,7 @@
 // permisos (the ones that see the Ficha). Same numbers -> same summary: it is
 // kept in memory here and in the phone, so it is paid once per cut.
 import { clienteClaude, pedirJson } from './claude.js';
+import { contarUso } from './limite.js';
 
 const MAX_DATOS = 12000; // characters of JSON
 const LIMITE_DIA = 20;
@@ -34,15 +35,6 @@ async function huella(texto) {
 
 // Per-isolate memory: same numbers, same summary (6 h).
 const guardados = new Map();
-const usos = new Map();
-function contar(numero) {
-  const dia = new Date().toISOString().slice(0, 10);
-  const u = usos.get(numero);
-  const n = u && u.dia === dia ? u.n : 0;
-  if (n >= LIMITE_DIA) return false;
-  usos.set(numero, { dia, n: n + 1 });
-  return true;
-}
 
 export async function resumenFicha(request, env, rpc) {
   const pedido = await request.json().catch(() => null);
@@ -61,7 +53,7 @@ export async function resumenFicha(request, env, rpc) {
   const clave = await huella(texto);
   const previo = guardados.get(clave);
   if (previo && previo.vence > Date.now()) return json({ ok: true, ...previo.resumen, guardado: true });
-  if (!contar(String(sesion.numero || ''))) return json({ ok: false, error: 'limite_diario' }, 429);
+  if (!(await contarUso(env, rpc, llave, 'resumen', LIMITE_DIA, String(sesion.numero || '')))) return json({ ok: false, error: 'limite_diario' }, 429);
 
   const inicio = Date.now();
   const { datos: r, uso, modelo } = await pedirJson(cliente, { system: SISTEMA, usuario: texto, schema: ESQUEMA, maxTokens: 2048 });

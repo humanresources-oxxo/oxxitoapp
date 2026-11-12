@@ -24,6 +24,7 @@
 // The question text is never logged: only the model, token counts and how
 // many articles were found (to measure the free daily allowance).
 import { clienteClaude, pedirJson } from './claude.js';
+import { contarUso } from './limite.js';
 
 const SUPABASE_URL = 'https://gceuazxrqdbfahtdieod.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_59I8XugqRxE-LUhMSqmiEQ_HNzD7CRK';
@@ -57,19 +58,6 @@ export async function rpc(env, fn, args) {
   });
   if (!r.ok) throw new Error(`${fn}: HTTP ${r.status}`);
   return r.json();
-}
-
-// Per-isolate daily count per employee: a soft limit for the prototype (an
-// isolate can restart, so it is approximate; Workers AI's own daily allowance
-// is the hard one).
-const usos = new Map();
-function contar(numero, limite) {
-  const dia = new Date().toISOString().slice(0, 10);
-  const u = usos.get(numero);
-  const n = u && u.dia === dia ? u.n : 0;
-  if (n >= limite) return false;
-  usos.set(numero, { dia, n: n + 1 });
-  return true;
 }
 
 export function habilitados(env) {
@@ -179,7 +167,8 @@ export async function chat(request, env) {
   const proveedor = String(env.CHAT_IA_PROVEEDOR || 'auto');
   const cliente = proveedor === 'workers-ai' ? null : clienteClaude(env);
   if (!env.AI && !cliente) return json({ ok: false, error: 'ia_no_configurada' }, 503);
-  if (!contar(numero, Number(env.CHAT_IA_LIMITE_DIA) || LIMITE_DIA)) return json({ ok: false, error: 'limite_diario' }, 429);
+  // Daily limit per employee, counted in Supabase (worker/limite.js).
+  if (!(await contarUso(env, rpc, llave, 'chat', Number(env.CHAT_IA_LIMITE_DIA) || LIMITE_DIA, numero))) return json({ ok: false, error: 'limite_diario' }, 429);
 
   if (cliente) {
     try {
