@@ -1,116 +1,115 @@
 // src/screens/SplashScreen.tsx
-// Ported from launch.jsx — branded app-open animation.
-// Note: animated GIF playback + entrance/exit choreography (bounce-in, bubble pop, sparkles, exit fade).
+// App-open animation. The bear drops in on a soft halo and keeps floating
+// while he waves (the GIF), his "¡Hola!" pops out next to his head, a few
+// stars twinkle around him, and the logo comes up with a thin bar that fills
+// while the app gets ready. With "reduce motion" on, everything is shown in
+// place, without movement.
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Image, StyleSheet, Animated, Easing, AccessibilityInfo } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { gradients, colors, fontFamily } from '../theme/tokens';
+import { Icon } from '../components/Icon';
+import { gradients, colors, fontFamily, radii } from '../theme/tokens';
 
 const BEAR_GIF = require('../../assets/images/osito_saludando.gif');
 const LOGO = require('../../assets/images/conoxxo-logo.png');
 
+// Same total time as before, so opening the app is not slower.
+const SALIDA = 2300;
+const FIN = 2820;
+const ANCHO_BARRA = 132;
+
+// Stars around the bear: where, how big and when each one starts.
+const ESTRELLAS = [
+  { top: 34, left: 2, size: 26, color: colors.oxGold, delay: 650 },
+  { top: 132, right: -6, size: 19, color: colors.oxRed, delay: 900 },
+  { bottom: 62, left: -4, size: 18, color: colors.oxGold, delay: 1150 },
+  { bottom: 110, right: 6, size: 23, color: colors.oxGold, delay: 1350 },
+];
+
 export function SplashScreen({ onDone }: { onDone: () => void }) {
-  const bearScale = useRef(new Animated.Value(0.35)).current;
-  const bearY = useRef(new Animated.Value(40)).current;
-  const bubbleScale = useRef(new Animated.Value(0.5)).current;
-  const bubbleOpacity = useRef(new Animated.Value(0)).current;
-  const wordOpacity = useRef(new Animated.Value(0)).current;
-  const wordY = useRef(new Animated.Value(14)).current;
-  const screenOpacity = useRef(new Animated.Value(1)).current;
-  const screenScale = useRef(new Animated.Value(1)).current;
-  const sparkAnims = useRef([0, 1, 2].map(() => ({
-    opacity: new Animated.Value(0),
-    scale: new Animated.Value(0),
-    y: new Animated.Value(0),
-  }))).current;
+  const v = useRef({
+    entra: new Animated.Value(0), // bear: 0 below and small -> 1 in place
+    halo: new Animated.Value(0),
+    flota: new Animated.Value(0), // idle float, 0 <-> 1
+    burbuja: new Animated.Value(0),
+    logo: new Animated.Value(0),
+    lema: new Animated.Value(0),
+    barra: new Animated.Value(0),
+    sale: new Animated.Value(0),
+    estrellas: ESTRELLAS.map(() => new Animated.Value(0)),
+  }).current;
 
   useEffect(() => {
-    let reduced = false;
-    AccessibilityInfo.isReduceMotionEnabled?.().then((v) => {
-      reduced = v;
-      if (v) {
-        bearScale.setValue(1);
-        bearY.setValue(0);
-        bubbleScale.setValue(1);
-        bubbleOpacity.setValue(1);
-        wordOpacity.setValue(1);
-        wordY.setValue(0);
-      }
-    });
+    let vivo = true;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const bucles: Animated.CompositeAnimation[] = [];
+    const luego = (ms: number, fn: () => void) => timers.push(setTimeout(() => vivo && fn(), ms));
+    const nativo = { useNativeDriver: true };
 
-    // Bear bounce-in: scale .35->1, translateY 40->0, overshoot bezier ~.62s
-    Animated.parallel([
-      Animated.spring(bearScale, {
-        toValue: 1,
-        damping: 9,
-        stiffness: 120,
-        mass: 0.7,
-        useNativeDriver: true,
-      }),
-      Animated.spring(bearY, {
-        toValue: 0,
-        damping: 10,
-        stiffness: 120,
-        mass: 0.7,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    const animar = () => {
+      // Bear: springs up into place over its halo.
+      Animated.spring(v.entra, { toValue: 1, damping: 9, stiffness: 110, mass: 0.8, ...nativo }).start();
+      Animated.timing(v.halo, { toValue: 1, duration: 520, easing: Easing.out(Easing.back(1.4)), ...nativo }).start();
 
-    // Speech bubble pop at 1s
-    const bubbleTimer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(bubbleOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
-        Animated.spring(bubbleScale, { toValue: 1, damping: 7, stiffness: 160, useNativeDriver: true }),
-      ]).start();
-    }, 1000);
+      // Then he floats gently for as long as the splash is up.
+      luego(650, () => {
+        const flotar = Animated.loop(
+          Animated.sequence([
+            Animated.timing(v.flota, { toValue: 1, duration: 850, easing: Easing.inOut(Easing.sin), ...nativo }),
+            Animated.timing(v.flota, { toValue: 0, duration: 850, easing: Easing.inOut(Easing.sin), ...nativo }),
+          ])
+        );
+        bucles.push(flotar);
+        flotar.start();
+      });
 
-    // Wordmark fade-up at .9s
-    const wordTimer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(wordOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-        Animated.timing(wordY, { toValue: 0, duration: 400, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      ]).start();
-    }, 900);
+      // "¡Hola!" pops out of his head with a little swing.
+      luego(800, () => Animated.spring(v.burbuja, { toValue: 1, damping: 7, stiffness: 150, mass: 0.7, ...nativo }).start());
 
-    // Sparkles staggered .7/.95/1.15s
-    const sparkDelays = [700, 950, 1150];
-    const sparkTimers = sparkAnims.map((s, i) =>
-      setTimeout(() => {
-        Animated.sequence([
-          Animated.parallel([
-            Animated.timing(s.opacity, { toValue: 1, duration: 270, useNativeDriver: true }),
-            Animated.timing(s.scale, { toValue: 1.2, duration: 270, useNativeDriver: true }),
-          ]),
-          Animated.parallel([
-            Animated.timing(s.opacity, { toValue: 0, duration: 360, useNativeDriver: true }),
-            Animated.timing(s.scale, { toValue: 0.4, duration: 360, useNativeDriver: true }),
-            Animated.timing(s.y, { toValue: -10, duration: 360, useNativeDriver: true }),
-          ]),
-        ]).start();
-      }, sparkDelays[i])
-    );
+      // Stars twinkle, one after another.
+      ESTRELLAS.forEach((e, i) =>
+        luego(e.delay, () => {
+          const brillar = Animated.loop(
+            Animated.sequence([
+              Animated.timing(v.estrellas[i], { toValue: 1, duration: 420, easing: Easing.out(Easing.quad), ...nativo }),
+              Animated.timing(v.estrellas[i], { toValue: 0, duration: 520, easing: Easing.in(Easing.quad), ...nativo }),
+              Animated.delay(260),
+            ])
+          );
+          bucles.push(brillar);
+          brillar.start();
+        })
+      );
 
-    // Exit at 2300ms, unmount at 2820ms
-    const exitTimer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(screenOpacity, { toValue: 0, duration: 400, useNativeDriver: true }),
-        Animated.timing(screenScale, { toValue: 1.08, duration: 400, useNativeDriver: true }),
-      ]).start();
-    }, 2300);
+      // Logo, then its line, then the bar that fills until the app opens.
+      luego(450, () => Animated.timing(v.logo, { toValue: 1, duration: 480, easing: Easing.out(Easing.cubic), ...nativo }).start());
+      luego(800, () => Animated.timing(v.lema, { toValue: 1, duration: 380, easing: Easing.out(Easing.cubic), ...nativo }).start());
+      luego(500, () => Animated.timing(v.barra, { toValue: 1, duration: SALIDA - 600, easing: Easing.inOut(Easing.cubic), ...nativo }).start());
 
-    const doneTimer = setTimeout(onDone, 2820);
+      luego(SALIDA, () => Animated.timing(v.sale, { toValue: 1, duration: 420, easing: Easing.in(Easing.cubic), ...nativo }).start());
+      luego(FIN, onDone);
+    };
+
+    const quieto = () => {
+      [v.entra, v.halo, v.burbuja, v.logo, v.lema, v.barra].forEach((x) => x.setValue(1));
+      luego(1500, onDone);
+    };
+
+    const consulta = AccessibilityInfo.isReduceMotionEnabled?.();
+    if (consulta) consulta.then((reducir) => vivo && (reducir ? quieto() : animar())).catch(() => vivo && animar());
+    else animar();
 
     return () => {
-      clearTimeout(bubbleTimer);
-      clearTimeout(wordTimer);
-      clearTimeout(exitTimer);
-      clearTimeout(doneTimer);
-      sparkTimers.forEach(clearTimeout);
+      vivo = false;
+      timers.forEach(clearTimeout);
+      bucles.forEach((b) => b.stop());
     };
   }, []);
 
+  const rango = (x: Animated.Value, de: number, a: number) => x.interpolate({ inputRange: [0, 1], outputRange: [de, a] });
+
   return (
-    <Animated.View style={[styles.fill, { opacity: screenOpacity, transform: [{ scale: screenScale }] }]}>
+    <Animated.View style={[styles.fill, { opacity: rango(v.sale, 1, 0) }]}>
       <LinearGradient
         colors={gradients.splash.colors}
         locations={gradients.splash.locations}
@@ -118,143 +117,188 @@ export function SplashScreen({ onDone }: { onDone: () => void }) {
         end={gradients.splash.end}
         style={styles.fill}
       >
-        {/* sheen + orbs (approximation of blurred radial orbs) */}
-        <View style={[styles.orb, styles.orbGold]} />
-        <View style={[styles.orb, styles.orbRed]} />
-        <View style={styles.sheen} />
+        <View style={[styles.orb, styles.orbArriba]} />
+        <View style={[styles.orb, styles.orbAbajo]} />
 
-        <View style={styles.stage}>
-          <Animated.View
-            style={[
-              styles.bubble,
-              { opacity: bubbleOpacity, transform: [{ scale: bubbleScale }] },
-            ]}
-          >
-            <Text style={styles.bubbleText}>¡Hola! 👋</Text>
-          </Animated.View>
+        <Animated.View style={[styles.stage, { transform: [{ translateY: rango(v.sale, 0, -18) }] }]}>
+          <View style={styles.mascota}>
+            <Animated.View style={[styles.halo, { opacity: v.halo, transform: [{ scale: Animated.add(rango(v.halo, 0.6, 1), rango(v.flota, 0, 0.05)) }] }]}>
+              <View style={styles.haloDentro} />
+            </Animated.View>
 
-          <Animated.View
-            style={{
-              transform: [{ scale: bearScale }, { translateY: bearY }],
-            }}
-          >
-            <Image source={BEAR_GIF} style={styles.bearImg} resizeMode="contain" />
-          </Animated.View>
+            {/* His shadow on the floor shrinks a little when he floats up. */}
+            <Animated.View style={[styles.sombra, { opacity: rango(v.entra, 0, 1), transform: [{ scaleX: rango(v.flota, 1, 0.86) }] }]} />
 
-          {sparkAnims.map((s, i) => (
+            {ESTRELLAS.map(({ size, color, delay, ...pos }, i) => (
+              <Animated.View
+                key={i}
+                style={[
+                  styles.estrella,
+                  pos,
+                  {
+                    opacity: v.estrellas[i],
+                    transform: [{ scale: rango(v.estrellas[i], 0.3, 1) }, { rotate: v.estrellas[i].interpolate({ inputRange: [0, 1], outputRange: ['-30deg', '20deg'] }) }],
+                  },
+                ]}
+              >
+                <Icon name="sparkle" size={size} color={color} fill />
+              </Animated.View>
+            ))}
+
             <Animated.View
-              key={i}
+              style={{
+                opacity: v.entra.interpolate({ inputRange: [0, 0.25, 1], outputRange: [0, 1, 1], extrapolate: 'clamp' }),
+                transform: [{ translateY: Animated.add(rango(v.entra, 70, 0), rango(v.flota, 0, -7)) }, { scale: rango(v.entra, 0.4, 1) }],
+              }}
+            >
+              <Image source={BEAR_GIF} style={styles.bearImg} resizeMode="contain" accessibilityLabel="Osito saludando" />
+            </Animated.View>
+
+            <Animated.View
               style={[
-                styles.spark,
-                SPARK_POS[i],
+                styles.bubble,
                 {
-                  opacity: s.opacity,
-                  transform: [{ scale: s.scale }, { translateY: s.y }],
+                  opacity: v.burbuja.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0, 1, 1], extrapolate: 'clamp' }),
+                  transform: [
+                    { translateY: Animated.add(rango(v.burbuja, 16, 0), rango(v.flota, 0, -4)) },
+                    { scale: rango(v.burbuja, 0.3, 1) },
+                    { rotate: v.burbuja.interpolate({ inputRange: [0, 1], outputRange: ['-14deg', '4deg'] }) },
+                  ],
                 },
               ]}
-            />
-          ))}
-        </View>
+            >
+              <Text style={styles.bubbleText} numberOfLines={1}>
+                ¡Hola! 👋
+              </Text>
+              <View style={styles.bubbleCola} />
+            </Animated.View>
+          </View>
+        </Animated.View>
 
-        <Animated.View style={[styles.wordWrap, { opacity: wordOpacity, transform: [{ translateY: wordY }] }]}>
+        <Animated.View style={[styles.wordWrap, { opacity: v.logo, transform: [{ translateY: rango(v.logo, 20, 0) }, { scale: rango(v.logo, 0.92, 1) }] }]}>
           <Image source={LOGO} style={styles.logo} resizeMode="contain" accessibilityLabel="Conoxxo" />
-          <Text style={styles.tagline}>TU ASISTENTE DEL REGLAMENTO</Text>
+          <Animated.Text style={[styles.tagline, { opacity: v.lema }]}>Tu asistente del reglamento</Animated.Text>
+          <Animated.View style={[styles.barra, { opacity: v.lema }]} accessibilityRole="progressbar" accessibilityLabel="Abriendo Conoxxo">
+            <Animated.View style={[styles.barraLlena, { transform: [{ translateX: rango(v.barra, -ANCHO_BARRA, 0) }] }]} />
+          </Animated.View>
         </Animated.View>
       </LinearGradient>
     </Animated.View>
   );
 }
 
-const SPARK_POS = [
-  { top: 18, left: '38%' as const },
-  { bottom: 160, left: '28%' as const },
-  { top: 60, right: '32%' as const },
-];
-
 const styles = StyleSheet.create({
   fill: {
     ...StyleSheet.absoluteFill,
+    overflow: 'hidden',
   },
   orb: {
     position: 'absolute',
     borderRadius: 999,
-    opacity: 0.16,
-  },
-  orbGold: {
-    width: 220,
-    height: 220,
-    top: -60,
-    left: -60,
     backgroundColor: colors.oxGold,
+    opacity: 0.14,
   },
-  orbRed: {
-    width: 240,
-    height: 240,
-    bottom: -70,
-    right: -70,
-    backgroundColor: colors.oxGold,
-  },
-  sheen: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: '70%',
-    height: '40%',
-    backgroundColor: 'rgba(255,255,255,.55)',
-    borderBottomLeftRadius: 400,
-  },
+  orbArriba: { width: 240, height: 240, top: -80, left: -80 },
+  orbAbajo: { width: 280, height: 280, bottom: -110, right: -100 },
   stage: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingBottom: 150, // room for the logo block below
   },
+  mascota: {
+    width: 240,
+    height: 300,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  halo: {
+    position: 'absolute',
+    top: 34,
+    width: 236,
+    height: 236,
+    borderRadius: 118,
+    backgroundColor: 'rgba(246,184,0,.16)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  haloDentro: { width: 176, height: 176, borderRadius: 88, backgroundColor: 'rgba(255,255,255,.7)' },
+  sombra: {
+    position: 'absolute',
+    bottom: -4,
+    width: 116,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: 'rgba(36,26,23,.09)',
+  },
+  estrella: { position: 'absolute' },
+  bearImg: {
+    width: 196,
+    height: 274, // osito_saludando.gif is 561x785
+  },
+  // Next to his right ear, with the tail pointing at him.
   bubble: {
     position: 'absolute',
-    top: '32%',
+    top: -20,
+    left: 146,
+    width: 108,
+    alignItems: 'center',
     backgroundColor: colors.white,
-    paddingVertical: 9,
-    paddingHorizontal: 14,
-    borderRadius: 16,
-    borderBottomLeftRadius: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 18,
     shadowColor: 'rgba(120,30,8,1)',
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 8,
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
+  },
+  bubbleCola: {
+    position: 'absolute',
+    left: 16,
+    bottom: -5,
+    width: 14,
+    height: 14,
+    borderRadius: 3,
+    backgroundColor: colors.white,
+    transform: [{ rotate: '45deg' }],
   },
   bubbleText: {
     fontFamily: fontFamily.extrabold,
-    fontSize: 15,
+    fontSize: 16,
     color: colors.ink,
-  },
-  bearImg: {
-    width: 196,
-    height: 270,
-  },
-  spark: {
-    position: 'absolute',
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    backgroundColor: colors.oxGold,
   },
   wordWrap: {
     position: 'absolute',
-    bottom: '14%',
-    alignSelf: 'center',
+    left: 0,
+    right: 0,
+    bottom: '9%',
     alignItems: 'center',
   },
   logo: {
-    width: 250,
-    height: 102, // conoxxo-logo.png is 1000x408
+    width: 230,
+    height: 94, // conoxxo-logo.png is 1000x408
   },
   tagline: {
     fontFamily: fontFamily.bold,
-    fontSize: 15,
+    fontSize: 13.5,
     letterSpacing: 1.3,
     textTransform: 'uppercase',
     color: colors.ink2,
-    marginTop: 12,
+    marginTop: 10,
   },
-
+  barra: {
+    width: ANCHO_BARRA,
+    height: 5,
+    borderRadius: radii.pill,
+    backgroundColor: 'rgba(36,26,23,.1)',
+    overflow: 'hidden',
+    marginTop: 16,
+  },
+  barraLlena: {
+    width: ANCHO_BARRA,
+    height: 5,
+    borderRadius: radii.pill,
+    backgroundColor: colors.oxRed,
+  },
 });
