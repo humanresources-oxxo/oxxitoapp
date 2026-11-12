@@ -25,7 +25,7 @@
     // "auto": Claude Haiku 5.5 when the ANTHROPIC_API_KEY secret is set
     // (worker/claude.js), else Workers AI. Or "haiku" / "workers-ai".
     "CHAT_IA_PROVEEDOR": "auto",
-    "DATOS_IA_NUMEROS": "5843652,1599067",
+    "DATOS_IA_NUMEROS": "*",
     "DATOS_IA_LIMITE_DIA": "30"
   },
   "services": [{ "binding": "DASHBOARDS", "service": "dashboardsoxxo" }],

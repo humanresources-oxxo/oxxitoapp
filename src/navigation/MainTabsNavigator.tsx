@@ -22,7 +22,7 @@ import { VacacionesScreen } from '../screens/VacacionesScreen';
 import { VotacionesScreen } from '../screens/VotacionesScreen';
 import { AltasScreen } from '../screens/AltasScreen';
 import { getJson, setJson, storageKeys } from '../services/appStorage';
-import { puedeLevantarActas, soloSusTiendas } from '../services/actas';
+import { puedeLevantarActas, soloSusTiendas, veFicha } from '../services/actas';
 import { lookupEmployee, miPerfil } from '../services/auth';
 import { fetchNotices } from '../services/notices';
 import { contarPendientes } from '../services/votaciones';
@@ -63,6 +63,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const [firstName, setFirstName] = useState('');
   const [canUseActas, setCanUseActas] = useState(false);
+  const [canSeeFicha, setCanSeeFicha] = useState(false);
   const [onlyOwnStores, setOnlyOwnStores] = useState(false);
   const [unreadNotices, setUnreadNotices] = useState(0);
   const [pendingVotes, setPendingVotes] = useState<number | null>(null);
@@ -113,6 +114,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       }
       setFirstName(session?.nombre?.split(' ')[0] ?? '');
       setCanUseActas(puedeLevantarActas(session?.puesto));
+      setCanSeeFicha(veFicha(session?.puesto));
       setOnlyOwnStores(soloSusTiendas(session?.puesto));
       setNumeroEmpleado(session?.numeroEmpleado ?? '');
       refreshPendingVotes(session?.numeroEmpleado ?? '');
@@ -151,6 +153,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
         setJson(storageKeys.session, nueva);
         setFirstName(nueva.nombre?.split(' ')[0] ?? '');
         setCanUseActas(puedeLevantarActas(nueva.puesto));
+        setCanSeeFicha(veFicha(nueva.puesto));
         setOnlyOwnStores(soloSusTiendas(nueva.puesto));
         leerLlave()
           .then((llave) => puedoAprobarAltas(nueva.puesto, llave))
@@ -218,7 +221,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       case 'cct':
         return canUseActas ? <CctScreen onBack={() => setActiveTab('home')} /> : null;
       case 'resumen':
-        return canUseActas ? <ResumenScreen /> : null;
+        return canSeeFicha ? <ResumenScreen /> : null;
       case 'altas':
         return canApprove ? <AltasScreen onBack={() => setActiveTab('home')} onCambio={refreshAltas} /> : null;
       case 'votaciones':
@@ -228,7 +231,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       default:
         return null;
     }
-  }, [activeTab, chatHistory, firstName, unreadNotices, canUseActas, onlyOwnStores, pendingVotes, numeroEmpleado, canApprove, pendingAltas]);
+  }, [activeTab, chatHistory, firstName, unreadNotices, canUseActas, canSeeFicha, onlyOwnStores, pendingVotes, numeroEmpleado, canApprove, pendingAltas]);
 
   return (
     <View style={styles.shell}>
@@ -253,7 +256,7 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       ) : null}
       <SafeAreaView edges={['bottom']} style={styles.tabSafe}>
         <BlurView intensity={38} tint="light" style={styles.tabBar}>
-          {tabsPara(canUseActas).map((tab) => {
+          {tabsPara(canSeeFicha).map((tab) => {
             const active = tab.key === activeTab;
             return (
               <Pressable

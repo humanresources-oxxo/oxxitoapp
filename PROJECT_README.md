@@ -469,7 +469,11 @@ Construir Chat Home + Conversación (`screens-chat-proto.jsx` en el handoff), qu
   las 5 plazas; nunca filas ni nombres de colaboradores) y las últimas 4 preguntas a
   `POST /api/datos-chat` (`worker/datos.js`), que contesta con Claude Haiku solo con esos números.
 - Quién: sesión válida y puesto que **no** sea de tienda (Líder tienda, Encargado turno, Ayudante
-  tienda, satélite incluido); puesto vacío no pasa. Además `DATOS_IA_NUMEROS` (`wrangler.jsonc`) lo
-  limita a una lista de números (`"*"` = todos los de oficina) mientras RH lo aprueba.
+  tienda, satélite incluido); puesto vacío no pasa. `DATOS_IA_NUMEROS` (`wrangler.jsonc`) puede
+  limitarlo a una lista de números; desde el 2026-11-12 es `"*"` (todos los de oficina).
+- Desde la migración 57 la pestaña Resumen también es para todos los puestos de oficina
+  (`puesto_ve_ficha`; `sesion_validar` devuelve `ficha`), sin ampliar `puesto_con_permisos`. El Apps
+  Script (v71) les deja leer solo las hojas de la ficha; sus hojas de bajas traen colaborador, motivo y
+  género aunque la ficha solo muestre totales.
 - Tope: `DATOS_IA_LIMITE_DIA` (30) preguntas por persona al día, contado en Supabase como función
   `datos` (migración 56). El texto de las preguntas no se guarda.
