@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   colTotal: { fontFamily: fontFamily.extrabold, fontSize: 10, color: colors.ink2, textAlign: 'center', marginBottom: 3 },
   colPila: { borderTopLeftRadius: 5, borderTopRightRadius: 5, overflow: 'hidden', minHeight: 3 },
   indicador: { flex: 1, paddingVertical: 14, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', minHeight: 84 },
-  indValor: { fontFamily: fontFamily.extrabold, fontSize: 24, color: colors.ink },
+  indValor: { fontFamily: fontFamily.titulo, fontSize: 24, color: colors.ink },
   indEtq: { fontFamily: fontFamily.bold, fontSize: 11.5, color: colors.ink2, textAlign: 'center', marginTop: 4 },
   apilada: { flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', backgroundColor: colors.field },
   delta: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: radii.pill, backgroundColor: 'rgba(255,255,255,.22)', marginTop: 8 },

@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     ...shadows.sheet,
   },
   asa: { alignSelf: 'center', width: 42, height: 5, borderRadius: radii.pill, backgroundColor: colors.line2, marginBottom: 14 },
-  titulo: { fontFamily: fontFamily.extrabold, fontSize: 20, color: colors.ink, marginBottom: 10 },
+  titulo: { fontFamily: fontFamily.titulo, fontSize: 20, color: colors.ink, marginBottom: 10 },
   parrafo: { fontFamily: fontFamily.semibold, fontSize: 14, lineHeight: 21, color: colors.ink2, marginBottom: 12 },
   boton: { minHeight: 50, borderRadius: 16, backgroundColor: colors.oxRed, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
   botonTexto: { fontFamily: fontFamily.extrabold, fontSize: 14.5, color: colors.white },

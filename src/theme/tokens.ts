@@ -14,7 +14,7 @@ export const colors = {
   ink3: '#7A6C66',
   // Only for the hint inside an empty field, so it is not mistaken for a value.
   placeholder: '#A2948D',
-  bg: '#FBF6F2',
+  bg: '#FFFFFF',
   card: '#FFFFFF',
   line: '#EFE5DE',
   line2: '#E6D9D0',
@@ -53,8 +53,6 @@ export const gradients = {
   purple: { colors: ['#7A3FCB', '#8F5BDC'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
   dark: { colors: ['#34324A', '#5A5570'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
   alertRed: { colors: ['#E0453B', '#FF6A4D'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
-  // Page background behind every screen.
-  fondo: { colors: ['#FFF7F0', '#FBF6F2', '#FFFFFF'] as const, start: { x: 0, y: 0 }, end: { x: 1, y: 1 } },
   // Splash background: light, so the logo's red sign stands out.
   splash: {
     colors: ['#FFFFFF', '#FFFAEC', '#FFF1CC'] as const,
@@ -93,12 +91,14 @@ export const fontFamily = {
   semibold: 'PlusJakartaSans_600SemiBold',
   bold: 'PlusJakartaSans_700Bold',
   extrabold: 'PlusJakartaSans_800ExtraBold',
+  // Rounded display face for titles, big numbers and the main button; body text stays in Plus Jakarta.
+  titulo: 'Fredoka_700Bold',
 };
 
 export const type = {
   // Display/title 27-44px / 800 / letter-spacing -.02em
-  display: { fontFamily: fontFamily.extrabold, fontSize: 30, letterSpacing: -0.6, lineHeight: 34 },
-  title: { fontFamily: fontFamily.extrabold, fontSize: 28, letterSpacing: -0.5, lineHeight: 31 },
+  display: { fontFamily: fontFamily.titulo, fontSize: 31, letterSpacing: -0.2, lineHeight: 34 },
+  title: { fontFamily: fontFamily.titulo, fontSize: 29, letterSpacing: -0.2, lineHeight: 31 },
   // Section eyebrow 12-13px / 700 / uppercase / letter-spacing .07-.1em
   eyebrow: { fontFamily: fontFamily.bold, fontSize: 13, letterSpacing: 1.1, textTransform: 'uppercase' as const },
   eyebrowSm: { fontFamily: fontFamily.bold, fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase' as const },
@@ -108,7 +108,7 @@ export const type = {
   // Caption/meta 11.5-12.5px
   caption: { fontFamily: fontFamily.medium, fontSize: 13, lineHeight: 19 },
   label: { fontFamily: fontFamily.bold, fontSize: 13.5 },
-  button: { fontFamily: fontFamily.bold, fontSize: 16.5, letterSpacing: 0.1 },
+  button: { fontFamily: fontFamily.titulo, fontSize: 17.5, letterSpacing: 0.2 },
 };
 
 export const shadows = {
@@ -150,6 +150,12 @@ export const shadows = {
 };
 
 export const minTapTarget = 44;
+
+// Frosted glass: translucent white with a bright rim. For what floats over
+// the page (tab bar, headers, pills); long text stays on solid cards.
+export const vidrio = { backgroundColor: 'rgba(255,255,255,.72)', borderWidth: 1, borderColor: 'rgba(36,26,23,.07)' };
+// The soft shadow under a glass piece.
+export const sombraVidrio = { shadowColor: 'rgba(120,60,20,1)', shadowOpacity: 0.14, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 4 };
 
 // Sheets and bubbles are solid: text behind them must not show through.
 export const solida = { backgroundColor: colors.card, borderColor: colors.line };

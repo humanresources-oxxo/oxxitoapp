@@ -10,6 +10,7 @@ import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Esqueleto } from '../components/Estado';
 import { Encabezado } from '../components/Encabezado';
+import { Fondo } from '../components/Fondo';
 import { Icon } from '../components/Icon';
 import { PinUnaVez } from '../components/PinUnaVez';
 import { getJson, storageKeys } from '../services/appStorage';
@@ -107,7 +108,7 @@ export function DilosScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Fondo />
       <Encabezado
         titulo="Folios DILOS"
         eyebrow={`Línea Ética · ZCS${dilos?.corte ? ` · corte ${fecha(dilos.corte)}` : dilos?.cargadoEl ? ` · cargado ${fecha(dilos.cargadoEl)}` : ''}`}
@@ -542,13 +543,13 @@ const styles = StyleSheet.create({
   nota: { ...type.caption, color: colors.ink2 },
   hero: { borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 14, ...shadows.hero },
   heroKicker: { fontFamily: fontFamily.extrabold, fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
-  heroNumero: { fontFamily: fontFamily.extrabold, fontSize: 52, lineHeight: 60, color: colors.white },
+  heroNumero: { fontFamily: fontFamily.titulo, fontSize: 52, lineHeight: 60, color: colors.white },
   heroBody: { fontFamily: fontFamily.semibold, fontSize: 12.5, lineHeight: 18, color: 'rgba(255,255,255,.9)' },
   heroLado: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,.2)', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 12, width: 96 },
-  heroLadoNum: { fontFamily: fontFamily.extrabold, fontSize: 28, color: colors.white },
+  heroLadoNum: { fontFamily: fontFamily.titulo, fontSize: 28, color: colors.white },
   heroLadoTxt: { fontFamily: fontFamily.bold, fontSize: 12, color: 'rgba(255,255,255,.9)', textAlign: 'center' },
   anilloFila: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  anilloNum: { fontFamily: fontFamily.extrabold, fontSize: 26, color: colors.ink },
+  anilloNum: { fontFamily: fontFamily.titulo, fontSize: 26, color: colors.ink },
   anilloTxt: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink3, marginTop: -2 },
   linea: { borderBottomWidth: 1, borderBottomColor: colors.line },
   casoBarra: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
@@ -566,7 +567,7 @@ const styles = StyleSheet.create({
   kpiCab: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   punto: { width: 9, height: 9, borderRadius: 5 },
   kpiTitulo: { flex: 1, fontFamily: fontFamily.extrabold, fontSize: 12 },
-  kpiValor: { fontFamily: fontFamily.extrabold, fontSize: 30, lineHeight: 36, color: colors.ink, marginTop: 6 },
+  kpiValor: { fontFamily: fontFamily.titulo, fontSize: 30, lineHeight: 36, color: colors.ink, marginTop: 6 },
   kpiNota: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink2, marginTop: 1 },
   heroLadoMini: { fontFamily: fontFamily.semibold, fontSize: 12, color: 'rgba(255,255,255,.8)', marginTop: 2, textAlign: 'center' },
   matriz: { flexDirection: 'row', gap: 12, padding: 12, borderRadius: radii.md },
@@ -638,7 +639,7 @@ const styles = StyleSheet.create({
   casoNum: { fontFamily: fontFamily.extrabold, fontSize: 14.5, color: colors.ink },
   casoMeta: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink2, marginTop: 2 },
   dias: { alignItems: 'center', minWidth: 52 },
-  diasNum: { fontFamily: fontFamily.extrabold, fontSize: 24, color: colors.ink },
+  diasNum: { fontFamily: fontFamily.titulo, fontSize: 24, color: colors.ink },
   diasTxt: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink3 },
   aviso: { alignItems: 'center', gap: 8, paddingVertical: 28 },
   avisoTitulo: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink, textAlign: 'center' },

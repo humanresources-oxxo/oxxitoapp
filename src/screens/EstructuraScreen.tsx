@@ -7,6 +7,7 @@
 // Only for the same puestos as Actas (see services/actas.ts).
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Fondo } from '../components/Fondo';
 import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -124,7 +125,7 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Fondo />
       <Encabezado titulo="Estructura" eyebrow={`Plaza Oaxaca${actualizado ? ` · ${actualizado}` : ''}`} onBack={onBack} />
 
       {error ? (
@@ -385,7 +386,7 @@ function Chip({ texto, activo, onPress }: { texto: string; activo: boolean; onPr
 
 const styles = StyleSheet.create({
   anilloFila: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  anilloNum: { fontFamily: fontFamily.extrabold, fontSize: 20, color: colors.ink },
+  anilloNum: { fontFamily: fontFamily.titulo, fontSize: 20, color: colors.ink },
   coberturaNota: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink3, marginTop: 10 },
   tiendaFila: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   tiendaCuenta: { fontFamily: fontFamily.extrabold, fontSize: 14, color: colors.ok, minWidth: 40, textAlign: 'right' },
@@ -405,15 +406,15 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
   },
   eyebrow: { ...type.eyebrowSm, color: colors.oxRed, marginBottom: 3 },
-  title: { fontFamily: fontFamily.extrabold, fontSize: 25, lineHeight: 29, color: colors.ink },
+  title: { fontFamily: fontFamily.titulo, fontSize: 25, lineHeight: 29, color: colors.ink },
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 12 },
   nota: { ...type.caption, color: colors.ink2 },
   hero: { borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 14, ...shadows.hero },
   heroKicker: { fontFamily: fontFamily.extrabold, fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
-  heroNumero: { fontFamily: fontFamily.extrabold, fontSize: 44, lineHeight: 52, color: colors.white, marginTop: 2 },
+  heroNumero: { fontFamily: fontFamily.titulo, fontSize: 44, lineHeight: 52, color: colors.white, marginTop: 2 },
   heroBody: { fontFamily: fontFamily.semibold, fontSize: 13, lineHeight: 18, color: 'rgba(255,255,255,.9)' },
   heroVacantes: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,.2)', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 14, minWidth: 86 },
-  heroVacNum: { fontFamily: fontFamily.extrabold, fontSize: 28, color: colors.white },
+  heroVacNum: { fontFamily: fontFamily.titulo, fontSize: 28, color: colors.white },
   heroVacTxt: { fontFamily: fontFamily.bold, fontSize: 12, color: 'rgba(255,255,255,.9)' },
   card: {
     borderRadius: radii.xl,

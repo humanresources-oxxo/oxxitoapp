@@ -9,13 +9,13 @@
 // from before the key existed confirms the PIN here first.
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, Platform, StyleSheet, Text, View } from 'react-native';
+import { Fondo } from '../components/Fondo';
 import { Pressable } from '../components/Pressable';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BotonEncabezado, Encabezado } from '../components/Encabezado';
 import { PinUnaVez } from '../components/PinUnaVez';
 import { getJson, storageKeys } from '../services/appStorage';
 import { leerLlave } from '../services/sesion';
-import { colors, radii, type, fontFamily, gradients } from '../theme/tokens';
+import { colors, radii, type, fontFamily } from '../theme/tokens';
 
 // Same domain as the app (Cloudflare passes /DashboardsOxxo/* to the dashboards
 // site, worker/index.js): on web a path is enough (and keeps the session key
@@ -35,7 +35,7 @@ export function ResumenScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Fondo />
       <Encabezado titulo="Resumen" eyebrow="Plaza Oaxaca · ficha" onBack={onBack}>
         <BotonEncabezado icono="refresh" etiqueta="Actualizar" onPress={() => setRecarga((n) => n + 1)} />
       </Encabezado>

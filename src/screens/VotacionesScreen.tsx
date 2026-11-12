@@ -11,6 +11,7 @@ import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Esqueleto } from '../components/Estado';
 import { Encabezado } from '../components/Encabezado';
+import { Fondo } from '../components/Fondo';
 import { Icon } from '../components/Icon';
 import { Desplegable } from '../components/Visual';
 import { getJson, storageKeys } from '../services/appStorage';
@@ -151,7 +152,7 @@ export function VotacionesScreen({ onBack, onCambio }: { onBack: () => void; onC
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Fondo />
       <Encabezado titulo="Votaciones" eyebrow="Voto secreto" onBack={onBack} />
 
       {error ? (
@@ -733,11 +734,11 @@ const styles = StyleSheet.create({
   nota: { ...type.caption, color: colors.ink2 },
   hero: { borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 14, ...shadows.hero },
   heroKicker: { fontFamily: fontFamily.extrabold, fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
-  heroNumero: { fontFamily: fontFamily.extrabold, fontSize: 52, lineHeight: 60, color: colors.white },
+  heroNumero: { fontFamily: fontFamily.titulo, fontSize: 52, lineHeight: 60, color: colors.white },
   heroBody: { fontFamily: fontFamily.semibold, fontSize: 12.5, lineHeight: 18, color: 'rgba(255,255,255,.9)' },
   heroIcono: { width: 64, height: 64, borderRadius: 22, backgroundColor: 'rgba(255,255,255,.2)', alignItems: 'center', justifyContent: 'center' },
   card: { borderRadius: radii.xl, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, padding: 16, ...shadows.card },
-  cardTitle: { fontFamily: fontFamily.extrabold, fontSize: 17, lineHeight: 22, color: colors.ink },
+  cardTitle: { fontFamily: fontFamily.titulo, fontSize: 17, lineHeight: 22, color: colors.ink },
   descripcion: { fontFamily: fontFamily.semibold, fontSize: 13.5, lineHeight: 19, color: colors.ink2 },
   meta: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink3 },
   subTitulo: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.ink3, textTransform: 'uppercase', letterSpacing: 0.8 },
@@ -810,7 +811,7 @@ const styles = StyleSheet.create({
     ...shadows.sheet,
   },
   asa: { alignSelf: 'center', width: 42, height: 5, borderRadius: radii.pill, backgroundColor: colors.line2, marginBottom: 14 },
-  hojaTitulo: { fontFamily: fontFamily.extrabold, fontSize: 20, color: colors.ink, marginBottom: 8 },
+  hojaTitulo: { fontFamily: fontFamily.titulo, fontSize: 20, color: colors.ink, marginBottom: 8 },
   etiqueta: { ...type.label, color: colors.ink, marginBottom: 8, marginTop: 14 },
   input: {
     minHeight: 48,

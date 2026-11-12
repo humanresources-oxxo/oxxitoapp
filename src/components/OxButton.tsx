@@ -36,6 +36,7 @@ export function OxButton({ children, onPress, variant = 'primary', disabled, ico
           end={gradients.oxGrad.end}
           style={[styles.base, styles.shadowPrimary, style]}
         >
+          <LinearGradient colors={['rgba(255,255,255,.3)', 'rgba(255,255,255,0)']} style={styles.brillo} />
           <Text style={[type.button, styles.textWhite]}>{children}</Text>
           {icon}
         </LinearGradient>
@@ -91,13 +92,15 @@ const styles = StyleSheet.create({
   base: {
     width: '100%',
     height: 56,
-    borderRadius: radii.lg,
+    borderRadius: radii.pill,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 9,
   },
   textWhite: { color: colors.white },
+  // The shine on the top half, like a glossy pill.
+  brillo: { position: 'absolute', top: 2, left: 2, right: 2, height: 28, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
   disabled: { backgroundColor: colors.line2 },
   shadowPrimary: {
     shadowColor: colors.oxRed,

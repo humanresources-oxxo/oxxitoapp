@@ -9,8 +9,8 @@
 // Data uploaded by RH from DashboardsOxxo's admin panel (services/cct.ts).
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Fondo } from '../components/Fondo';
 import { Pressable } from '../components/Pressable';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Esqueleto } from '../components/Estado';
 import { Encabezado } from '../components/Encabezado';
 import { Icon } from '../components/Icon';
@@ -20,7 +20,7 @@ import { esSinSesion } from '../services/sesion';
 import { Anillo, ColumnasApiladas, Desplegable, Indicador, Leyenda } from '../components/Visual';
 import { cargarCct, Cct, CctDatos, esOaxaca } from '../services/cct';
 import { normalizarNombre, sinAcentos } from '../services/gviz';
-import { colors, radii, shadows, type, fontFamily, gradients } from '../theme/tokens';
+import { colors, radii, shadows, type, fontFamily } from '../theme/tokens';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 function fecha(iso?: string) {
@@ -185,7 +185,7 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Fondo />
       <Encabezado titulo="Contratos colectivos" eyebrow={`OXXO · todas las plazas${cargado ? ` · ${cargado}` : ''}`} onBack={onBack} />
 
       {error ? (
@@ -504,17 +504,17 @@ const styles = StyleSheet.create({
   banda: { alignSelf: 'stretch', borderRadius: 10, backgroundColor: '#D8B200', paddingVertical: 7, marginBottom: 12 },
   bandaTxt: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.ink, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.4 },
   mini: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.line },
-  miniNum: { fontFamily: fontFamily.extrabold, fontSize: 24, color: colors.ink },
+  miniNum: { fontFamily: fontFamily.titulo, fontSize: 24, color: colors.ink },
   miniTxt: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink2, marginTop: 2 },
   anilloFila: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  anilloNum: { fontFamily: fontFamily.extrabold, fontSize: 22, color: colors.ink },
+  anilloNum: { fontFamily: fontFamily.titulo, fontSize: 22, color: colors.ink },
   leyendaFila: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 10 },
   leyendaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   leyendaPunto: { width: 10, height: 10, borderRadius: 5 },
   leyendaTxt: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink2 },
   compliance: { alignItems: 'center', borderColor: '#8FE39A', borderWidth: 2 },
   complianceTit: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.ink2, textTransform: 'uppercase', letterSpacing: 0.6 },
-  complianceNum: { fontFamily: fontFamily.extrabold, fontSize: 36, color: colors.ink, marginTop: 4 },
+  complianceNum: { fontFamily: fontFamily.titulo, fontSize: 36, color: colors.ink, marginTop: 4 },
   limpiar: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: '#FFF0EC' },
   limpiarTxt: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.oxRed },
   subTitulo: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.ink3, textTransform: 'uppercase', letterSpacing: 0.8 },
