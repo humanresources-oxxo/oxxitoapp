@@ -9,8 +9,8 @@
 // Data uploaded by RH from DashboardsOxxo's admin panel (services/cct.ts).
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Fondo } from '../components/Fondo';
 import { Pressable } from '../components/Pressable';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Esqueleto } from '../components/Estado';
 import { Encabezado } from '../components/Encabezado';
 import { Icon } from '../components/Icon';
@@ -20,7 +20,7 @@ import { esSinSesion } from '../services/sesion';
 import { Anillo, ColumnasApiladas, Desplegable, Indicador, Leyenda } from '../components/Visual';
 import { cargarCct, Cct, CctDatos, esOaxaca } from '../services/cct';
 import { normalizarNombre, sinAcentos } from '../services/gviz';
-import { colors, radii, shadows, type, fontFamily, gradients } from '../theme/tokens';
+import { colors, radii, shadows, type, fontFamily } from '../theme/tokens';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 function fecha(iso?: string) {
@@ -185,7 +185,7 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Fondo />
       <Encabezado titulo="Contratos colectivos" eyebrow={`OXXO · todas las plazas${cargado ? ` · ${cargado}` : ''}`} onBack={onBack} />
 
       {error ? (

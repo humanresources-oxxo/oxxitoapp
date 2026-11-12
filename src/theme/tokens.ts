@@ -151,6 +151,12 @@ export const shadows = {
 
 export const minTapTarget = 44;
 
+// Frosted glass: translucent white with a bright rim. For what floats over
+// the page (tab bar, headers, pills); long text stays on solid cards.
+export const vidrio = { backgroundColor: 'rgba(255,255,255,.62)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,.95)' };
+// The soft shadow under a glass piece.
+export const sombraVidrio = { shadowColor: 'rgba(120,60,20,1)', shadowOpacity: 0.14, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 4 };
+
 // Sheets and bubbles are solid: text behind them must not show through.
 export const solida = { backgroundColor: colors.card, borderColor: colors.line };
 

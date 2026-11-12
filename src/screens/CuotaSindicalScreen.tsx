@@ -9,6 +9,7 @@ import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Esqueleto } from '../components/Estado';
 import { Encabezado } from '../components/Encabezado';
+import { Fondo } from '../components/Fondo';
 import { Icon } from '../components/Icon';
 import { usePinDeSesion } from '../components/PinDeSesion';
 import { Anillo, Barras, Columnas, Delta, Desplegable, Leyenda } from '../components/Visual';
@@ -105,7 +106,7 @@ export function CuotaSindicalScreen({ onBack, soloMisTiendas = false }: { onBack
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Fondo />
       <Encabezado titulo="Cuota sindical" eyebrow={`Plaza Oaxaca${cuota?.cargadoEl ? ` · ${cuota.cargadoEl}` : ''}`} onBack={onBack} />
 
       {error ? (

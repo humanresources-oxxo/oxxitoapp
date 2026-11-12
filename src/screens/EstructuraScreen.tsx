@@ -7,6 +7,7 @@
 // Only for the same puestos as Actas (see services/actas.ts).
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Fondo } from '../components/Fondo';
 import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -124,7 +125,7 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Fondo />
       <Encabezado titulo="Estructura" eyebrow={`Plaza Oaxaca${actualizado ? ` · ${actualizado}` : ''}`} onBack={onBack} />
 
       {error ? (

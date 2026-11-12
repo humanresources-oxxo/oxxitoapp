@@ -2,6 +2,7 @@
 // Employee profile, preferences, and account actions.
 import React, { useEffect, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Fondo } from '../components/Fondo';
 import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BearAvatar } from '../components/Bear';
@@ -130,12 +131,7 @@ function ProfileBody({
 
   return (
     <View style={styles.screen}>
-      <LinearGradient
-        colors={gradients.fondo.colors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+      <Fondo />
 
       <Encabezado titulo="Perfil" />
 

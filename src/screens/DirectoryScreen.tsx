@@ -6,6 +6,7 @@ import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Encabezado } from '../components/Encabezado';
 import { Esqueleto, EstadoVacio } from '../components/Estado';
+import { Fondo } from '../components/Fondo';
 import { Icon } from '../components/Icon';
 import { Contact, fetchContacts } from '../services/directory';
 import { colors, gradients, radii, shadows, type, fontFamily, hoja } from '../theme/tokens';
@@ -89,12 +90,7 @@ export function DirectoryScreen() {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient
-        colors={gradients.fondo.colors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+      <Fondo />
 
       <Encabezado titulo="Directorio" />
 

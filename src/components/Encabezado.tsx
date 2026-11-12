@@ -6,7 +6,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icon } from './Icon';
 import { Pressable } from './Pressable';
-import { colors, fontFamily, type } from '../theme/tokens';
+import { colors, fontFamily, sombraVidrio, type, vidrio } from '../theme/tokens';
 
 export function Encabezado({
   titulo,
@@ -72,7 +72,7 @@ export function BotonEncabezado({
 }
 
 const styles = StyleSheet.create({
-  safe: { backgroundColor: 'rgba(255,255,255,.56)' },
+  safe: { backgroundColor: 'rgba(255,255,255,.3)' },
   fila: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
   copy: { flex: 1 },
   eyebrow: { ...type.eyebrowSm, color: colors.oxRed, marginBottom: 2 },
@@ -81,15 +81,15 @@ const styles = StyleSheet.create({
   acciones: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   boton: {
     height: 44,
-    borderRadius: 14,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.line,
+    ...vidrio,
+    backgroundColor: 'rgba(255,255,255,.8)',
+    ...sombraVidrio,
   },
   botonCuadrado: { width: 44 },
-  botonTexto: { paddingHorizontal: 13, flexDirection: 'row', gap: 6 },
+  botonTexto: { paddingHorizontal: 15, flexDirection: 'row', gap: 6 },
   botonPrincipal: { backgroundColor: colors.oxRed, borderColor: colors.oxRed },
   botonEtq: { fontFamily: fontFamily.bold, fontSize: 13.5 },
 

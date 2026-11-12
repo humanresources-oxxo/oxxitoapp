@@ -9,6 +9,7 @@
 // Plaza Oaxaca only (see services/gviz.ts).
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Fondo } from '../components/Fondo';
 import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -86,7 +87,7 @@ export function VacacionesScreen({
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Fondo />
       <Encabezado titulo="Vacaciones" eyebrow={`Plaza Oaxaca${actualizado ? ` · ${actualizado}` : ''}`} onBack={onBack} />
         {conEquipo ? (
           <View style={styles.segmento}>

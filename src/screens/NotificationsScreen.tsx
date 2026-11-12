@@ -9,6 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { AvisoComposer } from '../components/AvisoComposer';
 import { BotonEncabezado, Encabezado } from '../components/Encabezado';
 import { Esqueleto, EstadoVacio } from '../components/Estado';
+import { Fondo } from '../components/Fondo';
 import { Icon } from '../components/Icon';
 import { PinUnaVez } from '../components/PinUnaVez';
 import {
@@ -134,12 +135,7 @@ export function NotificationsScreen() {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient
-        colors={gradients.fondo.colors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+      <Fondo />
 
       <Encabezado titulo="Avisos" nota={unreadCount > 0 ? `${unreadCount} sin leer` : 'Todo está al día'}>
         {unreadCount > 0 ? <BotonEncabezado icono="check" texto="Leídos" etiqueta="Marcar todos como leídos" onPress={markAllRead} /> : null}

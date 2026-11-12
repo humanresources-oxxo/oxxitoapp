@@ -5,6 +5,7 @@
 // that person; reject frees the account so the real employee can register.
 import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Fondo } from '../components/Fondo';
 import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Esqueleto } from '../components/Estado';
@@ -71,7 +72,7 @@ export function AltasScreen({ onBack, onCambio }: { onBack: () => void; onCambio
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Fondo />
       <Encabezado titulo="Altas por aprobar" eyebrow="Cuentas nuevas" onBack={onBack} />
 
       {error ? (

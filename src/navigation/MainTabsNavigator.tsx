@@ -1,11 +1,12 @@
 // src/navigation/MainTabsNavigator.tsx
 // Lightweight post-login tabs without adding a navigation dependency.
-import React, { useEffect, useMemo, useState } from 'react';
-import { BackHandler, Linking, Platform, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, BackHandler, Linking, Platform, StyleSheet, Text, View } from 'react-native';
 import { Pressable } from '../components/Pressable';
-import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { Vidrio } from '../components/Vidrio';
 import { Icon } from '../components/Icon';
 import { ActasScreen } from '../screens/ActasScreen';
 import { ChatHistoryItem, HomeScreen } from '../screens/HomeScreen';
@@ -30,7 +31,7 @@ import { cargarMiVacacion } from '../services/vacaciones';
 import { listarAltas, puedoAprobarAltas } from '../services/altas';
 import { alPedirPin, leerLlave } from '../services/sesion';
 import { PinUnaVez } from '../components/PinUnaVez';
-import { colors, fontFamily, shadows } from '../theme/tokens';
+import { colors, fontFamily, gradients, radii, sombraVidrio } from '../theme/tokens';
 
 // 'actas', 'vacaciones', 'estructura', 'cuota', 'cct', 'dilos' and 'votaciones' are not in the tab
 // bar: they open from Inicio. Actas, Estructura, Cuota sindical, Contratos colectivos,
@@ -51,6 +52,8 @@ const TABS: TabItem[] = [
   { key: 'directory', label: 'Directorio', icon: 'headset' },
   { key: 'profile', label: 'Perfil', icon: 'user' },
 ];
+const ANCHO_BURBUJA = 54;
+const ALTO_BURBUJA = 34;
 const esPestana = (k: TabKey) => TABS.some((t) => t.key === k);
 
 export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
@@ -58,6 +61,14 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
   // A question picked on Inicio, for the chat to ask when it opens.
   const [preguntaChat, setPreguntaChat] = useState<string | undefined>();
   const [vacationDays, setVacationDays] = useState<number | null>(null);
+
+  // The red bubble of the tab bar slides from one tab to the next.
+  const [anchoTabs, setAnchoTabs] = useState(0);
+  const burbuja = useRef(new Animated.Value(0)).current;
+  const indiceTab = Math.max(0, TABS.findIndex((t) => t.key === activeTab));
+  useEffect(() => {
+    Animated.spring(burbuja, { toValue: indiceTab, damping: 16, stiffness: 190, mass: 0.8, useNativeDriver: true }).start();
+  }, [indiceTab]);
 
   // Back goes to Inicio instead of leaving the app: the hardware button on
   // Android, the browser's back on the web (one history entry while away
@@ -298,29 +309,42 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       ) : null}
       {esPestana(activeTab) ? (
         <SafeAreaView edges={['bottom']} style={styles.tabSafe}>
-          <BlurView intensity={38} tint="light" style={styles.tabBar} accessibilityRole="tablist">
-            {TABS.map((tab) => {
-              const active = tab.key === activeTab;
-              return (
-                <Pressable
-                  key={tab.key}
-                  style={styles.tabButton}
-                  onPress={() => ir(tab.key)}
-                  accessibilityRole="tab"
-                  accessibilityLabel={tab.key === 'notifications' && unreadNotices > 0 ? `Avisos: ${unreadNotices} sin leer` : tab.label}
-                  accessibilityState={{ selected: active }}
+          <Vidrio style={styles.tabBar}>
+            <View style={styles.tabFila} accessibilityRole="tablist" onLayout={(e) => setAnchoTabs(e.nativeEvent.layout.width)}>
+              {anchoTabs > 0 ? (
+                <Animated.View
+                  style={[
+                    styles.tabBurbuja,
+                    { left: (anchoTabs / TABS.length - ANCHO_BURBUJA) / 2, transform: [{ translateX: Animated.multiply(burbuja, anchoTabs / TABS.length) }] },
+                  ]}
                 >
-                  <View style={[styles.tabIconWrap, active && styles.tabIconWrapActive]}>
-                    <Icon name={tab.icon} size={21} color={active ? colors.white : colors.ink2} />
-                    {tab.key === 'notifications' && unreadNotices > 0 && !active ? <View style={styles.tabBadge} /> : null}
-                  </View>
-                  <Text style={[styles.tabLabel, active && styles.tabLabelActive]} numberOfLines={1}>
-                    {tab.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </BlurView>
+                  <LinearGradient colors={gradients.oxGrad.colors} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
+                  <LinearGradient colors={['rgba(255,255,255,.34)', 'rgba(255,255,255,0)']} style={styles.tabBrillo} />
+                </Animated.View>
+              ) : null}
+              {TABS.map((tab) => {
+                const active = tab.key === activeTab;
+                return (
+                  <Pressable
+                    key={tab.key}
+                    style={styles.tabButton}
+                    onPress={() => ir(tab.key)}
+                    accessibilityRole="tab"
+                    accessibilityLabel={tab.key === 'notifications' && unreadNotices > 0 ? `Avisos: ${unreadNotices} sin leer` : tab.label}
+                    accessibilityState={{ selected: active }}
+                  >
+                    <View style={styles.tabIconWrap}>
+                      <Icon name={tab.icon} size={21} color={active ? colors.white : colors.ink2} strokeWidth={active ? 2.1 : 1.8} />
+                      {tab.key === 'notifications' && unreadNotices > 0 && !active ? <View style={styles.tabBadge} /> : null}
+                    </View>
+                    <Text style={[styles.tabLabel, active && styles.tabLabelActive]} numberOfLines={1}>
+                      {tab.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Vidrio>
         </SafeAreaView>
       ) : null}
     </View>
@@ -340,45 +364,44 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: 10,
+    paddingHorizontal: 14,
     paddingTop: 8,
+    paddingBottom: 6,
   },
+  // A floating capsule of frosted glass.
   tabBar: {
-    minHeight: 72,
-    borderRadius: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,.86)',
-    backgroundColor: 'rgba(255,255,255,.78)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 2,
-    paddingTop: 8,
-    paddingBottom: 8,
-    ...shadows.card,
+    borderRadius: 36,
+    paddingHorizontal: 6,
+    ...sombraVidrio,
   },
+  tabFila: { flexDirection: 'row' },
   tabButton: {
     flex: 1,
-    minHeight: 56,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
+    paddingTop: 8,
+    paddingBottom: 8,
+    gap: 3,
   },
   tabIconWrap: {
-    width: 44,
-    height: 32,
-    borderRadius: 13,
+    width: ANCHO_BURBUJA,
+    height: ALTO_BURBUJA,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabIconWrapActive: {
-    backgroundColor: colors.oxRed,
+  tabBurbuja: {
+    position: 'absolute',
+    top: 8,
+    width: ANCHO_BURBUJA,
+    height: ALTO_BURBUJA,
+    borderRadius: radii.pill,
+    overflow: 'hidden',
   },
+  // The shine on the top half of the bubble.
+  tabBrillo: { position: 'absolute', top: 1, left: 1, right: 1, height: 18, borderTopLeftRadius: 17, borderTopRightRadius: 17 },
   tabBadge: {
     position: 'absolute',
-    top: -1,
-    right: 3,
+    top: 3,
+    right: 12,
     width: 8,
     height: 8,
     borderRadius: 4,

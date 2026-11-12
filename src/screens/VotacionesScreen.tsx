@@ -11,6 +11,7 @@ import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Esqueleto } from '../components/Estado';
 import { Encabezado } from '../components/Encabezado';
+import { Fondo } from '../components/Fondo';
 import { Icon } from '../components/Icon';
 import { Desplegable } from '../components/Visual';
 import { getJson, storageKeys } from '../services/appStorage';
@@ -151,7 +152,7 @@ export function VotacionesScreen({ onBack, onCambio }: { onBack: () => void; onC
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Fondo />
       <Encabezado titulo="Votaciones" eyebrow="Voto secreto" onBack={onBack} />
 
       {error ? (

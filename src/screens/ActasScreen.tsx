@@ -18,6 +18,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Fondo } from '../components/Fondo';
 import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -430,7 +431,7 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Fondo />
       <Encabezado titulo="Actas y formatos" eyebrow="Relaciones laborales" onBack={onBack}>
         <BotonEncabezado icono="eye" etiqueta="Vista previa" onPress={() => setVista(true)} />
       </Encabezado>
@@ -743,7 +744,7 @@ const styles = StyleSheet.create({
   pasosPie: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.card },
   pasosFalta: { fontFamily: fontFamily.semibold, fontSize: 12.5, color: '#9A5B00', marginBottom: 8 },
   pasosBotones: { flexDirection: 'row', gap: 10 },
-  pasoSiguiente: { minHeight: 50, borderRadius: radii.lg, backgroundColor: colors.oxRed, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 14 },
+  pasoSiguiente: { minHeight: 50, borderRadius: radii.pill, backgroundColor: colors.oxRed, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 14 },
   pasoSiguienteText: { flexShrink: 1, fontFamily: fontFamily.extrabold, fontSize: 14.5, color: colors.white },
   screen: { flex: 1, backgroundColor: colors.bg },
   headerButton: {

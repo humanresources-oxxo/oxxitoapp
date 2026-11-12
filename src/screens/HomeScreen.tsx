@@ -7,9 +7,10 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BearAvatar } from '../components/Bear';
+import { Fondo } from '../components/Fondo';
 import { Icon } from '../components/Icon';
 import { Pressable } from '../components/Pressable';
-import { colors, fontFamily, gradients, radii, shadows, type } from '../theme/tokens';
+import { colors, fontFamily, gradients, radii, sombraVidrio, type, vidrio } from '../theme/tokens';
 
 export type HomeTarget =
   | 'chat'
@@ -86,7 +87,7 @@ export function HomeScreen({
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={gradients.fondo.colors} start={gradients.fondo.start} end={gradients.fondo.end} style={StyleSheet.absoluteFill} />
+      <Fondo />
 
       <SafeAreaView edges={['top']}>
         <View style={styles.header}>
@@ -103,13 +104,13 @@ export function HomeScreen({
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {/* Ask the reglamento: the main thing the app is for. */}
         <Pressable accessibilityRole="button" accessibilityLabel="Preguntar al reglamento" style={styles.ask} onPress={() => onOpenTab('chat')}>
-          <Icon name="sparkle" size={21} color={colors.oxRed} />
+          <Icon name="sparkle" size={21} color={colors.oxRed} fill />
           <Text style={styles.askText} numberOfLines={1}>
             Pregúntale al reglamento…
           </Text>
-          <View style={styles.askSend}>
-            <Icon name="arrowR" size={18} color={colors.white} />
-          </View>
+          <LinearGradient colors={gradients.oxGrad.colors} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.askSend}>
+            <Icon name="arrowR" size={18} color={colors.white} strokeWidth={2.2} />
+          </LinearGradient>
         </Pressable>
 
         {history.length ? (
@@ -163,7 +164,7 @@ export function HomeScreen({
                   onPress={() => onOpenTab(h.target)}
                 >
                   <View style={styles.rowIcon}>
-                    <Icon name={h.icon} size={20} color={colors.ink} />
+                    <Icon name={h.icon} size={20} color={colors.oxRedDark} />
                   </View>
                   <View style={styles.rowCopy}>
                     <Text style={styles.rowTitle}>{h.title}</Text>
@@ -190,7 +191,15 @@ export function HomeScreen({
 function Tile({ icon, value, label, highlight, onPress }: { icon: string; value: string; label: string; highlight?: boolean; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${value} ${label}`} style={[styles.tile, highlight && styles.tileOn]} onPress={onPress}>
-      <Icon name={icon} size={19} color={highlight ? colors.oxRed : colors.ink2} />
+      {highlight ? (
+        <LinearGradient colors={gradients.oxGrad.colors} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.tileIcon}>
+          <Icon name={icon} size={18} color={colors.white} strokeWidth={2.1} />
+        </LinearGradient>
+      ) : (
+        <View style={[styles.tileIcon, styles.tileIconOff]}>
+          <Icon name={icon} size={18} color={colors.ink2} />
+        </View>
+      )}
       <Text style={[styles.tileValue, highlight && { color: colors.oxRed }]} numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>
@@ -220,29 +229,26 @@ const styles = StyleSheet.create({
   title: { fontFamily: fontFamily.extrabold, fontSize: 25, lineHeight: 30, letterSpacing: -0.4, color: colors.ink },
   content: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 20 },
   ask: {
-    minHeight: 58,
-    borderRadius: radii.xxl,
-    backgroundColor: colors.card,
-    borderWidth: 1.5,
-    borderColor: colors.line2,
-    paddingLeft: 16,
+    minHeight: 60,
+    borderRadius: 30,
+    ...vidrio,
+    backgroundColor: 'rgba(255,255,255,.78)',
+    paddingLeft: 18,
     paddingRight: 8,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    ...shadows.card,
+    ...sombraVidrio,
   },
   askText: { flex: 1, fontFamily: fontFamily.semibold, fontSize: 15.5, color: colors.ink2 },
-  askSend: { width: 42, height: 42, borderRadius: 15, backgroundColor: colors.oxRed, alignItems: 'center', justifyContent: 'center' },
+  askSend: { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   recentsWrap: { marginHorizontal: -16, marginTop: 10 },
   recents: { paddingHorizontal: 16, gap: 8 },
   recent: {
     maxWidth: 240,
     minHeight: 44,
     borderRadius: radii.pill,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.line,
+    ...vidrio,
     paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -253,26 +259,27 @@ const styles = StyleSheet.create({
   tiles: { flexDirection: 'row', gap: 10 },
   tile: {
     flex: 1,
-    minHeight: 112,
-    borderRadius: radii.xl,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.line,
+    minHeight: 124,
+    borderRadius: 24,
+    ...vidrio,
+    backgroundColor: 'rgba(255,255,255,.7)',
     padding: 12,
+    ...sombraVidrio,
   },
-  tileOn: { borderColor: '#FFC9BD', backgroundColor: '#FFF6F3' },
+  tileOn: { backgroundColor: 'rgba(255,255,255,.88)' },
+  tileIcon: { width: 36, height: 36, borderRadius: 18, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  tileIconOff: { backgroundColor: 'rgba(36,26,23,.06)' },
   tileValue: { fontFamily: fontFamily.extrabold, fontSize: 28, lineHeight: 34, letterSpacing: -0.5, color: colors.ink, marginTop: 8 },
   tileLabel: { fontFamily: fontFamily.semibold, fontSize: 12.5, lineHeight: 16, color: colors.ink2, marginTop: 2 },
   list: {
-    borderRadius: radii.xl,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.line,
+    borderRadius: 24,
+    ...vidrio,
+    backgroundColor: 'rgba(255,255,255,.8)',
     overflow: 'hidden',
   },
   row: { minHeight: 64, paddingHorizontal: 14, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  rowLine: { borderTopWidth: 1, borderTopColor: colors.line },
-  rowIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: colors.field, alignItems: 'center', justifyContent: 'center' },
+  rowLine: { borderTopWidth: 1, borderTopColor: 'rgba(36,26,23,.07)' },
+  rowIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFE9E2', alignItems: 'center', justifyContent: 'center' },
   rowCopy: { flex: 1 },
   rowTitle: { fontFamily: fontFamily.bold, fontSize: 15, color: colors.ink },
   rowDesc: { fontFamily: fontFamily.medium, fontSize: 13, color: colors.ink2, marginTop: 2 },

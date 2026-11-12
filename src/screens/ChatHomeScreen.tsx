@@ -12,11 +12,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Fondo } from '../components/Fondo';
 import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BearAvatar } from '../components/Bear';
 import { Icon } from '../components/Icon';
+import { Vidrio } from '../components/Vidrio';
 import {
   ChatChoice,
   ChatMessage,
@@ -29,7 +31,7 @@ import {
   answerQuestion,
 } from '../services/chatQa';
 import { getJson, setJson, storageKeys } from '../services/appStorage';
-import { colors, gradients, radii, shadows, type, fontFamily, solida, hoja } from '../theme/tokens';
+import { colors, gradients, radii, shadows, type, fontFamily, solida, hoja, sombraVidrio } from '../theme/tokens';
 
 
 // The conversation stays on the phone (removed on logout): changing tabs or
@@ -195,12 +197,7 @@ export function ChatHomeScreen({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
     >
-      <LinearGradient
-        colors={gradients.fondo.colors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+      <Fondo />
 
       <SafeAreaView edges={['top']} style={styles.safeTop}>
         <View style={styles.header}>
@@ -247,7 +244,7 @@ export function ChatHomeScreen({
       )}
 
       <SafeAreaView edges={['bottom']} style={styles.composerWrap}>
-        <View style={[styles.composerGlass, solida]}>
+        <Vidrio style={styles.composerGlass}>
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -263,7 +260,7 @@ export function ChatHomeScreen({
           >
             <Icon name="send" size={19} color={colors.white} />
           </Pressable>
-        </View>
+        </Vidrio>
       </SafeAreaView>
 
       <Modal transparent visible={!!selectedSource} animationType="fade" onRequestClose={() => setSelectedSource(null)}>
@@ -397,7 +394,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
   },
   safeTop: {
-    backgroundColor: 'rgba(255,255,255,.62)',
+    backgroundColor: 'rgba(255,255,255,.3)',
   },
   header: {
     paddingHorizontal: 18,
@@ -432,12 +429,13 @@ const styles = StyleSheet.create({
   iconButton: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
+    backgroundColor: 'rgba(255,255,255,.8)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,.95)',
+    ...sombraVidrio,
   },
   list: {
     paddingHorizontal: 16,
@@ -563,17 +561,14 @@ const styles = StyleSheet.create({
   },
   composerGlass: {
     minHeight: 58,
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,.85)',
-    backgroundColor: 'rgba(255,255,255,.72)',
+    borderRadius: 29,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 10,
+    paddingLeft: 18,
+    paddingRight: 8,
     paddingVertical: 8,
-    ...shadows.card,
+    ...sombraVidrio,
   },
   input: {
     flex: 1,
@@ -586,7 +581,7 @@ const styles = StyleSheet.create({
   sendButton: {
     width: 42,
     height: 42,
-    borderRadius: 14,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.oxRed,
