@@ -34,10 +34,9 @@ a partir del design handoff (`design_handoff_oxxito_app`).
 - **Vidrio esmerilado** en lo que flota sobre el contenido: barra de pestañas (cápsula con una
   burbuja roja que se desliza), encabezados y sus botones, el campo de Inicio y la caja del chat
   (`Vidrio`, y `vidrio` / `sombraVidrio` en `tokens.ts`). Las tarjetas con texto largo, hojas y
-  formularios siguen sólidos. `Fondo` pone detrás de cada pantalla manchas suaves con los colores
-  del logo. En Android nativo `expo-blur` no desenfoca sin `BlurTargetView`: ahí se ve el mismo
+  formularios siguen sólidos. `Fondo` es el fondo de cada pantalla (blanco), en un solo lugar. En Android nativo `expo-blur` no desenfoca sin `BlurTargetView`: ahí se ve el mismo
   blanco translúcido, sin desenfoque. Con "reducir transparencia" todo es sólido.
-- **Tipografía de títulos:** Fredoka (redonda) en títulos, números grandes y el botón principal
+- **Tipografía de títulos:** Fredoka en negrita (redonda) en títulos, números grandes y el botón principal
   (`fontFamily.titulo`); el texto de lectura sigue en Plus Jakarta Sans.
 - **Tokens** (`src/theme/tokens.ts`): las pantallas usan `fontFamily.*` y `colors.*` en vez de
   valores escritos a mano. Texto mínimo de 12 px y contraste AA para texto (`ink3`, `ok` y los

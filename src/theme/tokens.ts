@@ -53,8 +53,6 @@ export const gradients = {
   purple: { colors: ['#7A3FCB', '#8F5BDC'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
   dark: { colors: ['#34324A', '#5A5570'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
   alertRed: { colors: ['#E0453B', '#FF6A4D'] as const, start: { x: 0.1, y: 0 }, end: { x: 0.85, y: 1 } },
-  // Page background behind every screen.
-  fondo: { colors: ['#FFF7F0', '#FBF6F2', '#FFFFFF'] as const, start: { x: 0, y: 0 }, end: { x: 1, y: 1 } },
   // Splash background: light, so the logo's red sign stands out.
   splash: {
     colors: ['#FFFFFF', '#FFFAEC', '#FFF1CC'] as const,
@@ -94,7 +92,7 @@ export const fontFamily = {
   bold: 'PlusJakartaSans_700Bold',
   extrabold: 'PlusJakartaSans_800ExtraBold',
   // Rounded display face for titles, big numbers and the main button; body text stays in Plus Jakarta.
-  titulo: 'Fredoka_600SemiBold',
+  titulo: 'Fredoka_700Bold',
 };
 
 export const type = {
@@ -155,7 +153,7 @@ export const minTapTarget = 44;
 
 // Frosted glass: translucent white with a bright rim. For what floats over
 // the page (tab bar, headers, pills); long text stays on solid cards.
-export const vidrio = { backgroundColor: 'rgba(255,255,255,.62)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,.95)' };
+export const vidrio = { backgroundColor: 'rgba(255,255,255,.72)', borderWidth: 1, borderColor: 'rgba(36,26,23,.07)' };
 // The soft shadow under a glass piece.
 export const sombraVidrio = { shadowColor: 'rgba(120,60,20,1)', shadowOpacity: 0.14, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 4 };
 

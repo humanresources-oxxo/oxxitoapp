@@ -433,8 +433,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,.8)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,.95)',
+    borderWidth: 1,
+    borderColor: 'rgba(36,26,23,.07)',
     ...sombraVidrio,
   },
   list: {
