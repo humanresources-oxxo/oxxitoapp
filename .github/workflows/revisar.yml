@@ -1,0 +1,40 @@
+# Checks every pull request (and main) before it reaches production: Cloudflare
+# builds and publishes main on its own, so a type error or a build that fails
+# must show up here first. No secrets: it only compiles.
+name: Revisar
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: revisar-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+
+      - name: Tipos (TypeScript)
+        run: npm run typecheck
+
+      - name: Sintaxis del Worker
+        run: npm run check:worker
+
+      - name: Compilar la app web (igual que Cloudflare)
+        run: npm run build:cloudflare
