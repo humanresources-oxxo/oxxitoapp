@@ -107,6 +107,9 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     empleado en `employees`, sin acentos ni "OXXO"/"OAX"; también los nombres que nómina
     corta a 25 letras). Un voto por empleado, con su llave de sesión (migración 35; las
     funciones con PIN de la migración 34 se borraron).
+  - **Lista con sesión (migraciones 54 y 55):** la lista (`sesion_votaciones`) se lee con la
+    llave de sesión; antes `list_votaciones(numero)` decía, con solo el número y sin sesión, en
+    cuáles ya había votado esa persona y, con un número de RH, los resultados en vivo.
   - **Secreto:** `votacion_participantes` guarda quién ya votó y `votacion_opciones.votos` es
     un contador; no hay tabla que una a la persona con su opción ni horas de voto.
   - **Resultados:** al cerrar (o al votar, si se marcó "Mostrar resultados al votar"). RH los
