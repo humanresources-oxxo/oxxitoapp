@@ -11,6 +11,7 @@ import { chat, rpc } from './chat.js';
 import { redactar } from './redactar.js';
 import { resumenFicha } from './resumen.js';
 import { generarFaq } from './faq.js';
+import { datosChat } from './datos.js';
 
 // The Panel Conoxxo lives on the dashboards site: only that origin may call
 // /api/faq/* from a browser (it still needs an RH session, checked by Supabase).
@@ -60,6 +61,16 @@ export default {
         return await resumenFicha(request, env, rpc);
       } catch (err) {
         console.log(JSON.stringify({ resumen_ia: true, error: String((err && (err.status || err.message)) || err) }));
+        return new Response(JSON.stringify({ ok: false, error: 'error_servidor' }), { status: 502, headers: { 'content-type': 'application/json' } });
+      }
+    }
+    // Chatbot about the Ficha de Plaza numbers, office puestos only (worker/datos.js).
+    if (url.pathname === '/api/datos-chat') {
+      if (request.method !== 'POST') return new Response('Método no permitido', { status: 405 });
+      try {
+        return await datosChat(request, env, rpc);
+      } catch (err) {
+        console.log(JSON.stringify({ datos_ia: true, error: String((err && (err.status || err.message)) || err) }));
         return new Response(JSON.stringify({ ok: false, error: 'error_servidor' }), { status: 502, headers: { 'content-type': 'application/json' } });
       }
     }
