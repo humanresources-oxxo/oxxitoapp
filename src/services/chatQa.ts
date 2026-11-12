@@ -1,11 +1,11 @@
 // src/services/chatQa.ts
-// Real-reglamento QA: full-text search over the RIT articles table (Supabase).
+// Real-reglamento QA: full-text search over the RIT articles table (Supabase),
+// read with the session key since migration 49.
 // Prototype (answerQuestion): for the employee numbers enabled on the server,
 // a Workers AI model writes the answer from the articles that search finds
 // (worker/chat.js, POST /api/chat); otherwise, or if it fails, the search.
 import { Platform } from 'react-native';
-import { leerLlave } from './sesion';
-import { supabase } from './supabaseClient';
+import { esSinSesion, leerLlave, rpcSesion } from './sesion';
 
 export type ChatSource = {
   article: string;
@@ -67,24 +67,29 @@ function truncate(text: string, max = 220) {
 // (79, 93, 106) or the numbered items (77, 78).
 async function opcionesDe(numero: number): Promise<{ choices: ChatChoice[]; choiceKind: ChoiceKind } | null> {
   if (numero === 79 || numero === 93 || numero === 106) {
-    const { data } = await supabase.rpc('list_sanciones', { p_article: numero });
+    const data = await rpcSesion<any[]>('sesion_lista_sanciones', { p_article: numero });
     if (data && data.length > 0) return { choices: (data as { id: number; infraccion: string }[]).map((s) => ({ id: s.id, label: s.infraccion })), choiceKind: 'sancion' };
   }
   if (numero === 77 || numero === 78) {
-    const { data } = await supabase.rpc('list_reglamento_items', { p_article: numero });
+    const data = await rpcSesion<any[]>('sesion_lista_items', { p_article: numero });
     if (data && data.length > 0) return { choices: data as ChatChoice[], choiceKind: 'item' };
   }
   return null;
 }
 
 export async function matchQA(question: string): Promise<QAResult> {
-  const { data, error } = await supabase.rpc('search_reglamento', { q: question });
-  if (error || !data || data.length === 0) return FALLBACK;
+  // Without a session this throws (the chat says it could not connect and the
+  // app asks for the PIN); any other failure is the usual "no encontré".
+  const data = await rpcSesion<any[]>('sesion_buscar_reglamento', { q: question }).catch((e) => {
+    if (esSinSesion(e)) throw e;
+    return null;
+  });
+  if (!data || data.length === 0) return FALLBACK;
 
   const top = data[0] as { article: string; number: number; body: string };
 
   if (top.number === 79 || top.number === 93 || top.number === 106) {
-    const { data: sanciones } = await supabase.rpc('list_sanciones', { p_article: top.number });
+    const sanciones = await rpcSesion<any[]>('sesion_lista_sanciones', { p_article: top.number }).catch(() => null);
     if (sanciones && sanciones.length > 0) {
       return {
         answer: 'Estas son las sanciones del reglamento. Elige el motivo que te interesa para ver el detalle:',
@@ -100,7 +105,7 @@ export async function matchQA(question: string): Promise<QAResult> {
   }
 
   if (top.number === 77 || top.number === 78) {
-    const { data: items } = await supabase.rpc('list_reglamento_items', { p_article: top.number });
+    const items = await rpcSesion<any[]>('sesion_lista_items', { p_article: top.number }).catch(() => null);
     if (items && items.length > 0) {
       return {
         answer: 'Este artículo tiene varios puntos. Elige el que te interesa para ver el detalle:',
@@ -184,16 +189,16 @@ export async function answerQuestion(question: string): Promise<QAResult> {
 export async function getSancion(
   id: number
 ): Promise<{ infraccion: string; pasos: string[]; articleNumber: number } | null> {
-  const { data, error } = await supabase.rpc('get_sancion', { p_id: id });
-  if (error || !data || data.length === 0) return null;
+  const data = await rpcSesion<any[]>('sesion_sancion', { p_id: id }).catch(() => null);
+  if (!data || data.length === 0) return null;
   return { infraccion: data[0].infraccion, pasos: data[0].pasos, articleNumber: data[0].article_number };
 }
 
 export async function getReglamentoItem(
   id: number
 ): Promise<{ label: string; body: string; articleNumber: number } | null> {
-  const { data, error } = await supabase.rpc('get_reglamento_item', { p_id: id });
-  if (error || !data || data.length === 0) return null;
+  const data = await rpcSesion<any[]>('sesion_item', { p_id: id }).catch(() => null);
+  if (!data || data.length === 0) return null;
   return { label: data[0].label, body: data[0].body, articleNumber: data[0].article_number };
 }
 
@@ -207,8 +212,8 @@ export const chatSuggestions = [
 // different mix each time; the fixed ones while there are none.
 export async function cargarSugerencias(): Promise<string[]> {
   try {
-    const { data, error } = await supabase.rpc('faq_reglamento_aprobadas');
-    const preguntas = !error && Array.isArray(data) ? (data as { pregunta: string }[]).map((f) => f.pregunta).filter(Boolean) : [];
+    const data = await rpcSesion<any[]>('sesion_faq_aprobadas', {}, false);
+    const preguntas = Array.isArray(data) ? (data as { pregunta: string }[]).map((f) => f.pregunta).filter(Boolean) : [];
     if (preguntas.length < 3) return chatSuggestions;
     return preguntas
       .map((p) => ({ p, orden: Math.random() }))

@@ -4,17 +4,16 @@
 // their sizes, aviso_imagen each one's data), and RH / Gerente de plaza
 // publish and delete them with the session key (services/sesion.ts).
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
+import { rpcSesion } from './sesion';
 import { supabase } from './supabaseClient';
 import { Notice, NoticeKind } from '../data/notices';
 
 const dateFormatter = new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-export async function fetchNotices(): Promise<Notice[]> {
-  // list_avisos (migration 36) also brings the images; before that
-  // migration only list_notices exists.
-  let { data, error } = await supabase.rpc('list_avisos');
-  if (error) ({ data, error } = await supabase.rpc('list_notices'));
-  if (error) throw error;
+// Read with the session key (migration 49). avisar: false for the unread
+// badge, which must not open the PIN prompt by itself.
+export async function fetchNotices(avisar = true): Promise<Notice[]> {
+  const data = await rpcSesion<any[]>('sesion_avisos', {}, avisar);
 
   return (data ?? []).map((row: any) => ({
     id: row.id,
@@ -34,8 +33,8 @@ export function cargarImagenAviso(id: string): Promise<string> {
   let p = cache.get(id);
   if (!p) {
     p = (async () => {
-      const { data, error } = await supabase.rpc('aviso_imagen', { p_id: id });
-      if (error || !data?.[0]) throw error ?? new Error('sin imagen');
+      const data = await rpcSesion<any[]>('sesion_aviso_imagen', { p_id: id });
+      if (!data?.[0]) throw new Error('sin imagen');
       return `data:${data[0].mime};base64,${data[0].data}`;
     })();
     p.catch(() => cache.delete(id));

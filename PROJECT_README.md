@@ -79,6 +79,18 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   - La dirección del cliente sale de `cf-connecting-ip` (la pone Cloudflare; un encabezado falso
     se rechaza con 403). El diagnóstico `mi_red()` se borró en la migración 38.
 
+✅ **Lecturas con sesión (migraciones 49 y 50):** el reglamento (búsqueda, sanciones, puntos y
+  preguntas frecuentes), los avisos (con sus imágenes) y el directorio ya no contestan a la llave
+  pública: se leen con la llave de sesión (`rpcSesion` en `src/services/sesion.ts` →
+  `sesion_buscar_reglamento`, `sesion_lista_sanciones`, `sesion_sancion`, `sesion_lista_items`,
+  `sesion_item`, `sesion_faq_aprobadas`, `sesion_buscar_faq`, `sesion_avisos`,
+  `sesion_aviso_imagen`, `sesion_directorio`). El Worker del chat busca con la llave de quien
+  pregunta. Sin llave (sesión de antes de la llave, o terminada por un cambio de PIN) la app pide
+  el PIN una vez (`PinUnaVez` desde `MainTabsNavigator`) y recarga la pantalla. Lo único público
+  es `contacto_recuperar_pin()`: nombre y teléfono de recepción de RH para "Olvidé mi PIN".
+  **Orden:** correr la 49 → publicar la app → correr la 50 (cierra las funciones viejas; antes,
+  revisar que el Panel Conoxxo no las use).
+
 ✅ **Votaciones (`src/screens/VotacionesScreen.tsx`):** votaciones secretas para lugares,
   fechas y decisiones del equipo (no sindicales). Supabase, migración 34
   (`supabase/migration_34_votaciones.sql`); servicio `src/services/votaciones.ts`.
