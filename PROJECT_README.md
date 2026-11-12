@@ -149,7 +149,10 @@ a partir del design handoff (`design_handoff_oxxito_app`).
     Worker valida la sesión (`sesion_validar`), deja pasar a quien diga
     `CHAT_IA_NUMEROS` (`wrangler.jsonc`; desde el 2026-11-11 es `"*"`: **todos** los que tienen
     sesión; una lista de números lo limita a esos), con un
-    tope aproximado de `CHAT_IA_LIMITE_DIA` preguntas por persona al día.
+    tope de `CHAT_IA_LIMITE_DIA` preguntas por persona al día. Desde la migración 51 el tope
+    (chat, Mejorar redacción y Lo importante) se cuenta en Supabase (`sesion_ia_contar`, tabla
+    `ia_usos`, día de la Ciudad de México; `worker/limite.js`), así que vale para todas las copias
+    del Worker. Si Supabase no puede contar, se usa la cuenta en memoria de antes.
   - Busca los 3 artículos más cercanos con la misma `search_reglamento` de siempre y **solo
     esos** van al modelo (`CHAT_IA_MODELO`, hoy `@cf/meta/llama-3.3-70b-instruct-fp8-fast`),
     con la instrucción de contestar únicamente con ellos, citar el artículo y mandar a RH lo
