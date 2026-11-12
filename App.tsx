@@ -1,7 +1,7 @@
 ﻿// App.tsx - entry point: loads fonts, wraps navigation, shows onboarding flow.
 import React, { useState, useCallback, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import {
@@ -12,7 +12,7 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { OnboardingNavigator, DonePlaceholder } from './src/navigation/OnboardingNavigator';
-import { getBoolean, removeItem, setBoolean, storageKeys } from './src/services/appStorage';
+import { getBoolean, setBoolean, storageKeys } from './src/services/appStorage';
 import { cerrarSesion } from './src/services/sesion';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { colors } from './src/theme/tokens';
@@ -46,17 +46,16 @@ export default function App() {
     setBoolean(storageKeys.onboardingDone, true);
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     setOnboardingDone(false);
-    removeItem(storageKeys.onboardingDone);
-    removeItem(storageKeys.chatHistory);
-    removeItem(storageKeys.session);
-    // Ends the session key on the server too (avisos, votaciones).
-    cerrarSesion();
-    // An unsent acta draft has a worker's data: it must not outlive the session.
-    removeItem(storageKeys.actaDraft);
-    // The saved vacation balance belongs to this employee too.
-    removeItem(storageKeys.vacationBalance);
+    // Forgets everything saved for this employee (session, key, chat history,
+    // read avisos, acta draft, vacation balance...) and ends the session key
+    // on the server. A slow network must not hold the logout: 3 s at most.
+    await Promise.race([cerrarSesion().catch(() => {}), new Promise((listo) => setTimeout(listo, 3000))]);
+    // On the web, reloading also drops what the screens keep in memory
+    // (estructura, vacaciones, CCT, DILOS, cuota, aviso images), so the next
+    // person on a shared phone starts from zero.
+    if (Platform.OS === 'web' && typeof window !== 'undefined') window.location.reload();
   }, []);
 
   if (!fontsLoaded || !sessionLoaded) {

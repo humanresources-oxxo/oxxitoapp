@@ -44,3 +44,10 @@ export async function setJson<T>(key: string, value: T) {
 export async function removeItem(key: string) {
   await AsyncStorage.removeItem(key);
 }
+
+// Logout: everything the app saved for this employee goes, so the next
+// person on a shared phone starts clean (session, key, chat history and
+// count, read avisos, acta draft, vacation balance, store catalog).
+export async function borrarDatosLocales() {
+  await AsyncStorage.multiRemove(Object.values(storageKeys));
+}

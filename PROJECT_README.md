@@ -100,6 +100,12 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   para puestos con permisos. **Orden:** correr la 52 → publicar la app → correr la 53 (cierra
   `employee_lookup`).
 
+✅ **Cerrar sesión borra todo lo del empleado en el teléfono:** `cerrarSesion`
+  (`src/services/sesion.ts`) borra todas las llaves `oxxito:*` (sesión, llave, historial y contador
+  del chat, avisos leídos, borrador de acta, saldo de vacaciones, catálogo de tiendas) y termina
+  la llave en el servidor. En la web, además, la página se recarga para soltar lo que las
+  pantallas guardan en memoria.
+
 ✅ **Votaciones (`src/screens/VotacionesScreen.tsx`):** votaciones secretas para lugares,
   fechas y decisiones del equipo (no sindicales). Supabase, migración 34
   (`supabase/migration_34_votaciones.sql`); servicio `src/services/votaciones.ts`.
