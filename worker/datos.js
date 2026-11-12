@@ -3,7 +3,8 @@
 // office puestos. POST /api/datos-chat { llave, pregunta, datos, historial }.
 //
 // - The Ficha (DashboardsOxxo js/ficha-plaza.js datosChat) sends the numbers it
-//   already shows, aggregated: totals, one row per asesor and the 5 plazas.
+//   already shows, aggregated: totals, one row per asesor, the 5 plazas and rankings already
+//   sorted (so the model never has to scan the table for "who has the most").
 //   Never colaborador rows or names. Claude Haiku answers only from them.
 // - Who: a valid Conoxxo session whose puesto is NOT a store puesto (Líder,
 //   Encargado, Ayudante, satélite included); an empty puesto is refused. On
@@ -23,7 +24,9 @@ const LIMITE_DIA = 30;
 const SISTEMA = `Eres analista de Recursos Humanos de OXXO Plaza Oaxaca. Contestas preguntas de personal de oficina sobre la Ficha de Plaza. Recibes en JSON los indicadores del último corte: aprovechamiento de estructura, vacantes, bajas del mes contra su compromiso, una fila por asesor y el comparativo de las 5 plazas de la región.
 Reglas:
 - Usa SOLO los números del JSON. Si la respuesta no está ahí (por ejemplo nombres de colaboradores, causas de baja, rotación, tiempo extra u otros dashboards), dilo en una frase y sugiere revisar el dashboard correspondiente o preguntar a RH. No inventes cifras, causas ni tendencias.
-- Puedes sumar, restar, comparar y ordenar con los números que recibes; di la cifra concreta y el asesor, tienda o plaza cuando aplique.
+- Para "quién tiene más/menos" usa "rankings": ya vienen ordenados (el primero es el mayor; en menorAprovechamiento, el menor). No ordenes la tabla de asesores por tu cuenta. Si varios empatan en el primer lugar, nómbralos a todos.
+- Para otros cálculos puedes sumar, restar y comparar con los números que recibes; antes de contestar revisa que la cifra que das sea la del JSON y que tu respuesta no se contradiga.
+- Di la cifra concreta y el asesor, tienda o plaza cuando aplique.
 - Responde en español de México, directo, sin emojis, en máximo 90 palabras. Para listas usa líneas que empiecen con "- ".
 Glosario: "aprovechamiento" = % de tiendas con el equipo completo (completas, incompletas y críticas suman las tiendas); "compromiso" = bajas que se esperaban en el mes; "desfase" = bajas menos compromiso (positivo es malo, negativo es bueno); "vacantesDeMasDe6Dias" = vacantes abiertas hace más de 6 días; "masAntigua" = la vacante con más días abierta; "sinAsesorConfirmado" = bajas del mes que no tienen asesor asignado.`;
 
@@ -89,7 +92,7 @@ export async function datosChat(request, env, rpc) {
   if (!esPuestoOficina(sesion.puesto)) return json({ ok: false, error: 'no_habilitado' }, 403);
   const lista = habilitadosDatos(env);
   if (!lista.includes('*') && !lista.includes(numero)) return json({ ok: false, error: 'no_habilitado' }, 403);
-  const cliente = clienteClaude(env);
+  const cliente = clienteClaude(env, { timeout: 25000 });
   if (!cliente) return json({ ok: false, error: 'ia_no_configurada' }, 503);
   if (verificar) return json({ ok: true });
 
@@ -105,7 +108,7 @@ export async function datosChat(request, env, rpc) {
     .join('\n\n');
 
   const inicio = Date.now();
-  const { datos: r, uso, modelo } = await pedirJson(cliente, { system: SISTEMA, usuario, schema: ESQUEMA, maxTokens: 1024 });
+  const { datos: r, uso, modelo } = await pedirJson(cliente, { system: SISTEMA, usuario, schema: ESQUEMA, maxTokens: 4096, effort: 'medium' });
   const respuesta = String((r && r.respuesta) || '').trim().slice(0, 1500);
   if (!respuesta) return json({ ok: false, error: 'sin_respuesta' }, 502);
   console.log(JSON.stringify({ datos_ia: true, modelo, ms: Date.now() - inicio, turnos: historial.length, uso }));
