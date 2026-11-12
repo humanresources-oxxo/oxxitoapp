@@ -461,3 +461,15 @@ Construir Chat Home + Conversación (`screens-chat-proto.jsx` en el handoff), qu
 - Superficies liquid-glass (recomendado usar `BlurView`)
 - El motor de respuestas mock (`QA`, `matchQA`, `FALLBACK`) como capa de servicio reemplazable
 - Burbujas de chat, citas de artículo, chips de sugerencias, indicador de "escribiendo…"
+
+### Pregúntale a la ficha (chatbot de oficina)
+
+- Tarjeta dentro de la Ficha de Plaza (pestaña Resumen; DashboardsOxxo `js/ficha-chat.js`). Manda la
+  pregunta, los números agregados de la ficha (`OXXO_FICHA.datosChat`: totales, una fila por asesor y
+  las 5 plazas; nunca filas ni nombres de colaboradores) y las últimas 4 preguntas a
+  `POST /api/datos-chat` (`worker/datos.js`), que contesta con Claude Haiku solo con esos números.
+- Quién: sesión válida y puesto que **no** sea de tienda (Líder tienda, Encargado turno, Ayudante
+  tienda, satélite incluido); puesto vacío no pasa. Además `DATOS_IA_NUMEROS` (`wrangler.jsonc`) lo
+  limita a una lista de números (`"*"` = todos los de oficina) mientras RH lo aprueba.
+- Tope: `DATOS_IA_LIMITE_DIA` (30) preguntas por persona al día, contado en Supabase como función
+  `datos` (migración 56). El texto de las preguntas no se guarda.
