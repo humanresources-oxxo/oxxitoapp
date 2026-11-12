@@ -181,10 +181,10 @@ const styles = StyleSheet.create({
     marginBottom: 9,
   },
   title: {
-    fontFamily: fontFamily.extrabold,
+    fontFamily: fontFamily.titulo,
     fontSize: 30,
     lineHeight: 33,
-    letterSpacing: -0.6,
+    letterSpacing: -0.2,
     color: colors.ink,
     maxWidth: 260,
   },

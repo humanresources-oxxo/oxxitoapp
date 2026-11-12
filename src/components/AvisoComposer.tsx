@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     paddingBottom: 22,
     ...shadows.sheet,
   },
-  sheetTitle: { fontFamily: fontFamily.extrabold, fontSize: 20, color: colors.ink, marginBottom: 6 },
+  sheetTitle: { fontFamily: fontFamily.titulo, fontSize: 20, color: colors.ink, marginBottom: 6 },
   label: { ...type.label, color: colors.ink, marginBottom: 8, marginTop: 14 },
   input: {
     minHeight: 50,

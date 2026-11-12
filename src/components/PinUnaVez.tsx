@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     ...shadows.sheet,
   },
   asa: { alignSelf: 'center', width: 42, height: 5, borderRadius: radii.pill, backgroundColor: colors.line2, marginBottom: 14 },
-  titulo: { fontFamily: fontFamily.extrabold, fontSize: 20, color: colors.ink, marginBottom: 6 },
+  titulo: { fontFamily: fontFamily.titulo, fontSize: 20, color: colors.ink, marginBottom: 6 },
   texto: { fontFamily: fontFamily.semibold, fontSize: 13.5, lineHeight: 19, color: colors.ink2, marginBottom: 14 },
   input: {
     minHeight: 50,

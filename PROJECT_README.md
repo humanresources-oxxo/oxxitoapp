@@ -37,6 +37,8 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   formularios siguen sólidos. `Fondo` pone detrás de cada pantalla manchas suaves con los colores
   del logo. En Android nativo `expo-blur` no desenfoca sin `BlurTargetView`: ahí se ve el mismo
   blanco translúcido, sin desenfoque. Con "reducir transparencia" todo es sólido.
+- **Tipografía de títulos:** Fredoka (redonda) en títulos, números grandes y el botón principal
+  (`fontFamily.titulo`); el texto de lectura sigue en Plus Jakarta Sans.
 - **Tokens** (`src/theme/tokens.ts`): las pantallas usan `fontFamily.*` y `colors.*` en vez de
   valores escritos a mano. Texto mínimo de 12 px y contraste AA para texto (`ink3`, `ok` y los
   degradados se oscurecieron); `colors.placeholder` es solo para la pista de un campo vacío.

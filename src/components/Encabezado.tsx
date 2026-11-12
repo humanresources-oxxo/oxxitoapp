@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   fila: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
   copy: { flex: 1 },
   eyebrow: { ...type.eyebrowSm, color: colors.oxRed, marginBottom: 2 },
-  titulo: { fontFamily: fontFamily.extrabold, fontSize: 25, lineHeight: 30, letterSpacing: -0.4, color: colors.ink },
+  titulo: { fontFamily: fontFamily.titulo, fontSize: 25, lineHeight: 30, letterSpacing: -0.2, color: colors.ink },
   nota: { ...type.caption, color: colors.ink2, marginTop: 2 },
   acciones: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   boton: {

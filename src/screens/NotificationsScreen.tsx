@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   detailTitle: {
-    fontFamily: fontFamily.extrabold,
+    fontFamily: fontFamily.titulo,
     fontSize: 22,
     lineHeight: 27,
     color: colors.ink,

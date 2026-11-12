@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sheetTitle: {
-    fontFamily: fontFamily.extrabold,
+    fontFamily: fontFamily.titulo,
     fontSize: 22,
     color: colors.ink,
     textAlign: 'center',

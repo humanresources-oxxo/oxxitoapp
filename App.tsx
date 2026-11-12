@@ -11,6 +11,7 @@ import {
   PlusJakartaSans_700Bold,
   PlusJakartaSans_800ExtraBold,
 } from '@expo-google-fonts/plus-jakarta-sans';
+import { Fredoka_600SemiBold } from '@expo-google-fonts/fredoka';
 import { OnboardingNavigator, DonePlaceholder } from './src/navigation/OnboardingNavigator';
 import { getBoolean, setBoolean, storageKeys } from './src/services/appStorage';
 import { cerrarSesion } from './src/services/sesion';
@@ -23,6 +24,7 @@ export default function App() {
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
+    Fredoka_600SemiBold,
   });
   const [sessionLoaded, setSessionLoaded] = useState(false);
   const [onboardingDone, setOnboardingDone] = useState(false);

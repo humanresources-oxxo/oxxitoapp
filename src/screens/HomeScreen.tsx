@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   },
   headerCopy: { flex: 1 },
   eyebrow: { ...type.eyebrowSm, color: colors.oxRed, marginBottom: 2 },
-  title: { fontFamily: fontFamily.extrabold, fontSize: 25, lineHeight: 30, letterSpacing: -0.4, color: colors.ink },
+  title: { fontFamily: fontFamily.titulo, fontSize: 25, lineHeight: 30, letterSpacing: -0.2, color: colors.ink },
   content: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 20 },
   ask: {
     minHeight: 60,
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   recentText: { flexShrink: 1, fontFamily: fontFamily.semibold, fontSize: 13.5, color: colors.ink },
-  sectionTitle: { fontFamily: fontFamily.extrabold, fontSize: 17, color: colors.ink, marginTop: 22, marginBottom: 10 },
+  sectionTitle: { fontFamily: fontFamily.titulo, fontSize: 17, color: colors.ink, marginTop: 22, marginBottom: 10 },
   tiles: { flexDirection: 'row', gap: 10 },
   tile: {
     flex: 1,
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   tileOn: { backgroundColor: 'rgba(255,255,255,.88)' },
   tileIcon: { width: 36, height: 36, borderRadius: 18, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   tileIconOff: { backgroundColor: 'rgba(36,26,23,.06)' },
-  tileValue: { fontFamily: fontFamily.extrabold, fontSize: 28, lineHeight: 34, letterSpacing: -0.5, color: colors.ink, marginTop: 8 },
+  tileValue: { fontFamily: fontFamily.titulo, fontSize: 28, lineHeight: 34, letterSpacing: -0.2, color: colors.ink, marginTop: 8 },
   tileLabel: { fontFamily: fontFamily.semibold, fontSize: 12.5, lineHeight: 16, color: colors.ink2, marginTop: 2 },
   list: {
     borderRadius: 24,

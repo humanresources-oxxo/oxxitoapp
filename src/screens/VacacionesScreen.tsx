@@ -818,7 +818,7 @@ function Chip({ texto, activo, onPress }: { texto: string; activo: boolean; onPr
 
 const styles = StyleSheet.create({
   anilloFila: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  anilloNum: { fontFamily: fontFamily.extrabold, fontSize: 28, color: colors.ink },
+  anilloNum: { fontFamily: fontFamily.titulo, fontSize: 28, color: colors.ink },
   anilloTxt: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink3, marginTop: -2 },
   venceTxt: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink3, marginTop: 3, marginLeft: 18 },
   cardTitle: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink, marginBottom: 10 },
@@ -839,7 +839,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
   },
   eyebrow: { ...type.eyebrowSm, color: colors.oxRed, marginBottom: 3 },
-  title: { fontFamily: fontFamily.extrabold, fontSize: 25, lineHeight: 29, color: colors.ink },
+  title: { fontFamily: fontFamily.titulo, fontSize: 25, lineHeight: 29, color: colors.ink },
   segmento: {
     flexDirection: 'row',
     marginHorizontal: 16,
@@ -858,7 +858,7 @@ const styles = StyleSheet.create({
   nota: { ...type.caption, color: colors.ink2 },
   hero: { borderRadius: 24, padding: 20, ...shadows.hero },
   heroKicker: { fontFamily: fontFamily.extrabold, fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
-  heroNumero: { fontFamily: fontFamily.extrabold, fontSize: 64, lineHeight: 72, color: colors.white, marginTop: 4 },
+  heroNumero: { fontFamily: fontFamily.titulo, fontSize: 64, lineHeight: 72, color: colors.white, marginTop: 4 },
   heroBody: { fontFamily: fontFamily.bold, fontSize: 16, color: colors.white, marginTop: -4 },
   heroMeta: { fontFamily: fontFamily.semibold, fontSize: 12.5, color: 'rgba(255,255,255,.86)', marginTop: 10 },
   alerta: {
@@ -918,7 +918,7 @@ const styles = StyleSheet.create({
   },
   kpiTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
   kpiEtq: { flex: 1, fontFamily: fontFamily.extrabold, fontSize: 12, letterSpacing: 0.4, textTransform: 'uppercase', color: colors.ink2 },
-  kpiValor: { fontFamily: fontFamily.extrabold, fontSize: 30, lineHeight: 36, color: colors.ink },
+  kpiValor: { fontFamily: fontFamily.titulo, fontSize: 30, lineHeight: 36, color: colors.ink },
   kpiNota: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink3 },
   kpiCheck: { position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   ayudaKpi: { ...type.caption, color: colors.ink3, marginTop: -4 },

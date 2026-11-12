@@ -854,7 +854,7 @@ const styles = StyleSheet.create({
   avisoText: { ...type.caption, color: colors.ink },
   vistaScreen: { flex: 1, backgroundColor: '#E9E2DC' },
   vistaHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10 },
-  vistaTitulo: { fontFamily: fontFamily.extrabold, fontSize: 20, color: colors.ink },
+  vistaTitulo: { fontFamily: fontFamily.titulo, fontSize: 20, color: colors.ink },
   vistaContent: { padding: 12, paddingBottom: 40 },
   hoja: { backgroundColor: colors.white, borderRadius: 6, padding: 18, ...shadows.card },
   hojaEncabezado: { flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 3, borderBottomColor: '#B5121B', paddingBottom: 10, marginBottom: 12 },

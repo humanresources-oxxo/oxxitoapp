@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   nota: { ...type.caption, color: colors.ink2 },
   hero: { borderRadius: 24, padding: 20, ...shadows.hero },
   heroKicker: { fontFamily: fontFamily.extrabold, fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
-  heroNumero: { fontFamily: fontFamily.extrabold, fontSize: 40, lineHeight: 48, color: colors.white, marginTop: 4 },
+  heroNumero: { fontFamily: fontFamily.titulo, fontSize: 40, lineHeight: 48, color: colors.white, marginTop: 4 },
   heroBody: { fontFamily: fontFamily.bold, fontSize: 13.5, color: 'rgba(255,255,255,.92)', marginTop: 2 },
   fila: { flexDirection: 'row', gap: 10 },
   cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink, marginBottom: 10 },
   dato: { flex: 1, padding: 12 },
   datoTitulo: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink2 },
-  datoValor: { fontFamily: fontFamily.extrabold, fontSize: 19, color: colors.ink, marginTop: 4 },
+  datoValor: { fontFamily: fontFamily.titulo, fontSize: 19, color: colors.ink, marginTop: 4 },
   datoNota: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink3, marginTop: 2 },
   buscador: {
     flexDirection: 'row',

@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   title: {
-    fontFamily: fontFamily.extrabold,
+    fontFamily: fontFamily.titulo,
     fontSize: 25,
     lineHeight: 28,
     color: colors.ink,
@@ -645,7 +645,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sourceTitle: {
-    fontFamily: fontFamily.extrabold,
+    fontFamily: fontFamily.titulo,
     fontSize: 22,
     lineHeight: 27,
     color: colors.ink,

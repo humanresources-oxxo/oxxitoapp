@@ -93,12 +93,14 @@ export const fontFamily = {
   semibold: 'PlusJakartaSans_600SemiBold',
   bold: 'PlusJakartaSans_700Bold',
   extrabold: 'PlusJakartaSans_800ExtraBold',
+  // Rounded display face for titles, big numbers and the main button; body text stays in Plus Jakarta.
+  titulo: 'Fredoka_600SemiBold',
 };
 
 export const type = {
   // Display/title 27-44px / 800 / letter-spacing -.02em
-  display: { fontFamily: fontFamily.extrabold, fontSize: 30, letterSpacing: -0.6, lineHeight: 34 },
-  title: { fontFamily: fontFamily.extrabold, fontSize: 28, letterSpacing: -0.5, lineHeight: 31 },
+  display: { fontFamily: fontFamily.titulo, fontSize: 31, letterSpacing: -0.2, lineHeight: 34 },
+  title: { fontFamily: fontFamily.titulo, fontSize: 29, letterSpacing: -0.2, lineHeight: 31 },
   // Section eyebrow 12-13px / 700 / uppercase / letter-spacing .07-.1em
   eyebrow: { fontFamily: fontFamily.bold, fontSize: 13, letterSpacing: 1.1, textTransform: 'uppercase' as const },
   eyebrowSm: { fontFamily: fontFamily.bold, fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase' as const },
@@ -108,7 +110,7 @@ export const type = {
   // Caption/meta 11.5-12.5px
   caption: { fontFamily: fontFamily.medium, fontSize: 13, lineHeight: 19 },
   label: { fontFamily: fontFamily.bold, fontSize: 13.5 },
-  button: { fontFamily: fontFamily.bold, fontSize: 16.5, letterSpacing: 0.1 },
+  button: { fontFamily: fontFamily.titulo, fontSize: 17.5, letterSpacing: 0.2 },
 };
 
 export const shadows = {

@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    fontFamily: fontFamily.extrabold,
+    fontFamily: fontFamily.titulo,
     fontSize: 22,
     lineHeight: 26,
     color: colors.white,
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sectionTitle: {
-    fontFamily: fontFamily.extrabold,
+    fontFamily: fontFamily.titulo,
     fontSize: 17,
     color: colors.ink,
   },
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
     ...shadows.sheet,
   },
   composerTitle: {
-    fontFamily: fontFamily.extrabold,
+    fontFamily: fontFamily.titulo,
     fontSize: 20,
     color: colors.ink,
     marginBottom: 14,
