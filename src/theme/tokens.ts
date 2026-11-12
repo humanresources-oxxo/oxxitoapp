@@ -14,7 +14,7 @@ export const colors = {
   ink3: '#7A6C66',
   // Only for the hint inside an empty field, so it is not mistaken for a value.
   placeholder: '#A2948D',
-  bg: '#FBF6F2',
+  bg: '#FFFFFF',
   card: '#FFFFFF',
   line: '#EFE5DE',
   line2: '#E6D9D0',

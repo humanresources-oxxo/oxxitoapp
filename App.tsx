@@ -73,7 +73,7 @@ export default function App() {
       {/* On the web React Navigation names the browser tab after the screen
           ("undefined" for screens without a title): always Conoxxo. */}
       {/* On a tablet or a computer the app stays a centered column. */}
-      <View style={{ flex: 1, backgroundColor: '#F1E8E1', alignItems: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: '#F4F1EF', alignItems: 'center' }}>
         <View style={{ flex: 1, width: '100%', maxWidth: anchoMaximo, backgroundColor: colors.bg, overflow: 'hidden' }}>
           <NavigationContainer documentTitle={{ formatter: () => 'Conoxxo' }}>
             <ErrorBoundary>

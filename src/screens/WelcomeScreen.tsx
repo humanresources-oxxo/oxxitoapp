@@ -201,9 +201,9 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 13,
     borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,.7)',
+    backgroundColor: '#FBF6F2',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,.8)',
+    borderColor: colors.line,
   },
   featIcon: {
     width: 40,
