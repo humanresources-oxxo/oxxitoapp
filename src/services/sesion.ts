@@ -36,6 +36,36 @@ export const olvidarLlave = () => removeItem(storageKeys.sessionKey);
 export const SIN_SESION = 'sesion_conoxxo';
 export const esSinSesion = (e: unknown) => String((e as any)?.message ?? e).includes(SIN_SESION);
 
+// Reads that need the session key (migration 49: reglamento, avisos,
+// directorio): calls a sesion_* function with the saved key as p_token.
+// Without a key, or when the server rejects it, it fails with SIN_SESION and
+// (unless avisar is false, for background reads) tells whoever listens with
+// alPedirPin, so the app asks for the PIN once and reloads the screen.
+const oyentes = new Set<() => void>();
+export function alPedirPin(fn: () => void) {
+  oyentes.add(fn);
+  return () => {
+    oyentes.delete(fn);
+  };
+}
+
+export async function rpcSesion<T = any>(fn: string, args: Record<string, unknown> = {}, avisar = true): Promise<T> {
+  const pedirPin = () => {
+    if (avisar) oyentes.forEach((o) => o());
+  };
+  const llave = await leerLlave();
+  if (!llave) {
+    pedirPin();
+    throw new Error(`${SIN_SESION}: sin llave`);
+  }
+  const { data, error } = await supabase.rpc(fn, { p_token: llave, ...args });
+  if (error) {
+    if (esSinSesion(error)) pedirPin();
+    throw error;
+  }
+  return data as T;
+}
+
 // Logout: ends the key on the server too (best effort) and forgets it.
 export async function cerrarSesion() {
   const llave = await leerLlave();

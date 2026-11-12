@@ -12,7 +12,7 @@ import { Icon } from '../components/Icon';
 import { useOnboarding } from '../context/OnboardingContext';
 import { changePin, verifyPin } from '../services/auth';
 import { obtenerLlave } from '../services/sesion';
-import { fetchContacts } from '../services/directory';
+import { contactoRecuperarPin } from '../services/directory';
 import { showAlert } from '../utils/alert';
 import { colors, type } from '../theme/tokens';
 
@@ -112,9 +112,8 @@ export function VerifyScreen({
   };
 
   const recoverPin = () => {
-    fetchContacts()
-      .then((contacts) => {
-        const rh = contacts.find((c) => c.tags.includes('recepcion'));
+    contactoRecuperarPin()
+      .then((rh) => {
         showAlert(
           'Recupera tu PIN',
           rh

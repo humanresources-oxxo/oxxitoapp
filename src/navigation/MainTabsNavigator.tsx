@@ -27,7 +27,8 @@ import { lookupEmployee } from '../services/auth';
 import { fetchNotices } from '../services/notices';
 import { contarPendientes } from '../services/votaciones';
 import { listarAltas, puedoAprobarAltas } from '../services/altas';
-import { leerLlave } from '../services/sesion';
+import { alPedirPin, leerLlave } from '../services/sesion';
+import { PinUnaVez } from '../components/PinUnaVez';
 import { colors, gradients, radii, shadows, type } from '../theme/tokens';
 
 // 'actas', 'vacaciones', 'estructura', 'cuota', 'cct', 'dilos' and 'votaciones' are not in the tab
@@ -77,13 +78,20 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
       .catch(() => {});
   };
 
+  // The reglamento, the avisos and the directory are read with the session
+  // key (migration 49). A session without one (from before the key, or ended
+  // by a PIN change) gets the PIN prompt once; then the open screen reloads.
+  const [pedirPin, setPedirPin] = useState(false);
+  const [versionSesion, setVersionSesion] = useState(0);
+  useEffect(() => alPedirPin(() => setPedirPin(true)), []);
+
   const refreshPendingVotes = (numero = numeroEmpleado) => {
     if (!numero) return;
     contarPendientes(numero).then(setPendingVotes).catch(() => {});
   };
 
   const refreshUnreadNotices = () => {
-    Promise.all([fetchNotices().catch(() => []), getJson<Record<string, boolean>>(storageKeys.noticeReadState, {})]).then(
+    Promise.all([fetchNotices(false).catch(() => []), getJson<Record<string, boolean>>(storageKeys.noticeReadState, {})]).then(
       ([notices, readState]) => {
         setUnreadNotices(notices.filter((n) => !readState[n.id]).length);
       }
@@ -218,10 +226,21 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
     <View style={styles.shell}>
       <View style={styles.content}>
         {/* A screen that fails shows a message; switching tabs (key) clears it. */}
-        <ErrorBoundary key={activeTab} onReset={() => setActiveTab('home')}>
+        <ErrorBoundary key={`${activeTab}-${versionSesion}`} onReset={() => setActiveTab('home')}>
           {content}
         </ErrorBoundary>
       </View>
+      {pedirPin && numeroEmpleado ? (
+        <PinUnaVez
+          numero={numeroEmpleado}
+          onCerrar={() => setPedirPin(false)}
+          onListo={() => {
+            setPedirPin(false);
+            setVersionSesion((v) => v + 1);
+            refreshUnreadNotices();
+          }}
+        />
+      ) : null}
       <SafeAreaView edges={['bottom']} style={styles.tabSafe}>
         <BlurView intensity={38} tint="light" style={styles.tabBar}>
           {tabsPara(canUseActas).map((tab) => {

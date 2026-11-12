@@ -6,8 +6,9 @@
 //    CHAT_IA_NUMEROS = "*" lets every employee with a valid session use it;
 //    a list of employee numbers limits it to those (anyone else gets 403
 //    no_habilitado and the app keeps the keyword search).
-// 2. The same search the app already uses (search_reglamento) picks the 3
-//    closest articles; only those go to the model, never the whole RIT.
+// 2. The same search the app already uses (sesion_buscar_reglamento, with the
+//    employee's session key since migration 49) picks the 3 closest articles;
+//    only those go to the model, never the whole RIT.
 // 3. The model answers only from them and names the article it used. Its last
 //    line, "ARTICULO: <n>" or "ARTICULO: ninguno", is read here and removed.
 //
@@ -120,16 +121,16 @@ const ESQUEMA_RESPUESTA = {
 
 // Search with the question and with Haiku's rewrites; best articles first,
 // no repeats, at most 5.
-async function buscarConHaiku(cliente, env, pregunta) {
+async function buscarConHaiku(cliente, env, pregunta, llave) {
   const { datos, uso } = await pedirJson(cliente, { system: SISTEMA_BUSQUEDA, usuario: pregunta, schema: ESQUEMA_BUSQUEDA, maxTokens: 1024 });
   const busquedas = [pregunta, ...(Array.isArray(datos.busquedas) ? datos.busquedas : [])]
     .map((q) => String(q || '').trim())
     .filter(Boolean)
     .slice(0, 4);
   const [resultados, faqs] = await Promise.all([
-    Promise.all(busquedas.map((q) => rpc(env, 'search_reglamento', { q }).catch(() => []))),
+    Promise.all(busquedas.map((q) => rpc(env, 'sesion_buscar_reglamento', { p_token: llave, q }).catch(() => []))),
     // Approved FAQ (migration 44); before it exists, none.
-    rpc(env, 'search_faq', { q: busquedas.join(' ') }).catch(() => []),
+    rpc(env, 'sesion_buscar_faq', { p_token: llave, q: busquedas.join(' ') }).catch(() => []),
   ]);
   const porNumero = new Map();
   resultados.flat().forEach((a) => {
@@ -144,9 +145,9 @@ async function buscarConHaiku(cliente, env, pregunta) {
   };
 }
 
-async function respuestaHaiku(cliente, env, pregunta) {
+async function respuestaHaiku(cliente, env, pregunta, llave) {
   const inicio = Date.now();
-  const busqueda = await buscarConHaiku(cliente, env, pregunta);
+  const busqueda = await buscarConHaiku(cliente, env, pregunta, llave);
   const encontrados = busqueda.articulos;
   if (!encontrados.length) return { respuesta: null, encontrados };
   const faq = busqueda.faqs.length
@@ -182,7 +183,7 @@ export async function chat(request, env) {
 
   if (cliente) {
     try {
-      const h = await respuestaHaiku(cliente, env, pregunta);
+      const h = await respuestaHaiku(cliente, env, pregunta, llave);
       if (!h.respuesta && !h.encontrados.length) return json({ ok: true, respuesta: null, articulos: [] });
       if (h.respuesta) {
         return json({
@@ -200,7 +201,7 @@ export async function chat(request, env) {
     if (!env.AI) return json({ ok: false, error: 'sin_respuesta' }, 502);
   }
 
-  const encontrados = (await rpc(env, 'search_reglamento', { q: pregunta })) || [];
+  const encontrados = (await rpc(env, 'sesion_buscar_reglamento', { p_token: llave, q: pregunta })) || [];
   // Nothing in the RIT matches: the app shows its usual "no encontré" answer.
   if (!encontrados.length) return json({ ok: true, respuesta: null, articulos: [] });
 
