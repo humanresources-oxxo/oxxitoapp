@@ -28,11 +28,11 @@ const PREAPERTURAS = new Set(
     'Small Beach OAX VSA',
     'Piedra Parada VSA',
     'Gas Nopala VSA',
-    'Union y Progreso VSA',
     'Santa Gertrudis VSA',
     'Fuerza Aérea VSA',
     'Peregrinos VSA',
     // Already open (Nov 2026): 5 de Septiembre VSA, Gas Pancardo VSA.
+    // Closed (CNT Oct 2026): Union y Progreso VSA.
   ].map(normalizarTienda)
 );
 
