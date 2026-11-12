@@ -8,9 +8,12 @@
 // Exploración detallada. An AT only sees their own stores.
 // Plaza Oaxaca only (see services/gviz.ts).
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Esqueleto } from '../components/Estado';
+import { Encabezado } from '../components/Encabezado';
 import { Icon } from '../components/Icon';
 import { usePinDeSesion } from '../components/PinDeSesion';
 import { Anillo, Barras, Desplegable, Leyenda } from '../components/Visual';
@@ -26,7 +29,7 @@ import {
   urgencia,
   Vacacion,
 } from '../services/vacaciones';
-import { colors, gradients, radii, shadows, type } from '../theme/tokens';
+import { colors, gradients, radii, shadows, type, fontFamily } from '../theme/tokens';
 
 type Sesion = { numeroEmpleado?: string; nombre?: string } | null;
 type Vista = 'mias' | 'equipo';
@@ -83,17 +86,8 @@ export function VacacionesScreen({
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
-            <Icon name="chevL" size={20} color={colors.ink} />
-          </Pressable>
-          <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>Plaza Oaxaca{actualizado ? ` · ${actualizado}` : ''}</Text>
-            <Text style={styles.title}>Vacaciones</Text>
-          </View>
-        </View>
+      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Encabezado titulo="Vacaciones" eyebrow={`Plaza Oaxaca${actualizado ? ` · ${actualizado}` : ''}`} onBack={onBack} />
         {conEquipo ? (
           <View style={styles.segmento}>
             {(['mias', 'equipo'] as Vista[]).map((v) => (
@@ -109,7 +103,6 @@ export function VacacionesScreen({
             ))}
           </View>
         ) : null}
-      </SafeAreaView>
 
       {vista === 'mias' ? (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -123,8 +116,8 @@ export function VacacionesScreen({
               })}
             />
           ) : !mia ? (
-            <View style={styles.cargando}>
-              <ActivityIndicator color={colors.oxRed} />
+            <View style={{ padding: 16 }}>
+              <Esqueleto />
             </View>
           ) : mia.vacacion ? (
             <>
@@ -425,8 +418,8 @@ function Equipo({ sesion, soloMisTiendas }: { sesion: Sesion; soloMisTiendas: bo
             })}
           />
         ) : !filas ? (
-          <View style={styles.cargando}>
-            <ActivityIndicator color={colors.oxRed} />
+          <View style={{ padding: 16 }}>
+            <Esqueleto />
           </View>
         ) : sinTiendas ? (
           <Aviso icono="pin" titulo="No encontramos tiendas a tu nombre" texto="Tus tiendas salen del catálogo de asesores de RH. Si te falta alguna, avisa a RH." />
@@ -603,7 +596,7 @@ function Equipo({ sesion, soloMisTiendas }: { sesion: Sesion; soloMisTiendas: bo
                   value={texto}
                   onChangeText={setTexto}
                   placeholder="Nombre, número o tienda"
-                  placeholderTextColor={colors.ink3}
+                  placeholderTextColor={colors.placeholder}
                   autoCorrect={false}
                   returnKeyType="search"
                 />
@@ -824,15 +817,14 @@ function Chip({ texto, activo, onPress }: { texto: string; activo: boolean; onPr
 
 const styles = StyleSheet.create({
   anilloFila: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  anilloNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 28, color: colors.ink },
-  anilloTxt: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11, color: colors.ink3, marginTop: -2 },
-  venceTxt: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11.5, color: colors.ink3, marginTop: 3, marginLeft: 18 },
-  cardTitle: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink, marginBottom: 10 },
+  anilloNum: { fontFamily: fontFamily.extrabold, fontSize: 28, color: colors.ink },
+  anilloTxt: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink3, marginTop: -2 },
+  venceTxt: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink3, marginTop: 3, marginLeft: 18 },
+  cardTitle: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink, marginBottom: 10 },
   linea: { borderBottomWidth: 1, borderBottomColor: colors.line },
   personaBarra: { width: 4, alignSelf: 'stretch', borderRadius: 2 },
-  verMas: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: colors.oxRed, paddingVertical: 6 },
-  screen: { flex: 1, backgroundColor: colors.bg, paddingBottom: 108 },
-  safeTop: { backgroundColor: 'rgba(255,255,255,.56)' },
+  verMas: { fontFamily: fontFamily.extrabold, fontSize: 13, color: colors.oxRed, paddingVertical: 6 },
+  screen: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerCopy: { flex: 1 },
   headerButton: {
@@ -846,7 +838,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
   },
   eyebrow: { ...type.eyebrowSm, color: colors.oxRed, marginBottom: 3 },
-  title: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 25, lineHeight: 29, color: colors.ink },
+  title: { fontFamily: fontFamily.extrabold, fontSize: 25, lineHeight: 29, color: colors.ink },
   segmento: {
     flexDirection: 'row',
     marginHorizontal: 16,
@@ -859,16 +851,15 @@ const styles = StyleSheet.create({
   },
   segBoton: { flex: 1, paddingVertical: 9, borderRadius: radii.pill, alignItems: 'center' },
   segActivo: { backgroundColor: colors.white, ...shadows.card },
-  segTexto: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13.5, color: colors.ink2 },
+  segTexto: { fontFamily: fontFamily.bold, fontSize: 13.5, color: colors.ink2 },
   segTextoActivo: { color: colors.oxRed },
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 12 },
-  cargando: { paddingVertical: 48, alignItems: 'center' },
   nota: { ...type.caption, color: colors.ink2 },
   hero: { borderRadius: 24, padding: 20, ...shadows.hero },
-  heroKicker: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
-  heroNumero: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 64, lineHeight: 72, color: colors.white, marginTop: 4 },
-  heroBody: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 16, color: colors.white, marginTop: -4 },
-  heroMeta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12.5, color: 'rgba(255,255,255,.86)', marginTop: 10 },
+  heroKicker: { fontFamily: fontFamily.extrabold, fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
+  heroNumero: { fontFamily: fontFamily.extrabold, fontSize: 64, lineHeight: 72, color: colors.white, marginTop: 4 },
+  heroBody: { fontFamily: fontFamily.bold, fontSize: 16, color: colors.white, marginTop: -4 },
+  heroMeta: { fontFamily: fontFamily.semibold, fontSize: 12.5, color: 'rgba(255,255,255,.86)', marginTop: 10 },
   alerta: {
     flexDirection: 'row',
     gap: 10,
@@ -880,8 +871,7 @@ const styles = StyleSheet.create({
     borderColor: '#F5D98A',
   },
   alertaVencido: { backgroundColor: '#FFF0EC', borderColor: '#FFD2C4' },
-  alertaTexto: { flex: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13.5, lineHeight: 19, color: colors.ink },
-  fila: { flexDirection: 'row', gap: 10 },
+  alertaTexto: { flex: 1, fontFamily: fontFamily.semibold, fontSize: 13.5, lineHeight: 19, color: colors.ink },
   card: {
     borderRadius: radii.xl,
     backgroundColor: colors.white,
@@ -890,30 +880,26 @@ const styles = StyleSheet.create({
     padding: 16,
     ...shadows.card,
   },
-  periodo: { flex: 1, padding: 14 },
-  periodoTitulo: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12.5, color: colors.ink2 },
-  periodoValor: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 22, color: colors.ink, marginTop: 4 },
-  periodoVence: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, lineHeight: 16, color: colors.ink3, marginTop: 6 },
   dato: { paddingVertical: 10, flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   datoLinea: { borderBottomWidth: 1, borderBottomColor: colors.line },
-  datoEtq: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13, color: colors.ink2 },
-  datoValor: { flexShrink: 1, textAlign: 'right', fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink },
+  datoEtq: { fontFamily: fontFamily.semibold, fontSize: 13, color: colors.ink2 },
+  datoValor: { flexShrink: 1, textAlign: 'right', fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink },
   aviso: { alignItems: 'center', gap: 8, paddingVertical: 28 },
-  avisoTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink, textAlign: 'center' },
+  avisoTitulo: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink, textAlign: 'center' },
   avisoTexto: { ...type.caption, color: colors.ink2, textAlign: 'center', maxWidth: 300 },
   avisoBoton: { marginTop: 6, paddingHorizontal: 18, paddingVertical: 10, borderRadius: radii.pill, backgroundColor: colors.oxRed },
-  avisoBotonTexto: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13.5, color: colors.white },
+  avisoBotonTexto: { fontFamily: fontFamily.bold, fontSize: 13.5, color: colors.white },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   filtros: { gap: 10, padding: 12, borderRadius: radii.xl, backgroundColor: 'rgba(255,255,255,.7)', borderWidth: 1, borderColor: colors.line },
-  contexto: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink2 },
+  contexto: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink2 },
   selector: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.white, maxWidth: '100%' },
   selectorActivo: { borderColor: colors.oxRed, backgroundColor: '#FFF0EC' },
   limpiar: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 9 },
-  limpiarTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: '#D91F2D' },
+  limpiarTexto: { fontFamily: fontFamily.extrabold, fontSize: 13, color: '#D91F2D' },
   capa: { marginTop: 10, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.line, gap: 2 },
   capaPrimera: { marginTop: 2, paddingTop: 0, borderTopWidth: 0 },
-  capaTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 11, letterSpacing: 1.3, textTransform: 'uppercase', color: colors.oxRedDark },
-  capaProposito: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13, color: colors.ink2 },
+  capaTitulo: { fontFamily: fontFamily.extrabold, fontSize: 12, letterSpacing: 1.3, textTransform: 'uppercase', color: colors.oxRedDark },
+  capaProposito: { fontFamily: fontFamily.semibold, fontSize: 13, color: colors.ink2 },
   kpis: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   kpi: {
     flexBasis: '47%',
@@ -930,40 +916,40 @@ const styles = StyleSheet.create({
     ...shadows.card,
   },
   kpiTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 6 },
-  kpiEtq: { flex: 1, fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase', color: colors.ink2 },
-  kpiValor: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 30, lineHeight: 36, color: colors.ink },
-  kpiNota: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11.5, color: colors.ink3 },
+  kpiEtq: { flex: 1, fontFamily: fontFamily.extrabold, fontSize: 12, letterSpacing: 0.4, textTransform: 'uppercase', color: colors.ink2 },
+  kpiValor: { fontFamily: fontFamily.extrabold, fontSize: 30, lineHeight: 36, color: colors.ink },
+  kpiNota: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink3 },
   kpiCheck: { position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   ayudaKpi: { ...type.caption, color: colors.ink3, marginTop: -4 },
   tarjetaHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  tarjetaTitulo: { flexShrink: 1, fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 15, color: colors.ink },
-  badge: { flexShrink: 0, fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11.5, color: colors.ink2, backgroundColor: colors.field, paddingHorizontal: 9, paddingVertical: 4, borderRadius: radii.pill, overflow: 'hidden' },
+  tarjetaTitulo: { flexShrink: 1, fontFamily: fontFamily.extrabold, fontSize: 15, color: colors.ink },
+  badge: { flexShrink: 0, fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink2, backgroundColor: colors.field, paddingHorizontal: 9, paddingVertical: 4, borderRadius: radii.pill, overflow: 'hidden' },
   ayuda: { ...type.caption, color: colors.ink2, backgroundColor: colors.field, padding: 10, borderRadius: radii.md, marginTop: -4, marginBottom: 12, overflow: 'hidden' },
   apilada: { flexDirection: 'row', height: 14, borderRadius: 7, overflow: 'hidden', backgroundColor: colors.field, marginBottom: 4 },
   rango: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   rangoPunto: { width: 10, height: 10, borderRadius: 5 },
-  rangoEtq: { flex: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13, color: colors.ink2 },
-  rangoDias: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink3 },
-  rangoPersonas: { minWidth: 34, textAlign: 'right', fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13.5, color: colors.ink },
+  rangoEtq: { flex: 1, fontFamily: fontFamily.semibold, fontSize: 13, color: colors.ink2 },
+  rangoDias: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink3 },
+  rangoPersonas: { minWidth: 34, textAlign: 'right', fontFamily: fontFamily.extrabold, fontSize: 13.5, color: colors.ink },
   respTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
-  respNombre: { flex: 1, fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink },
-  respPct: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13 },
+  respNombre: { flex: 1, fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink },
+  respPct: { fontFamily: fontFamily.extrabold, fontSize: 13 },
   respBarra: { flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: colors.field },
-  respDetalle: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11.5, color: colors.ink3 },
+  respDetalle: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink3 },
   tablaFila: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9 },
-  tablaCab: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase', color: colors.ink3 },
-  tablaTxt: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink },
+  tablaCab: { fontFamily: fontFamily.extrabold, fontSize: 12, letterSpacing: 0.4, textTransform: 'uppercase', color: colors.ink3 },
+  tablaTxt: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink },
   tablaNum: { minWidth: 64, textAlign: 'right' },
-  velo: { flex: 1, backgroundColor: 'rgba(36,26,23,.35)' },
+  velo: { flex: 1, backgroundColor: colors.velo },
   hoja: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 16, paddingBottom: 28, gap: 8 },
-  hojaTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink, marginBottom: 4 },
+  hojaTitulo: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink, marginBottom: 4 },
   opcion: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 12, borderRadius: radii.md },
   opcionActiva: { backgroundColor: '#FFF0EC' },
-  opcionTxt: { flex: 1, fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: colors.ink },
-  opcionNum: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12.5, color: colors.ink3 },
+  opcionTxt: { flex: 1, fontFamily: fontFamily.bold, fontSize: 14, color: colors.ink },
+  opcionNum: { fontFamily: fontFamily.bold, fontSize: 12.5, color: colors.ink3 },
   chip: { paddingHorizontal: 13, paddingVertical: 9, borderRadius: radii.pill, backgroundColor: colors.field, borderWidth: 1, borderColor: colors.line },
   chipActivo: { backgroundColor: colors.oxRed, borderColor: colors.oxRed },
-  chipText: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink2 },
+  chipText: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink2 },
   chipTextActivo: { color: colors.white },
   buscador: {
     flexDirection: 'row',
@@ -976,13 +962,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     minHeight: 50,
   },
-  buscadorInput: { flex: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 15, color: colors.ink, paddingVertical: 12 },
-  resumen: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink3 },
+  buscadorInput: { flex: 1, fontFamily: fontFamily.semibold, fontSize: 15, color: colors.ink, paddingVertical: 12 },
   persona: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
-  personaNombre: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14.5, color: colors.ink },
-  personaMeta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink2, marginTop: 2 },
-  personaAlerta: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11.5, color: '#B7791F', marginTop: 4 },
-  personaDias: { alignItems: 'center', minWidth: 48 },
-  personaNumero: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 15, color: colors.ink },
-  personaUnidad: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11, color: colors.ink3 },
+  personaNombre: { fontFamily: fontFamily.extrabold, fontSize: 14.5, color: colors.ink },
+  personaMeta: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink2, marginTop: 2 },
+  personaNumero: { fontFamily: fontFamily.extrabold, fontSize: 15, color: colors.ink },
+
 });

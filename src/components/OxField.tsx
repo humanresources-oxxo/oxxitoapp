@@ -3,7 +3,7 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Icon } from './Icon';
-import { colors, radii, type } from '../theme/tokens';
+import { colors, radii, type, fontFamily } from '../theme/tokens';
 
 type OxFieldProps = {
   icon?: string;
@@ -54,7 +54,7 @@ export function OxField({
             value={value}
             onChangeText={onChangeText}
             placeholder={placeholder}
-            placeholderTextColor={colors.ink3}
+            placeholderTextColor={colors.placeholder}
             editable={!locked}
             keyboardType={keyboardType}
             autoCapitalize={autoCapitalize}
@@ -111,14 +111,14 @@ const styles = StyleSheet.create({
   },
   value: {
     flex: 1,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fontFamily.semibold,
     fontSize: 17,
     color: colors.ink,
     letterSpacing: 0.1,
   },
   placeholder: {
     color: colors.ink3,
-    fontFamily: 'PlusJakartaSans_500Medium',
+    fontFamily: fontFamily.medium,
   },
   input: {
     padding: 0,
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     marginLeft: -4,
   },
   tail: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 13,
     color: colors.ink3,
   },
@@ -141,4 +141,5 @@ const styles = StyleSheet.create({
     marginTop: 9,
     marginHorizontal: 2,
   },
+
 });

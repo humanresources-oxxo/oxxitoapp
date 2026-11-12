@@ -3,11 +3,12 @@
 // carry up to 3 images (shown in the card, the detail and full screen). RH and
 // Gerente de plaza also publish ("Nuevo aviso") and delete them here.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { ActivityIndicator, FlatList, Image, Modal, ScrollView, StyleSheet, Text, View, RefreshControl } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { AvisoComposer } from '../components/AvisoComposer';
+import { BotonEncabezado, Encabezado } from '../components/Encabezado';
+import { Esqueleto, EstadoVacio } from '../components/Estado';
 import { Icon } from '../components/Icon';
 import { PinUnaVez } from '../components/PinUnaVez';
 import {
@@ -21,12 +22,13 @@ import { cargarImagenAviso, deleteNotice, fetchNotices } from '../services/notic
 import { leerLlave, olvidarLlave, puedePublicar } from '../services/sesion';
 import { confirmAlert, showAlert } from '../utils/alert';
 import { getJson, setJson, storageKeys } from '../services/appStorage';
-import { colors, gradients, radii, shadows, type } from '../theme/tokens';
+import { acento, colors, gradients, radii, shadows, type, fontFamily, hoja } from '../theme/tokens';
 
 
 export function NotificationsScreen() {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [filter, setFilter] = useState<NoticeFilter>('all');
   const [selected, setSelected] = useState<Notice | null>(null);
   const [viewer, setViewer] = useState<NoticeImage | null>(null);
@@ -49,8 +51,12 @@ export function NotificationsScreen() {
     let mounted = true;
 
     const load = async () => {
+      let fallo = false;
       const [fetched, readState] = await Promise.all([
-        fetchNotices().catch(() => []),
+        fetchNotices().catch(() => {
+          fallo = true;
+          return [] as Notice[];
+        }),
         getJson<Record<string, boolean>>(storageKeys.noticeReadState, {}),
       ]);
       if (!mounted) return;
@@ -62,6 +68,7 @@ export function NotificationsScreen() {
             : notice
         )
       );
+      setFailed(fallo);
       setLoading(false);
     };
 
@@ -128,45 +135,18 @@ export function NotificationsScreen() {
   return (
     <View style={styles.screen}>
       <LinearGradient
-        colors={['#FFF7F0', colors.bg, '#FFFFFF']}
+        colors={gradients.fondo.colors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
 
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>Centro de avisos</Text>
-            <Text style={styles.title}>Avisos</Text>
-            <Text style={styles.subtitle}>
-              {unreadCount > 0 ? `${unreadCount} ${unreadCount === 1 ? 'pendiente' : 'pendientes'} por revisar` : 'Todo está al día'}
-            </Text>
-          </View>
-          <View style={styles.headerActions}>
-            {canPublish ? (
-              <Pressable accessibilityRole="button" style={[styles.headerAction, styles.headerActionMain]} onPress={() => setComposer(true)} accessibilityLabel="Nuevo aviso">
-                <Icon name="edit" size={19} color={colors.white} />
-              </Pressable>
-            ) : null}
-            <Pressable accessibilityRole="button" style={styles.headerAction} onPress={markAllRead} accessibilityLabel="Marcar todos como leídos">
-              <Icon name="check" size={20} color={colors.oxRed} />
-            </Pressable>
-          </View>
-        </View>
-      </SafeAreaView>
+      <Encabezado titulo="Avisos" nota={unreadCount > 0 ? `${unreadCount} sin leer` : 'Todo está al día'}>
+        {unreadCount > 0 ? <BotonEncabezado icono="check" texto="Leídos" etiqueta="Marcar todos como leídos" onPress={markAllRead} /> : null}
+        {canPublish ? <BotonEncabezado icono="edit" texto="Nuevo" etiqueta="Nuevo aviso" principal onPress={() => setComposer(true)} /> : null}
+      </Encabezado>
 
-      <View style={styles.summary}>
-        <LinearGradient colors={gradients.oxGrad.colors} style={styles.summaryIcon}>
-          <Icon name="bell" size={24} color="#fff" />
-        </LinearGradient>
-        <View style={styles.summaryCopy}>
-          <Text style={styles.summaryTitle}>Comunicados internos</Text>
-          <Text style={styles.summaryBody}>Prioriza cambios de política, turnos y capacitaciones.</Text>
-        </View>
-      </View>
-
-      <View style={styles.filters}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filtersWrap} contentContainerStyle={styles.filters}>
         {noticeFilters.map((item) => {
           const active = item.key === filter;
           return (
@@ -179,7 +159,7 @@ export function NotificationsScreen() {
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       <FlatList
         data={filteredNotices}
@@ -187,20 +167,22 @@ export function NotificationsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => <NoticeCard notice={item} onPress={() => openNotice(item)} />}
+        refreshControl={<RefreshControl refreshing={loading && notices.length > 0} onRefresh={() => { setLoading(true); refresh(); }} tintColor={colors.oxRed} colors={[colors.oxRed]} />}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Icon name="bell" size={30} color={colors.ink3} />
-            <Text style={styles.emptyText}>
-              {loading ? 'Cargando avisos...' : 'No hay avisos para este filtro.'}
-            </Text>
-          </View>
+          loading ? (
+            <Esqueleto />
+          ) : failed ? (
+            <EstadoVacio icono="alert" titulo="No pudimos cargar los avisos" texto="Revisa tu conexión e intenta de nuevo." accion={{ texto: 'Reintentar', onPress: () => { setLoading(true); refresh(); } }} />
+          ) : (
+            <EstadoVacio titulo={filter === 'all' ? 'Aún no hay avisos' : 'Nada en este filtro'} texto={filter === 'all' ? 'Cuando RH publique un comunicado lo verás aquí.' : undefined} accion={filter === 'all' ? undefined : { texto: 'Ver todos', onPress: () => setFilter('all') }} />
+          )
         }
       />
 
       <Modal transparent visible={!!selected} animationType="fade" onRequestClose={closeDetail}>
         <View style={styles.modalBackdrop}>
           <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={closeDetail} />
-          <BlurView intensity={36} tint="light" style={styles.detailSheet}>
+          <View style={[styles.detailSheet, hoja]}>
             {selected ? (
               <NoticeDetail
                 notice={selected}
@@ -209,7 +191,7 @@ export function NotificationsScreen() {
                 onDelete={canPublish ? () => removeNotice(selected) : undefined}
               />
             ) : null}
-          </BlurView>
+          </View>
         </View>
         {viewer ? <ImageViewer image={viewer} onClose={() => setViewer(null)} /> : null}
       </Modal>
@@ -238,14 +220,14 @@ function NoticeCard({ notice, onPress }: { notice: Notice; onPress: () => void }
     <Pressable accessibilityRole="button" style={[styles.card, !notice.read && styles.cardUnread]} onPress={onPress}>
       <View style={styles.cardIconWrap}>
         <LinearGradient colors={gradients[meta.accent].colors} style={styles.cardIcon}>
-          <Icon name={meta.icon} size={20} color="#fff" />
+          <Icon name={meta.icon} size={20} color={colors.white} />
         </LinearGradient>
         {!notice.read ? <View style={styles.unreadDot} /> : null}
       </View>
 
       <View style={styles.cardCopy}>
         <View style={styles.cardTop}>
-          <Text style={styles.noticeKind}>{meta.label}</Text>
+          <Text style={[styles.noticeKind, { color: acento[meta.accent] }]}>{meta.label}</Text>
           <Text style={styles.noticeDate}>{notice.date}</Text>
         </View>
         <Text style={styles.noticeTitle}>{notice.title}</Text>
@@ -335,9 +317,9 @@ function NoticeDetail({
     <ScrollView style={{ alignSelf: 'stretch' }} contentContainerStyle={{ alignItems: 'center' }} showsVerticalScrollIndicator={false}>
       <View style={styles.sheetHandle} />
       <LinearGradient colors={gradients[meta.accent].colors} style={styles.detailIcon}>
-        <Icon name={meta.icon} size={27} color="#fff" />
+        <Icon name={meta.icon} size={27} color={colors.white} />
       </LinearGradient>
-      <Text style={styles.detailKind}>{meta.label}</Text>
+      <Text style={[styles.detailKind, { color: acento[meta.accent] }]}>{meta.label}</Text>
       <Text style={styles.detailTitle}>{notice.title}</Text>
       <Text style={styles.detailDate}>{notice.date}</Text>
       {notice.body ? <Text style={styles.detailBody}>{notice.body}</Text> : null}
@@ -369,8 +351,6 @@ function NoticeDetail({
 }
 
 const styles = StyleSheet.create({
-  headerActions: { flexDirection: 'row', gap: 8 },
-  headerActionMain: { backgroundColor: colors.oxRed, borderColor: colors.oxRed },
   cardImage: { height: 150, borderRadius: 14, marginTop: 10 },
   moreImages: {
     position: 'absolute',
@@ -381,7 +361,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     backgroundColor: 'rgba(36,26,23,.72)',
   },
-  moreImagesText: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: colors.white },
+  moreImagesText: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.white },
   imageBox: { overflow: 'hidden', backgroundColor: colors.field, alignItems: 'center', justifyContent: 'center' },
   imageFill: { width: '100%', height: '100%' },
   detailImage: { alignSelf: 'stretch', borderRadius: 16, marginTop: 14, maxHeight: 520 },
@@ -399,95 +379,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   deleteButton: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14, paddingVertical: 8, paddingHorizontal: 14 },
-  deleteButtonText: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13.5, color: colors.oxRed },
+  deleteButtonText: { fontFamily: fontFamily.bold, fontSize: 13.5, color: colors.oxRed },
   screen: {
     flex: 1,
     backgroundColor: colors.bg,
     paddingBottom: 108,
   },
-  safeTop: {
-    backgroundColor: 'rgba(255,255,255,.56)',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 16,
-  },
-  headerCopy: {
-    flex: 1,
-  },
-  eyebrow: {
-    ...type.eyebrowSm,
-    color: colors.oxRed,
-    marginBottom: 7,
-  },
-  title: {
-    ...type.title,
-    color: colors.ink,
-  },
-  subtitle: {
-    ...type.bodySm,
-    color: colors.ink2,
-    marginTop: 8,
-  },
-  headerAction: {
-    width: 46,
-    height: 46,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  summary: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 22,
-    padding: 15,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 13,
-    ...shadows.card,
-  },
-  summaryIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  summaryCopy: {
-    flex: 1,
-  },
-  summaryTitle: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
-    fontSize: 16,
-    color: colors.ink,
-  },
-  summaryBody: {
-    ...type.bodySm,
-    color: colors.ink2,
-    marginTop: 4,
-  },
+  filtersWrap: { flexGrow: 0, flexShrink: 0 },
   filters: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
     paddingHorizontal: 16,
-    paddingTop: 14,
+    paddingTop: 12,
+    paddingBottom: 2,
   },
   filterChip: {
     borderRadius: radii.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    minHeight: 40,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.line,
@@ -497,7 +406,7 @@ const styles = StyleSheet.create({
     borderColor: colors.oxRed,
   },
   filterText: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 12.5,
     color: colors.ink2,
   },
@@ -558,18 +467,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   noticeKind: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
-    fontSize: 11.5,
+    fontFamily: fontFamily.extrabold,
+    fontSize: 12,
     color: colors.oxRed,
     textTransform: 'uppercase',
   },
   noticeDate: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    fontSize: 11.5,
+    fontFamily: fontFamily.bold,
+    fontSize: 12,
     color: colors.ink3,
   },
   noticeTitle: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 15,
     color: colors.ink,
   },
@@ -578,20 +487,9 @@ const styles = StyleSheet.create({
     color: colors.ink2,
     marginTop: 4,
   },
-  empty: {
-    minHeight: 190,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  emptyText: {
-    ...type.bodySm,
-    color: colors.ink2,
-    textAlign: 'center',
-  },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(36,26,23,.22)',
+    backgroundColor: colors.velo,
     justifyContent: 'flex-end',
     padding: 14,
   },
@@ -629,14 +527,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   detailTitle: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 22,
     lineHeight: 27,
     color: colors.ink,
     textAlign: 'center',
   },
   detailDate: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 12.5,
     color: colors.ink3,
     marginTop: 8,
@@ -661,7 +559,7 @@ const styles = StyleSheet.create({
   },
   priorityText: {
     flex: 1,
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 12.5,
     lineHeight: 18,
     color: colors.ink,
@@ -676,8 +574,9 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   closeButtonText: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 14.5,
     color: colors.white,
   },
+
 });

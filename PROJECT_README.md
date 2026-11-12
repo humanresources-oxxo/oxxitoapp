@@ -13,6 +13,29 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   instalada. Al publicar, `index.html` lleva title "Conoxxo" y `theme-color` `#E30613`
   (lo pone `scripts/patch-web-index.mjs`).
 
+🧭 **Diseño y navegación (revisión de UX):**
+- **5 pestañas para todos:** Inicio, Chat, Avisos, Directorio, Perfil. Lo demás (Vacaciones,
+  Votaciones, Resumen de plaza y las herramientas de gestión) abre desde Inicio como pantalla
+  propia, sin barra de pestañas y con botón de regresar.
+- **Inicio:** campo "Pregúntale al reglamento", consultas recientes (al tocarlas se vuelven a
+  preguntar), "Para ti" (días de vacaciones, avisos sin leer, votaciones por votar) y la lista
+  "Gestión" según el puesto.
+- **Atrás:** el botón de Android y el atrás del navegador regresan a Inicio en vez de salir
+  (`MainTabsNavigator`: `BackHandler` + una entrada de historial en web).
+- **Chat:** la conversación se guarda en el teléfono (`oxxito:chatMessages`, se borra al cerrar
+  sesión); el lápiz del encabezado empieza una nueva.
+- **Entrada:** 3 pasos; los términos se aceptan una sola vez por empleado en cada teléfono
+  (`oxxito:terminosAceptados`, que no se borra al cerrar sesión). Cerrar sesión pide confirmar.
+- **Actas y formatos por pasos:** tipo → datos del formato → firmas → revisar y enviar, con
+  barra de avance (se puede saltar entre pasos) y botones fijos abajo.
+- **Piezas compartidas** (`src/components`): `Encabezado` (título, regresar y acciones),
+  `Estado` (`Esqueleto` de carga y `EstadoVacio` con reintento), `Pressable` (todo lo que se
+  toca se atenúa al presionarlo). Las hojas inferiores son sólidas (`hoja` en `tokens.ts`).
+- **Tokens** (`src/theme/tokens.ts`): las pantallas usan `fontFamily.*` y `colors.*` en vez de
+  valores escritos a mano. Texto mínimo de 12 px y contraste AA para texto (`ink3`, `ok` y los
+  degradados se oscurecieron); `colors.placeholder` es solo para la pista de un campo vacío.
+  En pantallas anchas la app queda en una columna centrada (`anchoMaximo`).
+
 ✅ **Onboarding + tabs post-login completos:**
 - Splash, Welcome, Login, Verify, Register (crear PIN / PIN temporal → definitivo), Permissions
 - Home (saludo con nombre real), Chat, Directorio (con `tel:`), Notificaciones, Perfil

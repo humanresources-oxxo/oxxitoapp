@@ -14,8 +14,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bear } from '../components/Bear';
 import { Icon } from '../components/Icon';
-import { OxButton, GhostAccent } from '../components/OxButton';
-import { colors, gradients, radii, type } from '../theme/tokens';
+import { OxButton } from '../components/OxButton';
+import { colors, gradients, radii, type, fontFamily } from '../theme/tokens';
 
 const LOGO = require('../../assets/images/conoxxo-logo.png');
 
@@ -93,12 +93,10 @@ export function WelcomeScreen({ onContinue }: { onContinue: () => void }) {
         </ScrollView>
 
         <SafeAreaView edges={['bottom']} style={styles.footer}>
-          <OxButton onPress={onContinue} icon={<Icon name="arrowR" size={19} color="#fff" />}>
+          <OxButton onPress={onContinue} icon={<Icon name="arrowR" size={19} color={colors.white} />}>
             Comenzar
           </OxButton>
-          <OxButton variant="ghost" onPress={onContinue}>
-            ¿Ya tienes cuenta? <GhostAccent>Inicia sesión</GhostAccent>
-          </OxButton>
+          <Text style={styles.footNote}>Entra con tu número de empleado. Si es tu primera vez, aquí mismo creas tu PIN.</Text>
         </SafeAreaView>
       </View>
     </View>
@@ -109,12 +107,13 @@ function FeatIcon({ bg, icon }: { bg: 'oxGrad' | 'blue' | 'green'; icon: string 
   const g = gradients[bg];
   return (
     <LinearGradient colors={g.colors} start={g.start} end={g.end} style={styles.featIcon}>
-      <Icon name={icon} size={19} color="#fff" />
+      <Icon name={icon} size={19} color={colors.white} />
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  footNote: { ...type.caption, color: colors.ink2, textAlign: 'center', marginTop: 12, paddingHorizontal: 8 },
   screen: {
     flex: 1,
     backgroundColor: colors.bg,
@@ -158,7 +157,7 @@ const styles = StyleSheet.create({
   chipA: { top: 14, left: 4, transform: [{ rotate: '-5deg' }] },
   chipB: { bottom: 8, right: 4, transform: [{ rotate: '5deg' }] },
   chipText: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 12.5,
     color: colors.ink,
   },
@@ -182,7 +181,7 @@ const styles = StyleSheet.create({
     marginBottom: 9,
   },
   title: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 30,
     lineHeight: 33,
     letterSpacing: -0.6,
@@ -214,13 +213,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   featTitle: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 14.5,
     letterSpacing: -0.1,
     color: colors.ink,
   },
   featDesc: {
-    fontFamily: 'PlusJakartaSans_500Medium',
+    fontFamily: fontFamily.medium,
     fontSize: 12.5,
     color: colors.ink2,
     marginTop: 3,
@@ -230,4 +229,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 26,
     paddingTop: 10,
   },
+
 });

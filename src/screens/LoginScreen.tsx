@@ -102,7 +102,7 @@ export function LoginScreen({
         <OxButton
           disabled={!full || loading}
           onPress={handleContinue}
-          icon={loading ? <ActivityIndicator color="#fff" /> : <Icon name="arrowR" size={19} color="#fff" />}
+          icon={loading ? <ActivityIndicator color={colors.white} /> : <Icon name="arrowR" size={19} color={colors.white} />}
         >
           Continuar
         </OxButton>
@@ -148,4 +148,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
   },
+
 });

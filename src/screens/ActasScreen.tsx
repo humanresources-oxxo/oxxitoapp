@@ -12,22 +12,23 @@ import {
   KeyboardTypeOptions,
   Modal,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BotonEncabezado, Encabezado } from '../components/Encabezado';
 import { Icon } from '../components/Icon';
 import { SignaturePad, SignatureStrokes } from '../components/SignaturePad';
 import { getJson, removeItem, setJson, storageKeys } from '../services/appStorage';
 import { compartirWord, enviarActa, RegistroActa } from '../services/actas';
 import { buscarEmpleado } from '../services/auth';
 import { buscarTienda, cargarTiendas, sugerirTiendas, Tienda } from '../services/tiendas';
-import { colors, gradients, radii, shadows, type } from '../theme/tokens';
+import { colors, gradients, radii, shadows, type, fontFamily } from '../theme/tokens';
 import { showAlert } from '../utils/alert';
 import {
   ActaDatos,
@@ -53,7 +54,7 @@ type Campo = { key: string; label: string; tipo?: Tipo; placeholder?: string; ay
 
 const GRUPOS: Array<{ titulo: string; campos: Campo[] }> = [
   {
-    titulo: '1 · Lugar y fecha',
+    titulo: 'Lugar y fecha',
     campos: [
       { key: 'tienda', label: 'Tienda (OXXO)', placeholder: 'Nombre de la tienda' },
       { key: 'ciudad', label: 'Ciudad' },
@@ -65,7 +66,7 @@ const GRUPOS: Array<{ titulo: string; campos: Campo[] }> = [
     ],
   },
   {
-    titulo: '2 · Participantes',
+    titulo: 'Participantes',
     campos: [
       { key: 'representante', label: 'Representante del patrón' },
       { key: 'funcion', label: 'Función' },
@@ -89,7 +90,7 @@ const GRUPOS: Array<{ titulo: string; campos: Campo[] }> = [
     ],
   },
   {
-    titulo: '3 · Hechos',
+    titulo: 'Hechos',
     campos: [
       { key: 'fechaHechos', label: 'Fecha de los hechos', tipo: 'fecha' },
       { key: 'horaCierre', label: 'Hora de cierre', tipo: 'hora' },
@@ -227,6 +228,29 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
 
   const cambiar = (key: string, valor: string) => setForm((f) => ({ ...f, [key]: valor }));
 
+  // One step at a time: type, each group of data this format uses, signatures
+  // and sending. Steps can be visited in any order (the dots); what is
+  // missing is checked when sending.
+  const pasos = useMemo(
+    () => [
+      { id: 'tipo', titulo: 'Tipo de documento' },
+      ...GRUPOS.filter((g) => g.campos.some((c) => visibles.has(c.key))).map((g) => ({ id: g.titulo, titulo: g.titulo })),
+      { id: 'firmas', titulo: 'Firmas' },
+      { id: 'enviar', titulo: 'Revisar y enviar' },
+    ],
+    [visibles]
+  );
+  const [pasoN, setPasoN] = useState(0);
+  const paso = Math.min(pasoN, pasos.length - 1);
+  const actual = pasos[paso];
+  const irPaso = (n: number) => {
+    setPasoN(Math.max(0, Math.min(n, pasos.length - 1)));
+    scroll.current?.scrollTo({ y: 0, animated: false });
+  };
+  const faltanAqui = (GRUPOS.find((g) => g.titulo === actual.id)?.campos ?? [])
+    .filter((c) => visibles.has(c.key) && obligatorios.has(c.key) && !limpio(form[c.key]))
+    .map((c) => c.label);
+
   // The CR goes to RH's register, which groups actas by store CR (as the web does).
   const tiendaElegida = useMemo(() => buscarTienda(tiendas, form.tienda), [tiendas, form.tienda]);
   const sugerencias = useMemo(
@@ -288,6 +312,7 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
     });
     if (falta.length) {
       setAviso({ texto: `Faltan datos: ${falta.join(', ')}.`, tipo: 'error' });
+      scroll.current?.scrollTo({ y: 0, animated: true });
       return false;
     }
     return true;
@@ -314,6 +339,7 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
             + ((reg.actasTotal ?? 0) > (reg.actasEnTienda ?? 0) ? `, ${reg.actasTotal} en total.` : '.')
           : reg && reg.error ? ' Ojo: no se pudo guardar en el registro de actas; avisa a RH.' : '';
       limpiarDocumento(true);
+      irPaso(0);
       setAviso({
         texto: `${def.nombre} enviada a ${r.enviadoA}${textoFirmas()}.${conteo} El formulario quedó limpio para el siguiente.`,
         tipo: reg && reg.error ? 'error' : 'ok',
@@ -355,7 +381,7 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
             onChangeText={alCambiar}
             accessibilityLabel={c.label}
             placeholder={c.placeholder ?? (c.tipo === 'fecha' ? 'DD/MM/AAAA' : c.tipo === 'hora' ? 'HH:MM' : undefined)}
-            placeholderTextColor={colors.ink3}
+            placeholderTextColor={colors.placeholder}
             editable={!bloqueado}
             keyboardType={teclado}
             multiline={c.tipo === 'largo'}
@@ -404,21 +430,31 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
-            <Icon name="chevL" size={20} color={colors.ink} />
-          </Pressable>
-          <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>Relaciones laborales</Text>
-            <Text style={styles.title}>Actas y Formatos</Text>
-          </View>
-          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={() => setVista(true)} accessibilityLabel="Vista previa">
-            <Icon name="eye" size={20} color={colors.ink} />
-          </Pressable>
+      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Encabezado titulo="Actas y formatos" eyebrow="Relaciones laborales" onBack={onBack}>
+        <BotonEncabezado icono="eye" etiqueta="Vista previa" onPress={() => setVista(true)} />
+      </Encabezado>
+
+      <View style={styles.pasos}>
+        <Text style={styles.pasosTexto}>
+          Paso {paso + 1} de {pasos.length} · <Text style={styles.pasosTitulo}>{actual.titulo}</Text>
+        </Text>
+        <View style={styles.pasosBarra}>
+          {pasos.map((p, i) => (
+            <Pressable
+              key={p.id}
+              style={styles.pasoToque}
+              onPress={() => irPaso(i)}
+              hitSlop={{ top: 12, bottom: 12 }}
+              accessibilityRole="button"
+              accessibilityLabel={`Ir al paso ${i + 1}: ${p.titulo}`}
+              accessibilityState={{ selected: i === paso }}
+            >
+              <View style={[styles.pasoSeg, i < paso && styles.pasoHecho, i === paso && styles.pasoActivo]} />
+            </Pressable>
+          ))}
         </View>
-      </SafeAreaView>
+      </View>
 
       <ScrollView
         ref={scroll}
@@ -427,12 +463,15 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
         automaticallyAdjustKeyboardInsets
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.intro}>
-          Elige el tipo de documento, llena los datos, revisa la vista previa, firmen en pantalla (o a mano, ya impreso) y envíalo a RH.
-        </Text>
+        {aviso ? (
+          <View style={[styles.aviso, aviso.tipo === 'ok' && styles.avisoOk, aviso.tipo === 'error' && styles.avisoError]}>
+            <Text style={styles.avisoText}>{aviso.texto}</Text>
+          </View>
+        ) : null}
 
+        {actual.id === 'tipo' ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Tipo de documento</Text>
+          <Text style={styles.cardTitle}>¿Qué documento vas a levantar?</Text>
           <View style={styles.chips}>
             {TIPOS_ORDEN.map((t: ActaTipo) => {
               const activo = t === tipo;
@@ -451,21 +490,20 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
             })}
           </View>
           <Text style={styles.ayuda}>{def.carta ? 'La renuncia sale como carta del trabajador, sin membrete.' : `Se genera el formato "${def.nombre}".`}</Text>
+          {hayFirmas ? <Text style={styles.ayuda}>El documento ya tiene firmas: para cambiar el tipo, borra las firmas en el paso Firmas.</Text> : null}
         </View>
+        ) : null}
 
-        {GRUPOS.map((g) => {
-          const campos = g.campos.map(renderCampo).filter(Boolean);
-          if (!campos.length) return null;
-          return (
-            <View key={g.titulo} style={styles.card}>
-              <Text style={styles.cardTitle}>{g.titulo}</Text>
-              {campos}
-            </View>
-          );
-        })}
+        {GRUPOS.filter((g) => g.titulo === actual.id).map((g) => (
+          <View key={g.titulo} style={styles.card}>
+            <Text style={styles.cardTitle}>{g.titulo}</Text>
+            {g.campos.map(renderCampo)}
+          </View>
+        ))}
 
+        {actual.id === 'firmas' ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>4 · Firmas</Text>
+          <Text style={styles.cardTitle}>Firmas</Text>
           <Text style={styles.ayuda}>
             Opcional. Cada persona firma con el dedo en su recuadro y su firma sale en el Word. Si prefieren firmar a mano, déjalo en blanco e imprime el documento.
           </Text>
@@ -525,15 +563,21 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
             );
           })}
         </View>
+        ) : null}
 
+        {actual.id === 'enviar' ? (
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>5 · Enviar</Text>
+          <Text style={styles.cardTitle}>Revisar y enviar</Text>
+          <Pressable accessibilityRole="button" style={[styles.botonSecundario, { marginBottom: 14 }]} onPress={() => setVista(true)}>
+            <Icon name="eye" size={18} color={colors.oxRedDark} />
+            <Text style={styles.botonSecundarioText}>Ver cómo queda el documento</Text>
+          </Pressable>
           {renderCampo({ key: 'copia', label: 'Enviar copia a (opcional)', tipo: 'correo', placeholder: 'tu.correo@empresa.com' })}
           <Text style={styles.ayuda}>El documento siempre se envía al correo de RH. Aquí puedes agregar tu correo para recibir copia.</Text>
 
           <Pressable accessibilityRole="button" onPress={enviar} disabled={enviando} style={({ pressed }) => [styles.botonPrincipalWrap, pressed && styles.pressed]}>
             <LinearGradient colors={gradients.oxGrad.colors} start={gradients.oxGrad.start} end={gradients.oxGrad.end} style={[styles.botonPrincipal, enviando && styles.botonDeshabilitado]}>
-              {enviando ? <ActivityIndicator color="#fff" /> : <Icon name="send" size={19} color="#fff" />}
+              {enviando ? <ActivityIndicator color={colors.white} /> : <Icon name="send" size={19} color={colors.white} />}
               <Text style={styles.botonPrincipalText}>Enviar a RH</Text>
             </LinearGradient>
           </Pressable>
@@ -562,13 +606,32 @@ export function ActasScreen({ onBack }: { onBack: () => void }) {
           <Text style={styles.ayuda}>
             Al enviarlo a RH, el documento queda anotado en el registro de RH (cuántos lleva el empleado en su tienda). "{Platform.OS === 'web' ? 'Descargar' : 'Compartir'} Word" no lo registra.
           </Text>
-          {aviso ? (
-            <View style={[styles.aviso, aviso.tipo === 'ok' && styles.avisoOk, aviso.tipo === 'error' && styles.avisoError]}>
-              <Text style={styles.avisoText}>{aviso.texto}</Text>
-            </View>
+        </View>
+        ) : null}
+      </ScrollView>
+
+      {/* Step navigation, always in reach of the thumb. */}
+      <View style={styles.pasosPie}>
+        {faltanAqui.length ? (
+          <Text style={styles.pasosFalta} numberOfLines={2}>
+            Falta en este paso: {faltanAqui.join(', ')}
+          </Text>
+        ) : null}
+        <View style={styles.pasosBotones}>
+          {paso > 0 ? (
+            <Pressable accessibilityRole="button" style={[styles.botonSecundario, { flex: 1 }]} onPress={() => irPaso(paso - 1)}>
+              <Icon name="chevL" size={18} color={colors.oxRedDark} />
+              <Text style={styles.botonSecundarioText}>Atrás</Text>
+            </Pressable>
+          ) : null}
+          {paso < pasos.length - 1 ? (
+            <Pressable accessibilityRole="button" style={[styles.pasoSiguiente, { flex: 2 }]} onPress={() => irPaso(paso + 1)}>
+              <Text style={styles.pasoSiguienteText}>Siguiente: {pasos[paso + 1].titulo}</Text>
+              <Icon name="arrowR" size={18} color={colors.white} />
+            </Pressable>
           ) : null}
         </View>
-      </ScrollView>
+      </View>
 
       <Modal visible={vista} animationType="slide" onRequestClose={() => setVista(false)}>
         <SafeAreaView style={styles.vistaScreen} edges={['top', 'bottom']}>
@@ -622,7 +685,7 @@ function VistaPrevia({ datos, firmas }: { datos: ActaDatos; firmas: Array<Firma 
             key={i}
             style={[
               styles.hojaParrafo,
-              p.negrita && { fontFamily: 'PlusJakartaSans_700Bold' },
+              p.negrita && { fontFamily: fontFamily.bold },
               p.alinear === 'right' ? { textAlign: 'right' } : p.alinear === 'center' ? { textAlign: 'center' } : p.alinear === 'left' ? { textAlign: 'left' } : null,
             ]}
           >
@@ -669,10 +732,20 @@ function VistaPrevia({ datos, firmas }: { datos: ActaDatos; firmas: Array<Firma 
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg, paddingBottom: 108 },
-  safeTop: { backgroundColor: 'rgba(255,255,255,.56)' },
-  header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerCopy: { flex: 1 },
+  pasos: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 6 },
+  pasosTexto: { fontFamily: fontFamily.semibold, fontSize: 13, color: colors.ink2 },
+  pasosTitulo: { fontFamily: fontFamily.extrabold, color: colors.ink },
+  pasosBarra: { flexDirection: 'row', gap: 6, marginTop: 8 },
+  pasoToque: { flex: 1, paddingVertical: 4 },
+  pasoSeg: { height: 6, borderRadius: radii.pill, backgroundColor: colors.line2 },
+  pasoHecho: { backgroundColor: colors.oxOrange },
+  pasoActivo: { backgroundColor: colors.oxRed },
+  pasosPie: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12, borderTopWidth: 1, borderTopColor: colors.line, backgroundColor: colors.card },
+  pasosFalta: { fontFamily: fontFamily.semibold, fontSize: 12.5, color: '#9A5B00', marginBottom: 8 },
+  pasosBotones: { flexDirection: 'row', gap: 10 },
+  pasoSiguiente: { minHeight: 50, borderRadius: radii.lg, backgroundColor: colors.oxRed, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 14 },
+  pasoSiguienteText: { flexShrink: 1, fontFamily: fontFamily.extrabold, fontSize: 14.5, color: colors.white },
+  screen: { flex: 1, backgroundColor: colors.bg },
   headerButton: {
     width: 44,
     height: 44,
@@ -683,10 +756,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
   },
-  eyebrow: { ...type.eyebrowSm, color: colors.oxRed, marginBottom: 3 },
-  title: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 25, lineHeight: 29, color: colors.ink },
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 12 },
-  intro: { ...type.caption, color: colors.ink2, marginBottom: 2 },
   card: {
     borderRadius: radii.xl,
     backgroundColor: colors.white,
@@ -696,12 +766,12 @@ const styles = StyleSheet.create({
     gap: 4,
     ...shadows.card,
   },
-  cardTitle: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink, marginBottom: 8 },
+  cardTitle: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink, marginBottom: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 },
   chip: { paddingHorizontal: 13, paddingVertical: 9, borderRadius: radii.pill, backgroundColor: colors.field, borderWidth: 1, borderColor: colors.line },
   chipActivo: { backgroundColor: colors.oxRed, borderColor: colors.oxRed },
   chipBloqueado: { opacity: 0.45 },
-  chipText: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink2 },
+  chipText: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink2 },
   chipTextActivo: { color: colors.white },
   campo: { marginBottom: 10 },
   label: { ...type.label, color: colors.ink, marginBottom: 6 },
@@ -718,7 +788,7 @@ const styles = StyleSheet.create({
   },
   inputWrapLargo: { alignItems: 'flex-start', paddingVertical: 10 },
   inputBloqueado: { backgroundColor: colors.field, borderColor: colors.line },
-  input: { flex: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 15.5, color: colors.ink, paddingVertical: 10 },
+  input: { flex: 1, fontFamily: fontFamily.semibold, fontSize: 15.5, color: colors.ink, paddingVertical: 10 },
   inputLargo: { minHeight: 110, textAlignVertical: 'top', paddingVertical: 0 },
   inputBoton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', marginRight: -8 },
   ayuda: { ...type.caption, fontSize: 12.5, lineHeight: 18, color: colors.ink3, marginTop: 4 },
@@ -735,16 +805,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
   },
-  sugerenciaTienda: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: colors.ink },
-  sugerenciaMeta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink3 },
+  sugerenciaTienda: { fontFamily: fontFamily.bold, fontSize: 14, color: colors.ink },
+  sugerenciaMeta: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink3 },
   bloqueo: { backgroundColor: '#FFF4E5', borderColor: '#FFD9A8', borderWidth: 1, borderRadius: radii.md, padding: 12, gap: 10, marginTop: 8 },
   bloqueoText: { ...type.caption, color: colors.ink },
   firma: { marginTop: 12 },
-  firmaNombre: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14.5, color: colors.ink },
-  firmaRol: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11.5, color: colors.ink3, textTransform: 'uppercase', marginBottom: 6 },
+  firmaNombre: { fontFamily: fontFamily.extrabold, fontSize: 14.5, color: colors.ink },
+  firmaRol: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink3, textTransform: 'uppercase', marginBottom: 6 },
   firmaPie: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 6 },
   firmaEstado: { flex: 1, ...type.caption, fontSize: 12, color: colors.ink2 },
-  firmaAccion: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12.5, color: colors.oxRed },
+  firmaAccion: { fontFamily: fontFamily.bold, fontSize: 12.5, color: colors.oxRed },
   negada: {
     width: '100%',
     aspectRatio: 3,
@@ -755,7 +825,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  negadaText: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: '#B5121B', letterSpacing: 0.5 },
+  negadaText: { fontFamily: fontFamily.extrabold, fontSize: 13, color: '#B5121B', letterSpacing: 0.5 },
   botonPrincipalWrap: { marginTop: 12 },
   botonPrincipal: { height: 54, borderRadius: radii.lg, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, ...shadows.button },
   botonDeshabilitado: { opacity: 0.7 },
@@ -773,9 +843,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  botonSecundarioText: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14.5, color: colors.oxRedDark },
+  botonSecundarioText: { fontFamily: fontFamily.bold, fontSize: 14.5, color: colors.oxRedDark },
   botonSuave: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 8, borderRadius: radii.sm, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line2 },
-  botonSuaveText: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.oxRedDark },
+  botonSuaveText: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.oxRedDark },
   pressed: { opacity: 0.85 },
   aviso: { marginTop: 12, borderRadius: radii.md, padding: 12, backgroundColor: colors.field, borderWidth: 1, borderColor: colors.line },
   avisoOk: { backgroundColor: '#EAF7F0', borderColor: '#BFE6D1' },
@@ -783,20 +853,20 @@ const styles = StyleSheet.create({
   avisoText: { ...type.caption, color: colors.ink },
   vistaScreen: { flex: 1, backgroundColor: '#E9E2DC' },
   vistaHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10 },
-  vistaTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 20, color: colors.ink },
+  vistaTitulo: { fontFamily: fontFamily.extrabold, fontSize: 20, color: colors.ink },
   vistaContent: { padding: 12, paddingBottom: 40 },
   hoja: { backgroundColor: colors.white, borderRadius: 6, padding: 18, ...shadows.card },
   hojaEncabezado: { flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 3, borderBottomColor: '#B5121B', paddingBottom: 10, marginBottom: 12 },
   hojaLogo: { width: 70, height: 36 },
-  hojaTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 15, color: '#1A1A1A', textAlign: 'right' },
-  hojaSubtitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 10, color: '#B5121B' },
-  hojaEmpresa: { fontFamily: 'PlusJakartaSans_500Medium', fontSize: 8.5, color: '#6F625D', textAlign: 'right' },
+  hojaTitulo: { fontFamily: fontFamily.extrabold, fontSize: 15, color: '#1A1A1A', textAlign: 'right' },
+  hojaSubtitulo: { fontFamily: fontFamily.extrabold, fontSize: 10, color: '#B5121B' },
+  hojaEmpresa: { fontFamily: fontFamily.medium, fontSize: 8.5, color: '#6F625D', textAlign: 'right' },
   resumen: { flexDirection: 'row', flexWrap: 'wrap', borderWidth: 1, borderColor: '#DED6CF', backgroundColor: '#FAF6F1', marginBottom: 10 },
   resumenCelda: { width: '33.33%', padding: 6, borderWidth: 0.5, borderColor: '#DED6CF' },
-  resumenEtq: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 8, color: '#6F625D', textTransform: 'uppercase' },
+  resumenEtq: { fontFamily: fontFamily.bold, fontSize: 8, color: '#6F625D', textTransform: 'uppercase' },
   hojaSeccion: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
-    fontSize: 11,
+    fontFamily: fontFamily.extrabold,
+    fontSize: 12,
     color: '#B5121B',
     borderBottomWidth: 1,
     borderBottomColor: '#DED6CF',
@@ -804,17 +874,18 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 6,
   },
-  hojaParrafo: { fontFamily: 'PlusJakartaSans_500Medium', fontSize: 11.5, lineHeight: 17, color: '#262626', textAlign: 'justify', marginBottom: 6 },
-  dato: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 11.5, color: '#1F3B70', textDecorationLine: 'underline' },
-  datoLargo: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 11.5, color: '#1F3B70' },
-  hueco: { fontFamily: 'PlusJakartaSans_500Medium', fontSize: 11.5, color: '#9A9A9A' },
+  hojaParrafo: { fontFamily: fontFamily.medium, fontSize: 11.5, lineHeight: 17, color: '#262626', textAlign: 'justify', marginBottom: 6 },
+  dato: { fontFamily: fontFamily.extrabold, fontSize: 11.5, color: '#1F3B70', textDecorationLine: 'underline' },
+  datoLargo: { fontFamily: fontFamily.semibold, fontSize: 11.5, color: '#1F3B70' },
+  hueco: { fontFamily: fontFamily.medium, fontSize: 11.5, color: '#9A9A9A' },
   hojaFirmas: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', rowGap: 14 },
   hojaFirma: { width: '50%', alignItems: 'center', paddingHorizontal: 6 },
   hojaFirmaImg: { width: '100%', aspectRatio: 3, alignItems: 'center', justifyContent: 'flex-end' },
   hojaFirmaLinea: { width: '100%', height: 1, backgroundColor: '#595959', marginBottom: 3 },
-  hojaFirmaRol: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 8.5, color: '#6F625D', textAlign: 'center' },
-  hojaSello: { fontFamily: 'PlusJakartaSans_500Medium', fontSize: 7.5, color: '#6F625D', textAlign: 'center' },
-  hojaNota: { fontFamily: 'PlusJakartaSans_500Medium', fontSize: 9, color: '#6F625D', marginTop: 10 },
+  hojaFirmaRol: { fontFamily: fontFamily.bold, fontSize: 8.5, color: '#6F625D', textAlign: 'center' },
+  hojaSello: { fontFamily: fontFamily.medium, fontSize: 7.5, color: '#6F625D', textAlign: 'center' },
+  hojaNota: { fontFamily: fontFamily.medium, fontSize: 9, color: '#6F625D', marginTop: 10 },
   hojaPie: { borderTopWidth: 1, borderTopColor: '#DED6CF', marginTop: 16, paddingTop: 6 },
-  hojaPieText: { fontFamily: 'PlusJakartaSans_500Medium', fontSize: 8, color: '#6F625D' },
+  hojaPieText: { fontFamily: fontFamily.medium, fontSize: 8, color: '#6F625D' },
+
 });

@@ -6,10 +6,11 @@
 // them here. Actions go with the session key (services/sesion.ts); a session
 // from before the key existed asks for the PIN once. Data: services/votaciones.ts.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Esqueleto } from '../components/Estado';
+import { Encabezado } from '../components/Encabezado';
 import { Icon } from '../components/Icon';
 import { Desplegable } from '../components/Visual';
 import { getJson, storageKeys } from '../services/appStorage';
@@ -27,7 +28,7 @@ import {
   votar,
   Votacion,
 } from '../services/votaciones';
-import { colors, gradients, radii, shadows, type } from '../theme/tokens';
+import { colors, gradients, radii, shadows, type, fontFamily, hoja } from '../theme/tokens';
 import { confirmAlert, showAlert } from '../utils/alert';
 
 const fechaHora = new Intl.DateTimeFormat('es-MX', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -150,26 +151,16 @@ export function VotacionesScreen({ onBack, onCambio }: { onBack: () => void; onC
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
-            <Icon name="chevL" size={20} color={colors.ink} />
-          </Pressable>
-          <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>Voto secreto</Text>
-            <Text style={styles.title}>Votaciones</Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Encabezado titulo="Votaciones" eyebrow="Voto secreto" onBack={onBack} />
 
       {error ? (
         <View style={styles.content}>
           <Aviso titulo="No se pudieron cargar las votaciones" texto="Revisa tu conexión e intenta de nuevo." accion={{ texto: 'Reintentar', onPress: () => setIntento((i) => i + 1) }} />
         </View>
       ) : !lista ? (
-        <View style={styles.cargando}>
-          <ActivityIndicator color={colors.oxRed} />
+        <View style={{ padding: 16 }}>
+          <Esqueleto />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -184,7 +175,7 @@ export function VotacionesScreen({ onBack, onCambio }: { onBack: () => void; onC
               </Text>
             </View>
             <View style={styles.heroIcono}>
-              <Icon name="check" size={30} color="#fff" />
+              <Icon name="check" size={30} color={colors.white} />
             </View>
           </LinearGradient>
 
@@ -438,7 +429,7 @@ function PinModal({ numero, accion, onCerrar, onListo }: { numero: string; accio
     <Modal transparent visible animationType="fade" onRequestClose={onCerrar}>
       <View style={styles.modalFondo}>
         <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={onCerrar} />
-        <BlurView intensity={36} tint="light" style={styles.hoja}>
+        <View style={[styles.hoja, hoja]}>
           <View style={styles.asa} />
           <Text style={styles.hojaTitulo}>Confirma tu PIN</Text>
           <Text style={styles.descripcion}>Solo esta vez: con tu PIN la app queda lista y no te lo vuelve a pedir.</Text>
@@ -448,7 +439,7 @@ function PinModal({ numero, accion, onCerrar, onListo }: { numero: string; accio
             value={pin}
             onChangeText={(t) => setPin(t.replace(/\D/g, '').slice(0, 4))}
             placeholder="••••"
-            placeholderTextColor={colors.ink3}
+            placeholderTextColor={colors.placeholder}
             keyboardType="number-pad"
             secureTextEntry
             maxLength={4}
@@ -460,7 +451,7 @@ function PinModal({ numero, accion, onCerrar, onListo }: { numero: string; accio
           <Pressable accessibilityRole="button" style={[styles.boton, { marginTop: 16 }, pin.length !== 4 && styles.botonApagado]} onPress={enviar} disabled={pin.length !== 4 || enviando}>
             <Text style={styles.botonTexto}>{enviando ? 'Enviando…' : 'Confirmar'}</Text>
           </Pressable>
-        </BlurView>
+        </View>
       </View>
     </Modal>
   );
@@ -561,7 +552,7 @@ function NuevaVotacionModal({
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalFondo}>
         <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={onClose} />
-        <BlurView intensity={36} tint="light" style={[styles.hoja, { maxHeight: '90%' }]}>
+        <View style={[[styles.hoja, { maxHeight: '90%' }], hoja]}>
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <View style={styles.asa} />
             <Text style={styles.hojaTitulo}>Nueva votación</Text>
@@ -572,7 +563,7 @@ function NuevaVotacionModal({
               value={titulo}
               onChangeText={setTitulo}
               placeholder="Ej. ¿Dónde hacemos la posada?"
-              placeholderTextColor={colors.ink3}
+              placeholderTextColor={colors.placeholder}
               maxLength={120}
             />
 
@@ -582,7 +573,7 @@ function NuevaVotacionModal({
               value={descripcion}
               onChangeText={setDescripcion}
               placeholder="Fecha del evento, presupuesto, lo que deban saber"
-              placeholderTextColor={colors.ink3}
+              placeholderTextColor={colors.placeholder}
               multiline
               maxLength={600}
             />
@@ -596,7 +587,7 @@ function NuevaVotacionModal({
                     value={o}
                     onChangeText={(t) => setOpciones((xs) => xs.map((x, j) => (j === i ? t : x)))}
                     placeholder={`Opción ${i + 1}`}
-                    placeholderTextColor={colors.ink3}
+                    placeholderTextColor={colors.placeholder}
                     maxLength={80}
                   />
                   {opciones.length > 2 ? (
@@ -647,7 +638,7 @@ function NuevaVotacionModal({
                   value={busca}
                   onChangeText={setBusca}
                   placeholder={catalogo.length ? 'Busca la tienda por nombre o CR' : 'Cargando tiendas…'}
-                  placeholderTextColor={colors.ink3}
+                  placeholderTextColor={colors.placeholder}
                   autoCorrect={false}
                 />
                 {sugeridas.map((t) => (
@@ -669,7 +660,7 @@ function NuevaVotacionModal({
             )}
 
             <Pressable style={styles.casilla} onPress={() => setEnVivo((x) => !x)} accessibilityRole="checkbox" accessibilityState={{ checked: enVivo }}>
-              <View style={[styles.check, !enVivo && styles.checkVacio]}>{enVivo ? <Icon name="check" size={14} color="#fff" /> : null}</View>
+              <View style={[styles.check, !enVivo && styles.checkVacio]}>{enVivo ? <Icon name="check" size={14} color={colors.white} /> : null}</View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.opcionTexto}>Mostrar resultados al votar</Text>
                 <Text style={styles.meta}>Si no, se ven hasta que cierre.</Text>
@@ -684,7 +675,7 @@ function NuevaVotacionModal({
                   value={pin}
                   onChangeText={(t) => setPin(t.replace(/\D/g, '').slice(0, 4))}
                   placeholder="••••"
-                  placeholderTextColor={colors.ink3}
+                  placeholderTextColor={colors.placeholder}
                   keyboardType="number-pad"
                   secureTextEntry
                   maxLength={4}
@@ -698,7 +689,7 @@ function NuevaVotacionModal({
               <Text style={styles.botonTexto}>{enviando ? 'Publicando…' : 'Publicar votación'}</Text>
             </Pressable>
           </ScrollView>
-        </BlurView>
+        </View>
       </View>
     </Modal>
   );
@@ -737,44 +728,28 @@ function Aviso({ titulo, texto, icono = 'alert', accion }: { titulo: string; tex
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg, paddingBottom: 108 },
-  safeTop: { backgroundColor: 'rgba(255,255,255,.56)' },
-  header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerCopy: { flex: 1 },
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  eyebrow: { ...type.eyebrowSm, color: colors.oxRed, marginBottom: 3 },
-  title: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 25, lineHeight: 29, color: colors.ink },
+  screen: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 12 },
-  cargando: { paddingVertical: 48, alignItems: 'center' },
   nota: { ...type.caption, color: colors.ink2 },
   hero: { borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 14, ...shadows.hero },
-  heroKicker: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
-  heroNumero: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 52, lineHeight: 60, color: colors.white },
-  heroBody: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12.5, lineHeight: 18, color: 'rgba(255,255,255,.9)' },
+  heroKicker: { fontFamily: fontFamily.extrabold, fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
+  heroNumero: { fontFamily: fontFamily.extrabold, fontSize: 52, lineHeight: 60, color: colors.white },
+  heroBody: { fontFamily: fontFamily.semibold, fontSize: 12.5, lineHeight: 18, color: 'rgba(255,255,255,.9)' },
   heroIcono: { width: 64, height: 64, borderRadius: 22, backgroundColor: 'rgba(255,255,255,.2)', alignItems: 'center', justifyContent: 'center' },
   card: { borderRadius: radii.xl, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, padding: 16, ...shadows.card },
-  cardTitle: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 17, lineHeight: 22, color: colors.ink },
-  descripcion: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13.5, lineHeight: 19, color: colors.ink2 },
-  meta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink3 },
-  subTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 11.5, color: colors.ink3, textTransform: 'uppercase', letterSpacing: 0.8 },
+  cardTitle: { fontFamily: fontFamily.extrabold, fontSize: 17, lineHeight: 22, color: colors.ink },
+  descripcion: { fontFamily: fontFamily.semibold, fontSize: 13.5, lineHeight: 19, color: colors.ink2 },
+  meta: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink3 },
+  subTitulo: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.ink3, textTransform: 'uppercase', letterSpacing: 0.8 },
   linea: { borderBottomWidth: 1, borderBottomColor: colors.line },
   nueva: { flexDirection: 'row', alignItems: 'center', gap: 12, borderStyle: 'dashed', borderColor: '#F3B8B0', borderWidth: 1.5 },
   nuevaIcono: { width: 36, height: 36, borderRadius: 12, backgroundColor: '#FFF0EC', alignItems: 'center', justifyContent: 'center' },
-  nuevaTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 15.5, color: colors.ink },
-  nuevaTexto: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12.5, color: colors.ink2, marginTop: 2 },
+  nuevaTitulo: { fontFamily: fontFamily.extrabold, fontSize: 15.5, color: colors.ink },
+  nuevaTexto: { fontFamily: fontFamily.semibold, fontSize: 12.5, color: colors.ink2, marginTop: 2 },
   etiquetas: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: colors.field },
   pillAbierta: { backgroundColor: '#E6F4EC' },
-  pillTexto: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11.5, color: colors.ink2 },
+  pillTexto: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink2 },
   punto: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.ok },
   opcion: {
     flexDirection: 'row',
@@ -787,15 +762,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   opcionActiva: { borderColor: colors.oxRed, backgroundColor: '#FFF5F3' },
-  opcionTexto: { flex: 1, fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: colors.ink2 },
+  opcionTexto: { flex: 1, fontFamily: fontFamily.bold, fontSize: 14, color: colors.ink2 },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.line2, alignItems: 'center', justifyContent: 'center' },
   radioActivo: { borderColor: colors.oxRed },
   radioPunto: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.oxRed },
   boton: { minHeight: 50, borderRadius: 16, backgroundColor: colors.oxRed, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
   botonApagado: { opacity: 0.45 },
-  botonTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14.5, color: colors.white },
+  botonTexto: { fontFamily: fontFamily.extrabold, fontSize: 14.5, color: colors.white },
   yaVoto: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: radii.lg, backgroundColor: '#E6F4EC' },
-  yaVotoTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14, color: colors.ok },
+  yaVotoTexto: { fontFamily: fontFamily.extrabold, fontSize: 14, color: colors.ok },
   pie: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' },
   adminFila: { flexDirection: 'row', gap: 6 },
   botonChico: {
@@ -809,20 +784,20 @@ const styles = StyleSheet.create({
     borderColor: colors.line2,
     backgroundColor: colors.white,
   },
-  botonChicoTexto: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink2 },
-  cerradaTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14.5, color: colors.ink },
+  botonChicoTexto: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink2 },
+  cerradaTitulo: { fontFamily: fontFamily.extrabold, fontSize: 14.5, color: colors.ink },
   resTop: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
-  resEtq: { flex: 1, fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink },
-  resValor: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13, color: colors.ink2 },
+  resEtq: { flex: 1, fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink },
+  resValor: { fontFamily: fontFamily.extrabold, fontSize: 13, color: colors.ink2 },
   resFondo: { height: 10, borderRadius: 5, backgroundColor: colors.field, overflow: 'hidden' },
   resLlena: { height: 10, borderRadius: 5, backgroundColor: '#F6C4BE' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 13, paddingVertical: 9, borderRadius: radii.pill, backgroundColor: colors.field, borderWidth: 1, borderColor: colors.line },
   chipActivo: { backgroundColor: colors.oxRed, borderColor: colors.oxRed },
   chipQuitar: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  chipTexto: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink2 },
+  chipTexto: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink2 },
   sugerida: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: colors.line },
-  modalFondo: { flex: 1, backgroundColor: 'rgba(36,26,23,.24)', justifyContent: 'flex-end', padding: 14 },
+  modalFondo: { flex: 1, backgroundColor: colors.velo, justifyContent: 'flex-end', padding: 14 },
   hoja: {
     borderRadius: 28,
     overflow: 'hidden',
@@ -835,7 +810,7 @@ const styles = StyleSheet.create({
     ...shadows.sheet,
   },
   asa: { alignSelf: 'center', width: 42, height: 5, borderRadius: radii.pill, backgroundColor: colors.line2, marginBottom: 14 },
-  hojaTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 20, color: colors.ink, marginBottom: 8 },
+  hojaTitulo: { fontFamily: fontFamily.extrabold, fontSize: 20, color: colors.ink, marginBottom: 8 },
   etiqueta: { ...type.label, color: colors.ink, marginBottom: 8, marginTop: 14 },
   input: {
     minHeight: 48,
@@ -845,7 +820,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line2,
     paddingHorizontal: 14,
     paddingVertical: 11,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fontFamily.semibold,
     fontSize: 14.5,
     color: colors.ink,
   },
@@ -853,14 +828,15 @@ const styles = StyleSheet.create({
   opcionEdit: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   quitar: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.field },
   agregar: { paddingVertical: 10, alignItems: 'center', borderRadius: radii.lg, borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.line2 },
-  agregarTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13.5, color: colors.oxRed },
+  agregarTexto: { fontFamily: fontFamily.extrabold, fontSize: 13.5, color: colors.oxRed },
   casilla: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 18 },
   check: { width: 22, height: 22, borderRadius: 7, backgroundColor: colors.oxRed, alignItems: 'center', justifyContent: 'center' },
   checkVacio: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.line2 },
   error: { ...type.caption, color: colors.oxRed, marginTop: 10 },
   aviso: { alignItems: 'center', gap: 8, paddingVertical: 28 },
-  avisoTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink, textAlign: 'center' },
+  avisoTitulo: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink, textAlign: 'center' },
   avisoTexto: { ...type.caption, color: colors.ink2, textAlign: 'center' },
   avisoBoton: { marginTop: 8, paddingHorizontal: 18, paddingVertical: 10, borderRadius: radii.pill, backgroundColor: colors.oxRed },
-  avisoBotonTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 13.5, color: colors.white },
+  avisoBotonTexto: { fontFamily: fontFamily.extrabold, fontSize: 13.5, color: colors.white },
+
 });

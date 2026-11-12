@@ -1,11 +1,11 @@
 // src/screens/ProfileScreen.tsx
 // Employee profile, preferences, and account actions.
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { BearAvatar } from '../components/Bear';
+import { Encabezado } from '../components/Encabezado';
 import { Icon } from '../components/Icon';
 import { TextoLegal } from '../components/TextoLegal';
 import { AVISO_PRIVACIDAD, TERMINOS_USO } from '../data/legal';
@@ -14,8 +14,8 @@ import { obtenerLlave, puedePublicar } from '../services/sesion';
 import { changePin } from '../services/auth';
 import { fetchContacts } from '../services/directory';
 import { getJson, storageKeys } from '../services/appStorage';
-import { showAlert } from '../utils/alert';
-import { colors, gradients, radii, shadows, type } from '../theme/tokens';
+import { confirmAlert, showAlert } from '../utils/alert';
+import { colors, gradients, radii, shadows, type, fontFamily, hoja } from '../theme/tokens';
 
 export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
   const [session, setSession] = useState<{
@@ -26,8 +26,6 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
     puesto?: string;
     createdAt?: string;
   } | null>(null);
-  const [consultas, setConsultas] = useState(0);
-  const [avisosLeidos, setAvisosLeidos] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -41,13 +39,9 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
         puesto?: string;
         createdAt?: string;
       } | null>(storageKeys.session, null);
-      const questionCount = await getJson<number>(storageKeys.chatQuestionCount, 0);
-      const noticeReadState = await getJson<Record<string, boolean>>(storageKeys.noticeReadState, {});
       if (!mounted) return;
 
       setSession(savedSession);
-      setConsultas(questionCount);
-      setAvisosLeidos(Object.values(noticeReadState).filter(Boolean).length);
     };
 
     loadPrefs();
@@ -57,18 +51,10 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
     };
   }, []);
 
-  const profileFields = [session?.nombre, session?.tienda, session?.plaza];
-  const profileCompletion = Math.round(
-    (profileFields.filter(Boolean).length / profileFields.length) * 100
-  );
-  const stats = [
-    { label: 'Consultas', value: String(consultas) },
-    { label: 'Avisos leídos', value: String(avisosLeidos) },
-    { label: 'Perfil', value: `${profileCompletion}%` },
-  ];
-
-  const logout = () => {
-    onLogout();
+  // Logging out  // Logging out erases what is saved on the phone (chat, acta draft, read
+  // avisos): one accidental touch must not do it.
+  const logout = async () => {
+    if (await confirmAlert('Cerrar sesión', 'Se borrará de este teléfono tu historial del chat y el borrador de acta. Para volver a entrar necesitas tu número de empleado y tu PIN.', 'Cerrar sesión')) onLogout();
   };
 
   const [noticeModal, setNoticeModal] = useState(false);
@@ -89,7 +75,6 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
     <>
       <ProfileBody
         session={session}
-        stats={stats}
         logout={logout}
         onPublishNotice={() => setNoticeModal(true)}
         onChangePin={() => setPinModal(true)}
@@ -120,7 +105,6 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
 
 function ProfileBody({
   session,
-  stats,
   logout,
   onPublishNotice,
   onChangePin,
@@ -136,7 +120,6 @@ function ProfileBody({
     puesto?: string;
     createdAt?: string;
   } | null;
-  stats: Array<{ label: string; value: string }>;
   logout: () => void;
   onPublishNotice: () => void;
   onChangePin: () => void;
@@ -148,21 +131,13 @@ function ProfileBody({
   return (
     <View style={styles.screen}>
       <LinearGradient
-        colors={['#FFF7F0', colors.bg, '#FFFFFF']}
+        colors={gradients.fondo.colors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
 
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.eyebrow}>Cuenta verificada</Text>
-            <Text style={styles.title}>Perfil</Text>
-            <Text style={styles.subtitle}>Datos del colaborador y preferencias de app.</Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <Encabezado titulo="Perfil" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <LinearGradient
@@ -176,10 +151,6 @@ function ProfileBody({
             <View style={styles.profileCopy}>
               <Text style={styles.profileName}>{session?.nombre || '—'}</Text>
               <Text style={styles.profileRole}>{session?.puesto || ''}</Text>
-              <View style={styles.verifiedPill}>
-                <Icon name="shieldCheck" size={14} color={colors.oxRed} />
-                <Text style={styles.verifiedText}>Verificado</Text>
-              </View>
             </View>
           </View>
 
@@ -191,16 +162,7 @@ function ProfileBody({
           </View>
         </LinearGradient>
 
-        <View style={styles.statsRow}>
-          {stats.map((item) => (
-            <View style={styles.statCard} key={item.label}>
-              <Text style={styles.statValue}>{item.value}</Text>
-              <Text style={styles.statLabel}>{item.label}</Text>
-            </View>
-          ))}
-        </View>
-
-        <SectionTitle title="Cuenta" meta="Acciones" />
+        <SectionTitle title="Cuenta" />
         <View style={styles.sectionCard}>
           <ActionRow
             title="Cambiar PIN"
@@ -260,11 +222,11 @@ function InfoItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SectionTitle({ title, meta }: { title: string; meta: string }) {
+function SectionTitle({ title, meta }: { title: string; meta?: string }) {
   return (
     <View style={styles.sectionTitleRow}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      <Text style={styles.sectionMeta}>{meta}</Text>
+      {meta ? <Text style={styles.sectionMeta}>{meta}</Text> : null}
     </View>
   );
 }
@@ -353,7 +315,7 @@ function ChangePinModal({
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalBackdrop}>
         <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={onClose} />
-        <BlurView intensity={36} tint="light" style={styles.composerSheet}>
+        <View style={[styles.composerSheet, hoja]}>
           <View style={styles.sheetHandle} />
           <Text style={styles.composerTitle}>Cambiar PIN</Text>
 
@@ -363,7 +325,7 @@ function ChangePinModal({
             value={oldPin}
             onChangeText={(v) => setOldPin(v.replace(/\D/g, '').slice(0, 4))}
             placeholder="••••"
-            placeholderTextColor={colors.ink3}
+            placeholderTextColor={colors.placeholder}
             keyboardType="number-pad"
             secureTextEntry
             maxLength={4}
@@ -376,7 +338,7 @@ function ChangePinModal({
             value={newPin}
             onChangeText={(v) => setNewPin(v.replace(/\D/g, '').slice(0, 4))}
             placeholder="••••"
-            placeholderTextColor={colors.ink3}
+            placeholderTextColor={colors.placeholder}
             keyboardType="number-pad"
             secureTextEntry
             maxLength={4}
@@ -389,7 +351,7 @@ function ChangePinModal({
             value={confirmPin}
             onChangeText={(v) => setConfirmPin(v.replace(/\D/g, '').slice(0, 4))}
             placeholder="••••"
-            placeholderTextColor={colors.ink3}
+            placeholderTextColor={colors.placeholder}
             keyboardType="number-pad"
             secureTextEntry
             maxLength={4}
@@ -406,7 +368,7 @@ function ChangePinModal({
           >
             <Text style={styles.publishButtonText}>{submitting ? 'Guardando...' : 'Guardar PIN'}</Text>
           </Pressable>
-        </BlurView>
+        </View>
       </View>
     </Modal>
   );
@@ -417,43 +379,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
     paddingBottom: 108,
-  },
-  safeTop: {
-    backgroundColor: 'rgba(255,255,255,.56)',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 16,
-  },
-  eyebrow: {
-    ...type.eyebrowSm,
-    color: colors.oxRed,
-    marginBottom: 7,
-  },
-  title: {
-    ...type.title,
-    color: colors.ink,
-  },
-  subtitle: {
-    ...type.bodySm,
-    color: colors.ink2,
-    marginTop: 8,
-    maxWidth: 300,
-  },
-  headerButton: {
-    width: 46,
-    height: 46,
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
   },
   content: {
     paddingHorizontal: 16,
@@ -474,32 +399,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 22,
     lineHeight: 26,
     color: colors.white,
   },
   profileRole: {
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fontFamily.semibold,
     fontSize: 13.5,
     color: 'rgba(255,255,255,.86)',
     marginTop: 3,
-  },
-  verifiedPill: {
-    alignSelf: 'flex-start',
-    marginTop: 10,
-    borderRadius: radii.pill,
-    backgroundColor: 'rgba(255,255,255,.9)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  verifiedText: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
-    fontSize: 12,
-    color: colors.oxRed,
   },
   infoGrid: {
     marginTop: 18,
@@ -518,45 +427,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   infoLabel: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    fontSize: 11,
+    fontFamily: fontFamily.bold,
+    fontSize: 12,
     color: 'rgba(255,255,255,.72)',
     textTransform: 'uppercase',
   },
   infoValue: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 13.5,
     color: colors.white,
     marginTop: 4,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 12,
-  },
-  statCard: {
-    flex: 1,
-    minHeight: 74,
-    borderRadius: radii.xl,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 8,
-    ...shadows.card,
-  },
-  statValue: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
-    fontSize: 21,
-    color: colors.oxRed,
-  },
-  statLabel: {
-    fontFamily: 'PlusJakartaSans_700Bold',
-    fontSize: 11.5,
-    color: colors.ink2,
-    textAlign: 'center',
-    marginTop: 3,
   },
   sectionTitleRow: {
     marginTop: 18,
@@ -566,12 +446,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   sectionTitle: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 17,
     color: colors.ink,
   },
   sectionMeta: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 12,
     color: colors.ink3,
   },
@@ -603,7 +483,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rowTitle: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 14.5,
     color: colors.ink,
   },
@@ -630,13 +510,13 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   logoutText: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 14.5,
     color: colors.oxRed,
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(36,26,23,.24)',
+    backgroundColor: colors.velo,
     justifyContent: 'flex-end',
     padding: 14,
   },
@@ -661,7 +541,7 @@ const styles = StyleSheet.create({
     ...shadows.sheet,
   },
   composerTitle: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 20,
     color: colors.ink,
     marginBottom: 14,
@@ -680,7 +560,7 @@ const styles = StyleSheet.create({
     borderColor: colors.line2,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fontFamily.semibold,
     fontSize: 14.5,
     color: colors.ink,
   },
@@ -701,9 +581,10 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   publishButtonText: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 14.5,
     color: colors.white,
   },
+
 });
 

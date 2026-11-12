@@ -114,7 +114,7 @@ export function RegisterScreen({
     return (
       <View style={styles.screen}>
         <View style={[styles.body, { paddingTop: Platform.OS === 'ios' ? 8 : 4 }]}>
-          <StepsHeader active={2} onBack={onBack} />
+          <StepsHeader active={1} onBack={onBack} />
           <View style={styles.head}>
             <Text style={styles.kicker}>Primer ingreso</Text>
             <Text style={styles.title}>¡Listo! Falta un paso</Text>
@@ -129,7 +129,7 @@ export function RegisterScreen({
           </View>
         </View>
         <SafeAreaView edges={['bottom']} style={styles.cta}>
-          <OxButton onPress={onBack} icon={<Icon name="check" size={19} color="#fff" />}>
+          <OxButton onPress={onBack} icon={<Icon name="check" size={19} color={colors.white} />}>
             Entendido
           </OxButton>
         </SafeAreaView>
@@ -140,7 +140,7 @@ export function RegisterScreen({
   return (
     <View style={styles.screen}>
       <View style={[styles.body, { paddingTop: Platform.OS === 'ios' ? 8 : 4 }]}>
-        <StepsHeader active={2} onBack={back} />
+        <StepsHeader active={1} onBack={back} />
 
         <View style={styles.head}>
           <Text style={styles.kicker}>Primer ingreso</Text>
@@ -182,7 +182,7 @@ export function RegisterScreen({
         <OxButton
           disabled={!ready || loading}
           onPress={handleContinue}
-          icon={loading ? <ActivityIndicator color="#fff" /> : <Icon name="arrowR" size={19} color="#fff" />}
+          icon={loading ? <ActivityIndicator color={colors.white} /> : <Icon name="arrowR" size={19} color={colors.white} />}
         >
           {paso === 'fecha' ? 'Continuar' : 'Crear PIN'}
         </OxButton>
@@ -228,4 +228,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
   },
+
 });

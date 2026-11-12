@@ -8,14 +8,14 @@
 // session key (oxxito:sessionKey) and checks it with Supabase, so a session
 // from before the key existed confirms the PIN here first.
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Platform, StyleSheet, Text, View } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Icon } from '../components/Icon';
+import { BotonEncabezado, Encabezado } from '../components/Encabezado';
 import { PinUnaVez } from '../components/PinUnaVez';
 import { getJson, storageKeys } from '../services/appStorage';
 import { leerLlave } from '../services/sesion';
-import { colors, radii, type } from '../theme/tokens';
+import { colors, radii, type, fontFamily, gradients } from '../theme/tokens';
 
 // Same domain as the app (Cloudflare passes /DashboardsOxxo/* to the dashboards
 // site, worker/index.js): on web a path is enough (and keeps the session key
@@ -23,7 +23,7 @@ import { colors, radii, type } from '../theme/tokens';
 const FICHA_PATH = '/DashboardsOxxo/dashboards/ficha-plaza.html?embed=1';
 export const FICHA_URL = 'https://conoxxo.plaza-oaxaca.workers.dev' + FICHA_PATH;
 
-export function ResumenScreen() {
+export function ResumenScreen({ onBack }: { onBack: () => void }) {
   const [numero, setNumero] = useState('');
   const [listo, setListo] = useState<boolean | null>(null);
   const [recarga, setRecarga] = useState(0);
@@ -35,18 +35,10 @@ export function ResumenScreen() {
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.eyebrow}>Plaza Oaxaca · ficha</Text>
-            <Text style={styles.title}>Resumen</Text>
-          </View>
-          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={() => setRecarga((n) => n + 1)} accessibilityLabel="Actualizar">
-            <Icon name="history" size={20} color={colors.ink} />
-          </Pressable>
-        </View>
-      </SafeAreaView>
+      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Encabezado titulo="Resumen" eyebrow="Plaza Oaxaca · ficha" onBack={onBack}>
+        <BotonEncabezado icono="refresh" etiqueta="Actualizar" onPress={() => setRecarga((n) => n + 1)} />
+      </Encabezado>
 
       {listo === null ? (
         <View style={styles.centro}>
@@ -80,26 +72,13 @@ export function ResumenScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg, paddingBottom: 88 },
-  safeTop: { backgroundColor: 'rgba(255,255,255,.56)' },
-  header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  eyebrow: { ...type.eyebrowSm, color: colors.oxRed, marginBottom: 3 },
-  title: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 25, lineHeight: 29, color: colors.ink },
+  screen: { flex: 1, backgroundColor: colors.bg },
   // Full width, same background as the app: the page inside (embed view)
   // already brings its own cards.
   marco: { flex: 1, backgroundColor: colors.bg },
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
   texto: { ...type.caption, color: colors.ink2, textAlign: 'center' },
   boton: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: radii.pill, backgroundColor: colors.oxRed },
-  botonTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14, color: colors.white },
+  botonTexto: { fontFamily: fontFamily.extrabold, fontSize: 14, color: colors.white },
+
 });

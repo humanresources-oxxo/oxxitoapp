@@ -1,4 +1,4 @@
-﻿// src/navigation/OnboardingNavigator.tsx
+// src/navigation/OnboardingNavigator.tsx
 // Single-stack navigator for onboarding: splash -> welcome -> login -> verify -> register -> permissions.
 import React, { useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -52,7 +52,7 @@ export function OnboardingNavigator({ onFinished }: { onFinished: () => void }) 
         </Stack.Screen>
         <Stack.Screen name="Verify">
           {({ navigation }) => (
-            <VerifyScreen onBack={() => navigation.navigate('Login')} onContinue={() => navigation.navigate('Permissions')} />
+            <VerifyScreen onBack={() => navigation.navigate('Login')} onContinue={() => navigation.navigate('Permissions')} onEntrar={onFinished} />
           )}
         </Stack.Screen>
         <Stack.Screen name="Register">

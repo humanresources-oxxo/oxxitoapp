@@ -58,4 +58,5 @@ const styles = StyleSheet.create({
   dotError: {
     backgroundColor: colors.oxRed,
   },
+
 });

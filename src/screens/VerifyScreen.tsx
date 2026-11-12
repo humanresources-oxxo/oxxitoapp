@@ -10,7 +10,7 @@ import { OxKeypad } from '../components/OxKeypad';
 import { OxButton, GhostAccent } from '../components/OxButton';
 import { Icon } from '../components/Icon';
 import { useOnboarding } from '../context/OnboardingContext';
-import { changePin, verifyPin } from '../services/auth';
+import { changePin, guardarSesionLocal, verifyPin, yaAceptoTerminos } from '../services/auth';
 import { obtenerLlave } from '../services/sesion';
 import { contactoRecuperarPin } from '../services/directory';
 import { showAlert } from '../utils/alert';
@@ -27,11 +27,26 @@ const lockText = (lockedUntil: string) =>
 export function VerifyScreen({
   onBack,
   onContinue,
+  onEntrar,
 }: {
   onBack: () => void;
+  // First time on this phone: on to the terms.
   onContinue: () => void;
+  // Terms already accepted here before: straight into the app.
+  onEntrar: () => void;
 }) {
-  const { empNum, pin, setPin, verifiedName } = useOnboarding();
+  const { empNum, pin, setPin, verifiedName, tienda, plaza, puesto, createdAt } = useOnboarding();
+  // Session key for avisos and votaciones (migration 35). If it fails, those
+  // screens ask for the PIN once later.
+  const entrar = async (pinCorrecto: string) => {
+    if (!(await yaAceptoTerminos(empNum).catch(() => false))) {
+      obtenerLlave(empNum, pinCorrecto).catch(() => {});
+      return onContinue();
+    }
+    await obtenerLlave(empNum, pinCorrecto).catch(() => {});
+    await guardarSesionLocal({ numeroEmpleado: empNum, nombre: verifiedName, tienda, plaza, puesto, createdAt });
+    onEntrar();
+  };
   const len = pin.length;
   const [error, setError] = useState(false);
   // A network failure is not a wrong PIN: say so, so nobody burns attempts.
@@ -54,11 +69,7 @@ export function VerifyScreen({
       setChecking(true);
       changePin(empNum, temporal, next)
         .then((st) => {
-          if (st === 'ok') {
-            obtenerLlave(empNum, next).catch(() => {});
-            onContinue();
-            return;
-          }
+          if (st === 'ok') return entrar(next);
           setNuevoError(
             st === 'weak_pin'
               ? 'Ese PIN es muy fácil de adivinar (como 1234 o 0000). Elige otro.'
@@ -83,11 +94,7 @@ export function VerifyScreen({
               setTimeout(() => setPin(''), 200);
               return;
             }
-            // Session key for avisos and votaciones (migration 35). If it
-            // fails, those screens ask for the PIN once later.
-            obtenerLlave(empNum, next).catch(() => {});
-            onContinue();
-            return;
+            return entrar(next);
           }
           if (result.status === 'pendiente') {
             setLockedMessage('Tu cuenta está esperando que tu asesor o RH la apruebe. Cuando la aprueben, entra con tu número y tu PIN.');
@@ -160,7 +167,7 @@ export function VerifyScreen({
       </View>
 
       <SafeAreaView edges={['bottom']} style={styles.cta}>
-        <OxButton disabled={len !== 4 || checking || !!lockedMessage} icon={<Icon name="shieldCheck" size={19} color="#fff" />}>
+        <OxButton disabled={len !== 4 || checking || !!lockedMessage} icon={<Icon name="shieldCheck" size={19} color={colors.white} />}>
           {checking ? (temporal ? 'Guardando…' : 'Verificando…') : temporal ? 'Guardar PIN' : 'Verificar'}
         </OxButton>
       </SafeAreaView>
@@ -200,4 +207,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
   },
+
 });

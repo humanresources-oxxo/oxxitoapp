@@ -6,9 +6,12 @@
 // download of every position in view.
 // Only for the same puestos as Actas (see services/actas.ts).
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Esqueleto } from '../components/Estado';
+import { Encabezado } from '../components/Encabezado';
 import { Icon } from '../components/Icon';
 import { usePinDeSesion } from '../components/PinDeSesion';
 import { Anillo, Barras, Desplegable, Leyenda } from '../components/Visual';
@@ -27,7 +30,7 @@ import {
 import { normalizarNombre } from '../services/gviz';
 import { showAlert } from '../utils/alert';
 import { compartirArchivo, MIME } from '../utils/compartir';
-import { colors, gradients, radii, shadows, type } from '../theme/tokens';
+import { colors, gradients, radii, shadows, type, fontFamily } from '../theme/tokens';
 
 type Sesion = { nombre?: string } | null;
 
@@ -121,21 +124,8 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
-            <Icon name="chevL" size={20} color={colors.ink} />
-          </Pressable>
-          <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>
-              Plaza Oaxaca
-              {actualizado ? ` · ${actualizado}` : ''}
-            </Text>
-            <Text style={styles.title}>Estructura</Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Encabezado titulo="Estructura" eyebrow={`Plaza Oaxaca${actualizado ? ` · ${actualizado}` : ''}`} onBack={onBack} />
 
       {error ? (
         <View style={styles.content}>
@@ -160,8 +150,8 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
           </View>
         </View>
       ) : !corte ? (
-        <View style={styles.cargando}>
-          <ActivityIndicator color={colors.oxRed} />
+        <View style={{ padding: 16 }}>
+          <Esqueleto />
         </View>
       ) : sinTiendas ? (
         <View style={styles.content}>
@@ -262,7 +252,7 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
                 value={texto}
                 onChangeText={setTexto}
                 placeholder="Tienda, CR o colaborador"
-                placeholderTextColor={colors.ink3}
+                placeholderTextColor={colors.placeholder}
                 autoCorrect={false}
                 returnKeyType="search"
               />
@@ -395,14 +385,13 @@ function Chip({ texto, activo, onPress }: { texto: string; activo: boolean; onPr
 
 const styles = StyleSheet.create({
   anilloFila: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  anilloNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 20, color: colors.ink },
-  coberturaNota: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink3, marginTop: 10 },
+  anilloNum: { fontFamily: fontFamily.extrabold, fontSize: 20, color: colors.ink },
+  coberturaNota: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink3, marginTop: 10 },
   tiendaFila: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
-  tiendaCuenta: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14, color: colors.ok, minWidth: 40, textAlign: 'right' },
+  tiendaCuenta: { fontFamily: fontFamily.extrabold, fontSize: 14, color: colors.ok, minWidth: 40, textAlign: 'right' },
   vacPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: '#FFF0EC' },
-  vacPillTxt: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: colors.oxRed },
-  screen: { flex: 1, backgroundColor: colors.bg, paddingBottom: 108 },
-  safeTop: { backgroundColor: 'rgba(255,255,255,.56)' },
+  vacPillTxt: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.oxRed },
+  screen: { flex: 1, backgroundColor: colors.bg },
   header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerCopy: { flex: 1 },
   headerButton: {
@@ -416,17 +405,16 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
   },
   eyebrow: { ...type.eyebrowSm, color: colors.oxRed, marginBottom: 3 },
-  title: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 25, lineHeight: 29, color: colors.ink },
+  title: { fontFamily: fontFamily.extrabold, fontSize: 25, lineHeight: 29, color: colors.ink },
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 12 },
-  cargando: { paddingVertical: 48, alignItems: 'center' },
   nota: { ...type.caption, color: colors.ink2 },
   hero: { borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 14, ...shadows.hero },
-  heroKicker: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
-  heroNumero: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 44, lineHeight: 52, color: colors.white, marginTop: 2 },
-  heroBody: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 13, lineHeight: 18, color: 'rgba(255,255,255,.9)' },
+  heroKicker: { fontFamily: fontFamily.extrabold, fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
+  heroNumero: { fontFamily: fontFamily.extrabold, fontSize: 44, lineHeight: 52, color: colors.white, marginTop: 2 },
+  heroBody: { fontFamily: fontFamily.semibold, fontSize: 13, lineHeight: 18, color: 'rgba(255,255,255,.9)' },
   heroVacantes: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,.2)', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 14, minWidth: 86 },
-  heroVacNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 28, color: colors.white },
-  heroVacTxt: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: 'rgba(255,255,255,.9)' },
+  heroVacNum: { fontFamily: fontFamily.extrabold, fontSize: 28, color: colors.white },
+  heroVacTxt: { fontFamily: fontFamily.bold, fontSize: 12, color: 'rgba(255,255,255,.9)' },
   card: {
     borderRadius: radii.xl,
     backgroundColor: colors.white,
@@ -435,16 +423,16 @@ const styles = StyleSheet.create({
     padding: 16,
     ...shadows.card,
   },
-  cardTitle: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink, marginBottom: 4 },
+  cardTitle: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink, marginBottom: 4 },
   aviso: { alignItems: 'center', gap: 8, paddingVertical: 28 },
-  avisoTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink, textAlign: 'center' },
+  avisoTitulo: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink, textAlign: 'center' },
   avisoTexto: { ...type.caption, color: colors.ink2, textAlign: 'center', maxWidth: 300 },
   avisoBoton: { marginTop: 6, paddingHorizontal: 18, paddingVertical: 10, borderRadius: radii.pill, backgroundColor: colors.oxRed },
-  avisoBotonTexto: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13.5, color: colors.white },
+  avisoBotonTexto: { fontFamily: fontFamily.bold, fontSize: 13.5, color: colors.white },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 13, paddingVertical: 9, borderRadius: radii.pill, backgroundColor: colors.field, borderWidth: 1, borderColor: colors.line },
   chipActivo: { backgroundColor: colors.oxRed, borderColor: colors.oxRed },
-  chipText: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 13, color: colors.ink2 },
+  chipText: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink2 },
   chipTextActivo: { color: colors.white },
   buscador: {
     flexDirection: 'row',
@@ -457,8 +445,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     minHeight: 50,
   },
-  buscadorInput: { flex: 1, fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 15, color: colors.ink, paddingVertical: 12 },
-  resumen: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink3 },
+  buscadorInput: { flex: 1, fontFamily: fontFamily.semibold, fontSize: 15, color: colors.ink, paddingVertical: 12 },
   descargar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -470,34 +457,15 @@ const styles = StyleSheet.create({
     borderColor: colors.oxRed,
     backgroundColor: colors.white,
   },
-  descargarTexto: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: colors.oxRed },
-  tienda: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    borderRadius: radii.xl,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  tiendaNombre: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14.5, color: colors.ink },
-  tiendaMeta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink2, marginTop: 2 },
+  descargarTexto: { fontFamily: fontFamily.bold, fontSize: 14, color: colors.oxRed },
+  tiendaNombre: { fontFamily: fontFamily.extrabold, fontSize: 14.5, color: colors.ink },
+  tiendaMeta: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink2, marginTop: 2 },
   barra: { flexDirection: 'row', height: 6, borderRadius: 3, backgroundColor: '#FFE1DA', overflow: 'hidden', marginTop: 8 },
   barraLlena: { backgroundColor: colors.ok },
-  tiendaOcup: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11.5, color: colors.ink3, marginTop: 4 },
-  vacBadge: { alignItems: 'center', minWidth: 64, paddingVertical: 8, borderRadius: 14, backgroundColor: '#FFF0EC' },
-  vacBadgeOk: { backgroundColor: '#EAF6F0' },
-  vacNum: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 22, color: colors.oxRed },
-  vacTxt: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 11, color: colors.ink3 },
-  fila: { flexDirection: 'row', gap: 10 },
-  dato: { flex: 1, padding: 12 },
-  datoTitulo: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 12, color: colors.ink2 },
-  datoValor: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 22, color: colors.ink, marginTop: 4 },
   pos: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
   posLinea: { borderBottomWidth: 1, borderBottomColor: colors.line },
   punto: { width: 9, height: 9, borderRadius: 5 },
-  posPuesto: { fontFamily: 'PlusJakartaSans_700Bold', fontSize: 14, color: colors.ink },
-  posMeta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12, color: colors.ink2, marginTop: 2 },
+  posPuesto: { fontFamily: fontFamily.bold, fontSize: 14, color: colors.ink },
+  posMeta: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink2, marginTop: 2 },
+
 });

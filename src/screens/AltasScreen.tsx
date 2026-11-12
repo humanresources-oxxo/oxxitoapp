@@ -4,15 +4,17 @@
 // approved before they can sign in (migration 39). Approve if it is really
 // that person; reject frees the account so the real employee can register.
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Esqueleto } from '../components/Estado';
+import { Encabezado } from '../components/Encabezado';
 import { Icon } from '../components/Icon';
 import { PinUnaVez } from '../components/PinUnaVez';
 import { Alta, listarAltas, resolverAlta } from '../services/altas';
 import { getJson, storageKeys } from '../services/appStorage';
 import { leerLlave, olvidarLlave } from '../services/sesion';
-import { colors, gradients, radii, shadows, type } from '../theme/tokens';
+import { colors, gradients, radii, shadows, type, fontFamily } from '../theme/tokens';
 import { confirmAlert, showAlert } from '../utils/alert';
 
 const cuando = new Intl.DateTimeFormat('es-MX', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -69,18 +71,8 @@ export function AltasScreen({ onBack, onCambio }: { onBack: () => void; onCambio
 
   return (
     <View style={styles.screen}>
-      <LinearGradient colors={['#FFF7F0', colors.bg, '#FFFFFF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <Pressable accessibilityRole="button" style={styles.headerButton} onPress={onBack} accessibilityLabel="Regresar">
-            <Icon name="chevL" size={20} color={colors.ink} />
-          </Pressable>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.eyebrow}>Cuentas nuevas</Text>
-            <Text style={styles.title}>Altas por aprobar</Text>
-          </View>
-        </View>
-      </SafeAreaView>
+      <LinearGradient colors={gradients.fondo.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+      <Encabezado titulo="Altas por aprobar" eyebrow="Cuentas nuevas" onBack={onBack} />
 
       {error ? (
         <View style={styles.content}>
@@ -93,7 +85,7 @@ export function AltasScreen({ onBack, onCambio }: { onBack: () => void; onCambio
           </View>
         </View>
       ) : !altas ? (
-        <View style={styles.cargando}>{pedirPin ? null : <ActivityIndicator color={colors.oxRed} />}</View>
+        <View style={{ padding: 16 }}>{pedirPin ? null : <Esqueleto />}</View>
       ) : (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <LinearGradient colors={gradients.green.colors} start={gradients.green.start} end={gradients.green.end} style={styles.hero}>
@@ -103,7 +95,7 @@ export function AltasScreen({ onBack, onCambio }: { onBack: () => void; onCambio
               <Text style={styles.heroBody}>Aprueba solo si sabes que es esa persona. Si dudas, pregúntale en tienda.</Text>
             </View>
             <View style={styles.heroIcono}>
-              <Icon name="user" size={28} color="#fff" />
+              <Icon name="user" size={28} color={colors.white} />
             </View>
           </LinearGradient>
 
@@ -153,34 +145,19 @@ export function AltasScreen({ onBack, onCambio }: { onBack: () => void; onCambio
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.bg, paddingBottom: 108 },
-  safeTop: { backgroundColor: 'rgba(255,255,255,.56)' },
-  header: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  eyebrow: { ...type.eyebrowSm, color: colors.oxRed, marginBottom: 3 },
-  title: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 25, lineHeight: 29, color: colors.ink },
+  screen: { flex: 1, backgroundColor: colors.bg },
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 12 },
-  cargando: { paddingVertical: 48, alignItems: 'center' },
   hero: { borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 14, ...shadows.hero },
-  heroKicker: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
-  heroNumero: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 52, lineHeight: 60, color: colors.white },
-  heroBody: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12.5, lineHeight: 18, color: 'rgba(255,255,255,.92)' },
+  heroKicker: { fontFamily: fontFamily.extrabold, fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
+  heroNumero: { fontFamily: fontFamily.extrabold, fontSize: 52, lineHeight: 60, color: colors.white },
+  heroBody: { fontFamily: fontFamily.semibold, fontSize: 12.5, lineHeight: 18, color: 'rgba(255,255,255,.92)' },
   heroIcono: { width: 64, height: 64, borderRadius: 22, backgroundColor: 'rgba(255,255,255,.2)', alignItems: 'center', justifyContent: 'center' },
   card: { borderRadius: radii.xl, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, padding: 16, ...shadows.card },
-  nombre: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16.5, color: colors.ink },
-  meta: { fontFamily: 'PlusJakartaSans_600SemiBold', fontSize: 12.5, color: colors.ink2, marginTop: 3 },
+  nombre: { fontFamily: fontFamily.extrabold, fontSize: 16.5, color: colors.ink },
+  meta: { fontFamily: fontFamily.semibold, fontSize: 12.5, color: colors.ink2, marginTop: 3 },
   fila: { flexDirection: 'row', gap: 10 },
   boton: { minHeight: 46, borderRadius: 14, backgroundColor: colors.ok, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6, paddingHorizontal: 14 },
-  botonTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14, color: colors.white },
+  botonTexto: { fontFamily: fontFamily.extrabold, fontSize: 14, color: colors.white },
   botonSec: {
     minHeight: 46,
     borderRadius: 14,
@@ -192,8 +169,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
   },
-  botonSecTexto: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 14, color: colors.oxRed },
+  botonSecTexto: { fontFamily: fontFamily.extrabold, fontSize: 14, color: colors.oxRed },
   nota: { ...type.caption, color: colors.ink2 },
   aviso: { alignItems: 'center', gap: 10, paddingVertical: 28 },
-  avisoTitulo: { fontFamily: 'PlusJakartaSans_800ExtraBold', fontSize: 16, color: colors.ink },
+  avisoTitulo: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink },
+
 });

@@ -1,4 +1,4 @@
-﻿// App.tsx - entry point: loads fonts, wraps navigation, shows onboarding flow.
+// App.tsx - entry point: loads fonts, wraps navigation, shows onboarding flow.
 import React, { useState, useCallback, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, Platform } from 'react-native';
@@ -15,7 +15,7 @@ import { OnboardingNavigator, DonePlaceholder } from './src/navigation/Onboardin
 import { getBoolean, setBoolean, storageKeys } from './src/services/appStorage';
 import { cerrarSesion } from './src/services/sesion';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
-import { colors } from './src/theme/tokens';
+import { anchoMaximo, colors } from './src/theme/tokens';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -70,11 +70,16 @@ export default function App() {
     <SafeAreaProvider>
       {/* On the web React Navigation names the browser tab after the screen
           ("undefined" for screens without a title): always Conoxxo. */}
-      <NavigationContainer documentTitle={{ formatter: () => 'Conoxxo' }}>
-        <ErrorBoundary>
-          {onboardingDone ? <DonePlaceholder onLogout={logout} /> : <OnboardingNavigator onFinished={finishOnboarding} />}
-        </ErrorBoundary>
-      </NavigationContainer>
+      {/* On a tablet or a computer the app stays a centered column. */}
+      <View style={{ flex: 1, backgroundColor: '#F1E8E1', alignItems: 'center' }}>
+        <View style={{ flex: 1, width: '100%', maxWidth: anchoMaximo, backgroundColor: colors.bg, overflow: 'hidden' }}>
+          <NavigationContainer documentTitle={{ formatter: () => 'Conoxxo' }}>
+            <ErrorBoundary>
+              {onboardingDone ? <DonePlaceholder onLogout={logout} /> : <OnboardingNavigator onFinished={finishOnboarding} />}
+            </ErrorBoundary>
+          </NavigationContainer>
+        </View>
+      </View>
       <StatusBar style="dark" />
     </SafeAreaProvider>
   );

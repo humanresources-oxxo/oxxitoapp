@@ -1,22 +1,14 @@
 // src/screens/DirectoryScreen.tsx
 // Internal contact directory with search and a lightweight call sheet.
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  FlatList,
-  Linking,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { BlurView } from 'expo-blur';
+import { FlatList, Linking, Modal, StyleSheet, Text, TextInput, View, RefreshControl, ScrollView } from 'react-native';
+import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Encabezado } from '../components/Encabezado';
+import { Esqueleto, EstadoVacio } from '../components/Estado';
 import { Icon } from '../components/Icon';
 import { Contact, fetchContacts } from '../services/directory';
-import { colors, gradients, radii, shadows, type } from '../theme/tokens';
+import { colors, gradients, radii, shadows, type, fontFamily, hoja } from '../theme/tokens';
 
 
 function normalize(text: string) {
@@ -33,20 +25,30 @@ export function DirectoryScreen() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [failed, setFailed] = useState(false);
+  const [reload, setReload] = useState(0);
+  const refresh = () => {
+    setLoading(true);
+    setReload((n) => n + 1);
+  };
   useEffect(() => {
     let mounted = true;
     fetchContacts()
       .then((rows) => {
-        if (mounted) setContacts(rows);
+        if (!mounted) return;
+        setContacts(rows);
+        setFailed(false);
       })
-      .catch(() => {})
+      .catch(() => {
+        if (mounted) setFailed(true);
+      })
       .finally(() => {
         if (mounted) setLoading(false);
       });
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [reload]);
 
   const directoryFilters = useMemo(
     () => ['Todos', ...Array.from(new Set(contacts.map((c) => c.area)))],
@@ -88,24 +90,13 @@ export function DirectoryScreen() {
   return (
     <View style={styles.screen}>
       <LinearGradient
-        colors={['#FFF7F0', colors.bg, '#FFFFFF']}
+        colors={gradients.fondo.colors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
 
-      <SafeAreaView edges={['top']} style={styles.safeTop}>
-        <View style={styles.header}>
-          <View style={styles.headerCopy}>
-            <Text style={styles.eyebrow}>Contactos internos</Text>
-            <Text style={styles.title}>Directorio</Text>
-            <Text style={styles.subtitle}>Encuentra el área correcta y llama cuando necesites apoyo.</Text>
-          </View>
-          <LinearGradient colors={gradients.oxGrad.colors} style={styles.headerIcon}>
-            <Icon name="headset" size={25} color="#fff" />
-          </LinearGradient>
-        </View>
-      </SafeAreaView>
+      <Encabezado titulo="Directorio" />
 
       <View style={styles.searchWrap}>
         <View style={styles.searchBox}>
@@ -114,13 +105,13 @@ export function DirectoryScreen() {
             value={query}
             onChangeText={setQuery}
             placeholder="Buscar por área o tema..."
-            placeholderTextColor={colors.ink3}
+            placeholderTextColor={colors.placeholder}
             style={styles.searchInput}
           />
         </View>
       </View>
 
-      <View style={styles.filters}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={styles.filters}>
         {directoryFilters.map((item) => {
           const active = item === filter;
           return (
@@ -133,7 +124,7 @@ export function DirectoryScreen() {
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       <FlatList
         data={filteredContacts}
@@ -141,25 +132,32 @@ export function DirectoryScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => <ContactCard contact={item} onPress={() => setSelected(item)} />}
+        refreshControl={<RefreshControl refreshing={loading && contacts.length > 0} onRefresh={refresh} tintColor={colors.oxRed} colors={[colors.oxRed]} />}
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Icon name="search" size={28} color={colors.ink3} />
-            <Text style={styles.emptyText}>
-              {loading ? 'Cargando directorio...' : 'No encontramos contactos con esa búsqueda.'}
-            </Text>
-          </View>
+          loading ? (
+            <Esqueleto />
+          ) : failed ? (
+            <EstadoVacio icono="alert" titulo="No pudimos cargar el directorio" texto="Revisa tu conexión e intenta de nuevo." accion={{ texto: 'Reintentar', onPress: refresh }} />
+          ) : (
+            <EstadoVacio
+              icono="search"
+              titulo="Sin resultados"
+              texto="No encontramos contactos con esa búsqueda."
+              accion={query || filter !== 'Todos' ? { texto: 'Ver todos', onPress: () => { setQuery(''); setFilter('Todos'); } } : undefined}
+            />
+          )
         }
       />
 
       <Modal transparent visible={!!selected} animationType="fade" onRequestClose={() => setSelected(null)}>
         <View style={styles.modalBackdrop}>
           <Pressable accessibilityRole="button" accessibilityLabel="Cerrar" style={StyleSheet.absoluteFill} onPress={() => setSelected(null)} />
-          <BlurView intensity={35} tint="light" style={styles.callSheet}>
+          <View style={[styles.callSheet, hoja]}>
             {selected ? (
               <>
                 <View style={styles.sheetHandle} />
                 <LinearGradient colors={gradients.oxGrad.colors} style={styles.sheetIcon}>
-                  <Icon name="phone" size={26} color="#fff" />
+                  <Icon name="phone" size={26} color={colors.white} />
                 </LinearGradient>
                 <Text style={styles.sheetTitle}>{selected.name}</Text>
                 <Text style={styles.sheetMeta}>{selected.role}</Text>
@@ -169,11 +167,11 @@ export function DirectoryScreen() {
                 </View>
                 <View style={styles.sheetActions}>
                   <Pressable accessibilityRole="button" style={styles.whatsappButton} onPress={whatsappSelected}>
-                    <Icon name="whatsapp" size={18} color="#fff" />
+                    <Icon name="whatsapp" size={18} color={colors.white} />
                     <Text style={styles.primaryButtonText}>WhatsApp</Text>
                   </Pressable>
                   <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={callSelected}>
-                    <Icon name="phone" size={18} color="#fff" />
+                    <Icon name="phone" size={18} color={colors.white} />
                     <Text style={styles.primaryButtonText}>Llamar</Text>
                   </Pressable>
                 </View>
@@ -182,7 +180,7 @@ export function DirectoryScreen() {
                 </Pressable>
               </>
             ) : null}
-          </BlurView>
+          </View>
         </View>
       </Modal>
     </View>
@@ -222,44 +220,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     paddingBottom: 108,
   },
-  safeTop: {
-    backgroundColor: 'rgba(255,255,255,.56)',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 16,
-  },
-  headerCopy: {
-    flex: 1,
-  },
-  eyebrow: {
-    ...type.eyebrowSm,
-    color: colors.oxRed,
-    marginBottom: 7,
-  },
-  title: {
-    ...type.title,
-    color: colors.ink,
-  },
-  subtitle: {
-    ...type.bodySm,
-    color: colors.ink2,
-    marginTop: 8,
-    maxWidth: 300,
-  },
-  headerIcon: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.button,
-  },
   searchWrap: {
     paddingHorizontal: 16,
     paddingTop: 12,
@@ -278,7 +238,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     minHeight: 46,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fontFamily.semibold,
     fontSize: 14.5,
     color: colors.ink,
   },
@@ -287,12 +247,12 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 16,
     paddingTop: 12,
-    flexWrap: 'wrap',
   },
   filterChip: {
     borderRadius: radii.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    minHeight: 40,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.line,
@@ -302,7 +262,7 @@ const styles = StyleSheet.create({
     borderColor: colors.oxRed,
   },
   filterText: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 12.5,
     color: colors.ink2,
   },
@@ -346,7 +306,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   contactName: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 16,
     color: colors.ink,
   },
@@ -356,12 +316,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFE8E3',
     paddingHorizontal: 8,
     paddingVertical: 3,
-    fontFamily: 'PlusJakartaSans_700Bold',
-    fontSize: 10.5,
+    fontFamily: fontFamily.bold,
+    fontSize: 12,
     color: colors.oxRed,
   },
   contactArea: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 12.5,
     color: colors.oxRed,
     marginTop: 2,
@@ -387,25 +347,13 @@ const styles = StyleSheet.create({
   },
   metaText: {
     flex: 1,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fontFamily.semibold,
     fontSize: 12.5,
     color: colors.ink2,
   },
-  empty: {
-    minHeight: 180,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  emptyText: {
-    ...type.bodySm,
-    color: colors.ink2,
-    textAlign: 'center',
-    maxWidth: 240,
-  },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(36,26,23,.22)',
+    backgroundColor: colors.velo,
     justifyContent: 'flex-end',
     padding: 14,
   },
@@ -437,7 +385,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   sheetTitle: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 22,
     color: colors.ink,
     textAlign: 'center',
@@ -455,7 +403,7 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   phoneLineText: {
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fontFamily.bold,
     fontSize: 13,
     color: colors.ink2,
   },
@@ -465,16 +413,8 @@ const styles = StyleSheet.create({
     marginTop: 22,
     width: '100%',
   },
-  secondaryButton: {
-    flex: 1,
-    minHeight: 50,
-    borderRadius: 16,
-    backgroundColor: colors.field,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   secondaryButtonText: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 14,
     color: colors.ink,
   },
@@ -506,8 +446,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   primaryButtonText: {
-    fontFamily: 'PlusJakartaSans_800ExtraBold',
+    fontFamily: fontFamily.extrabold,
     fontSize: 14,
     color: colors.white,
   },
+
 });

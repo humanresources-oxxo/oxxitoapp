@@ -121,4 +121,5 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: colors.line2,
   },
+
 });
