@@ -9,6 +9,7 @@
 // Data uploaded by RH from DashboardsOxxo's admin panel (services/cct.ts).
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Fondo } from '../components/Fondo';
 import { Pressable } from '../components/Pressable';
 import { Esqueleto } from '../components/Estado';
@@ -17,10 +18,10 @@ import { Icon } from '../components/Icon';
 import { PinUnaVez } from '../components/PinUnaVez';
 import { getJson, storageKeys } from '../services/appStorage';
 import { esSinSesion } from '../services/sesion';
-import { Anillo, ColumnasApiladas, Desplegable, Indicador, Leyenda } from '../components/Visual';
+import { Anillo, ColumnasApiladas, Desplegable, Leyenda } from '../components/Visual';
 import { cargarCct, Cct, CctDatos, esOaxaca } from '../services/cct';
 import { normalizarNombre, sinAcentos } from '../services/gviz';
-import { colors, radii, shadows, type, fontFamily } from '../theme/tokens';
+import { colors, radii, shadows, type, fontFamily, gradients } from '../theme/tokens';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 function fecha(iso?: string) {
@@ -237,36 +238,39 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
             <Grupo titulo="Estatus de revisión" valores={opciones((d) => etiqueta(d.estatusRevision))} activo={filtros.estatus} onPress={(v) => pon('estatus', v)} />
           </Desplegable>
 
-          <View style={styles.franja}>
-            <View style={styles.fila}>
-              <Indicador valor={miles(colaboradores)} etiqueta="Colaboradores" />
-              <Indicador valor={num(filas.length)} etiqueta="Contratos" />
+          <LinearGradient colors={gradients.oxGrad.colors} start={gradients.oxGrad.start} end={gradients.oxGrad.end} style={styles.hero}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.heroKicker}>Contratos · {anio}</Text>
+              <Text style={styles.heroNumero}>{num(filas.length)}</Text>
+              <Text style={styles.heroBody}>{activos ? 'con estos filtros' : 'en todas las plazas'}</Text>
             </View>
+            <View style={styles.heroLado}>
+              <Text style={styles.heroLadoNum}>{miles(colaboradores)}</Text>
+              <Text style={styles.heroLadoTxt}>colaboradores</Text>
+            </View>
+          </LinearGradient>
+
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Incremento promedio</Text>
             <View style={styles.fila}>
-              <Indicador valor={pct(nominal)} etiqueta="Incr. nominal" tono={colors.oxRed} />
-              <Indicador valor={pct(salarioTotal)} etiqueta="Incr. salario total" tono={colors.oxRed} />
-              <Indicador valor={pct(prestaciones)} etiqueta="Incr. prestaciones" tono={colors.oxRed} />
+              <Mini valor={pct(nominal)} texto="Nominal" tono={colors.oxRed} />
+              <Mini valor={pct(salarioTotal)} texto="Salario total" tono={colors.oxRed} />
+              <Mini valor={pct(prestaciones)} texto="Prestaciones" tono={colors.oxRed} />
             </View>
           </View>
 
           <View style={styles.fila}>
             <View style={[styles.card, { flex: 2 }]}>
-              <Banda texto="Revisiones por tipo" />
+              <Text style={styles.cardTitle}>Revisiones por tipo</Text>
               <View style={styles.fila}>
                 {(porTipo.length ? porTipo : [['Salarial', 0] as [string, number]]).slice(0, 2).map(([t, n]) => (
-                  <View key={t} style={styles.mini}>
-                    <Text style={styles.miniNum}>{n}</Text>
-                    <Text style={styles.miniTxt}>{t}</Text>
-                  </View>
+                  <Mini key={t} valor={String(n)} texto={t} />
                 ))}
               </View>
             </View>
             <View style={[styles.card, { flex: 1 }]}>
-              <Banda texto="Nuevos CCT" />
-              <View style={styles.mini}>
-                <Text style={styles.miniNum}>{nuevos}</Text>
-                <Text style={styles.miniTxt}>Inicial</Text>
-              </View>
+              <Text style={styles.cardTitle}>Nuevos CCT</Text>
+              <Mini valor={String(nuevos)} texto="Inicial" />
             </View>
           </View>
 
@@ -280,7 +284,7 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
             </View>
           </Grafica>
 
-          <Grafica titulo="Estatus revisiones">
+          <Grafica titulo="Estatus de revisiones">
             <Anillo
               segmentos={porEstatus.map(([e, n]) => ({ valor: n, color: ESTATUS[e] || colors.ink3 }))}
               centro={<Text style={styles.anilloNum}>{filas.length}</Text>}
@@ -291,7 +295,7 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
           </Grafica>
 
           <View style={styles.card}>
-            <Banda texto="Negociaciones por mes" />
+            <Text style={styles.cardTitle}>Negociaciones por mes</Text>
             {porMes.length ? (
               <>
                 <View style={styles.leyendaFila}>
@@ -309,7 +313,7 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
             )}
           </View>
 
-          <Grafica titulo="Estatus consultas">
+          <Grafica titulo="Estatus de consultas">
             {consultas ? (
               <>
                 <Anillo
@@ -326,30 +330,24 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
           </Grafica>
 
           <View style={styles.card}>
-            <Banda texto="Avance consultas" />
+            <Text style={styles.cardTitle}>Avance de consultas</Text>
             <View style={styles.fila}>
-              <View style={styles.mini}>
-                <Text style={styles.miniNum}>{pct(aprobacion, 0)}</Text>
-                <Text style={styles.miniTxt}>Aprobación</Text>
-              </View>
-              <View style={styles.mini}>
-                <Text style={styles.miniNum}>{pct(participacion, 0)}</Text>
-                <Text style={styles.miniTxt}>Participación</Text>
-              </View>
+              <Mini valor={pct(aprobacion, 0)} texto="Aprobación" />
+              <Mini valor={pct(participacion, 0)} texto="Participación" />
             </View>
             <View style={[styles.fila, { marginTop: 8 }]}>
               {(['Realizada', 'Pendiente', 'Programada'] as const).map((k) => (
-                <View key={k} style={styles.mini}>
-                  <Text style={styles.miniNum}>{nConsulta(k)}</Text>
-                  <Text style={styles.miniTxt}>{k === 'Realizada' ? 'Realizadas' : k === 'Pendiente' ? 'Pendientes' : 'Programadas'}</Text>
-                </View>
+                <Mini key={k} valor={String(nConsulta(k))} texto={k === 'Realizada' ? 'Realizadas' : k === 'Pendiente' ? 'Pendientes' : 'Programadas'} />
               ))}
             </View>
           </View>
 
           {compliance !== null ? (
             <View style={[styles.card, styles.compliance]}>
-              <Text style={styles.complianceTit}>Compliance</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardTitle}>Compliance</Text>
+                <Text style={styles.nota}>Cumplimiento promedio de los contratos</Text>
+              </View>
               <Text style={styles.complianceNum}>{pct(compliance, 0)}</Text>
             </View>
           ) : null}
@@ -423,11 +421,16 @@ export function CctScreen({ onBack }: { onBack: () => void }) {
   );
 }
 
-// Yellow title band, like the board's section headers.
-function Banda({ texto }: { texto: string }) {
+// One number with its label, inside a card.
+function Mini({ valor, texto, tono }: { valor: string; texto: string; tono?: string }) {
   return (
-    <View style={styles.banda}>
-      <Text style={styles.bandaTxt}>{texto}</Text>
+    <View style={styles.mini}>
+      <Text style={[styles.miniNum, tono ? { color: tono } : null]} numberOfLines={1} adjustsFontSizeToFit>
+        {valor}
+      </Text>
+      <Text style={styles.miniTxt} numberOfLines={2}>
+        {texto}
+      </Text>
     </View>
   );
 }
@@ -435,7 +438,7 @@ function Banda({ texto }: { texto: string }) {
 function Grafica({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <View style={styles.card}>
-      <Banda texto={titulo} />
+      <Text style={styles.cardTitle}>{titulo}</Text>
       <View style={styles.anilloFila}>{children}</View>
     </View>
   );
@@ -492,7 +495,14 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, gap: 12 },
   nota: { ...type.caption, color: colors.ink2 },
   fila: { flexDirection: 'row', gap: 10 },
-  franja: { gap: 10, padding: 10, borderRadius: radii.xl, backgroundColor: '#F6C9CC' },
+  hero: { borderRadius: 24, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 14, ...shadows.hero },
+  heroKicker: { fontFamily: fontFamily.extrabold, fontSize: 12, color: 'rgba(255,255,255,.84)', textTransform: 'uppercase' },
+  heroNumero: { fontFamily: fontFamily.titulo, fontSize: 44, lineHeight: 52, color: colors.white, marginTop: 2 },
+  heroBody: { fontFamily: fontFamily.semibold, fontSize: 13, lineHeight: 18, color: 'rgba(255,255,255,.9)' },
+  heroLado: { alignItems: 'center', backgroundColor: 'rgba(255,255,255,.2)', borderRadius: 18, paddingVertical: 12, paddingHorizontal: 14, minWidth: 104 },
+  heroLadoNum: { fontFamily: fontFamily.titulo, fontSize: 24, color: colors.white },
+  heroLadoTxt: { fontFamily: fontFamily.bold, fontSize: 12, color: 'rgba(255,255,255,.9)' },
+  cardTitle: { fontFamily: fontFamily.extrabold, fontSize: 16, color: colors.ink, marginBottom: 12 },
   card: {
     borderRadius: radii.xl,
     backgroundColor: colors.white,
@@ -501,20 +511,17 @@ const styles = StyleSheet.create({
     padding: 14,
     ...shadows.card,
   },
-  banda: { alignSelf: 'stretch', borderRadius: 10, backgroundColor: '#D8B200', paddingVertical: 7, marginBottom: 12 },
-  bandaTxt: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.ink, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.4 },
-  mini: { flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: colors.line },
+  mini: { flex: 1, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6, borderRadius: radii.lg, backgroundColor: colors.field },
   miniNum: { fontFamily: fontFamily.titulo, fontSize: 24, color: colors.ink },
-  miniTxt: { fontFamily: fontFamily.semibold, fontSize: 12, color: colors.ink2, marginTop: 2 },
+  miniTxt: { fontFamily: fontFamily.semibold, fontSize: 12.5, color: colors.ink2, marginTop: 2, textAlign: 'center' },
   anilloFila: { flexDirection: 'row', alignItems: 'center', gap: 18 },
   anilloNum: { fontFamily: fontFamily.titulo, fontSize: 22, color: colors.ink },
   leyendaFila: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 10 },
   leyendaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   leyendaPunto: { width: 10, height: 10, borderRadius: 5 },
   leyendaTxt: { fontFamily: fontFamily.bold, fontSize: 12, color: colors.ink2 },
-  compliance: { alignItems: 'center', borderColor: '#8FE39A', borderWidth: 2 },
-  complianceTit: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.ink2, textTransform: 'uppercase', letterSpacing: 0.6 },
-  complianceNum: { fontFamily: fontFamily.titulo, fontSize: 36, color: colors.ink, marginTop: 4 },
+  compliance: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  complianceNum: { fontFamily: fontFamily.titulo, fontSize: 36, color: colors.ok },
   limpiar: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: radii.pill, backgroundColor: '#FFF0EC' },
   limpiarTxt: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.oxRed },
   subTitulo: { fontFamily: fontFamily.extrabold, fontSize: 12, color: colors.ink3, textTransform: 'uppercase', letterSpacing: 0.8 },
