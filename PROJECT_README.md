@@ -140,6 +140,21 @@ a partir del design handoff (`design_handoff_oxxito_app`).
   `main` corre `npm run typecheck` (TypeScript), `npm run check:worker` (sintaxis de `worker/`) y
   `npm run build:cloudflare` (la misma compilación que hace Cloudflare). No usa secretos.
 
+✅ **Estructura · Equipo (`src/screens/EstructuraEquipo.tsx`, `src/services/plantilla.ts`):**
+  Estructura tiene dos vistas: **Vacantes** (la de siempre, Dashboard 1) y **Equipo**, con la
+  demografía de las tiendas en vista (las del AT o toda la plaza): género (y mujeres por puesto),
+  edad, antigüedad, tiendas con equipo nuevo (40% o más con menos de 3 meses), cumpleaños del mes
+  y quién está fuera de la operación (incapacidad, banca, contingencia). El detalle de cada tienda
+  suma una tarjeta "Equipo" y la antigüedad junto a cada colaborador. Género y edad salen solo
+  como totales, nunca junto al nombre.
+  - **Datos:** pestaña `Plantilla_Demograficos` del Sheet de DashboardsOxxo, que RH sube cada
+    semana desde el panel (Excel "Plantilla Operativa con Demográficos"). El panel publica 14
+    columnas; RFC, CURP, IMSS, teléfono, domicilio, sueldo y la fecha de nacimiento no salen del
+    navegador de quien lo sube. Del cumpleaños solo llega el **mes**: con el día, edad + día y mes
+    darían la fecha completa, que es lo que pide `registrar_pin` para el primer PIN.
+  - **Quién la lee:** solo puestos con permisos (Apps Script v72, `LECTURA_HOJAS_SOLO_PERMISOS`).
+    Mientras la pestaña no exista o el script sea anterior, Equipo dice "Aún no hay datos".
+
 ✅ **Votaciones (`src/screens/VotacionesScreen.tsx`):** votaciones secretas para lugares,
   fechas y decisiones del equipo (no sindicales). Supabase, migración 34
   (`supabase/migration_34_votaciones.sql`); servicio `src/services/votaciones.ts`.
