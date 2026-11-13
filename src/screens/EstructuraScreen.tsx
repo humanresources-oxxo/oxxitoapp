@@ -4,6 +4,8 @@
 // vacancies, a coverage ring, vacancies by puesto, the stores with vacancies
 // and, folded, every store (search by store, CR or employee), plus an Excel
 // download of every position in view.
+// "Equipo" (EstructuraEquipo.tsx) adds who is on those teams, from the weekly
+// Plantilla con Demográficos: gender, age, seniority and birthdays.
 // Only for the same puestos as Actas (see services/actas.ts).
 import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -29,6 +31,8 @@ import {
   totales,
 } from '../services/estructura';
 import { normalizarNombre } from '../services/gviz';
+import { antiguedadPorNombre, cargarPlantilla, Colaborador, delAlcance, Plantilla } from '../services/plantilla';
+import { EquipoDeTienda, EquipoResumen } from './EstructuraEquipo';
 import { showAlert } from '../utils/alert';
 import { compartirArchivo, MIME } from '../utils/compartir';
 import { colors, gradients, radii, shadows, type, fontFamily } from '../theme/tokens';
@@ -59,6 +63,9 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
   const [soloMias, setSoloMias] = useState(true);
   const [conVacantes, setConVacantes] = useState(false);
   const [detalle, setDetalle] = useState<TiendaEstructura | null>(null);
+  // "Equipo": the weekly plantilla. undefined = loading, null = not uploaded yet.
+  const [vista, setVista] = useState<'vacantes' | 'equipo'>('vacantes');
+  const [plantilla, setPlantilla] = useState<Plantilla | null | undefined>(undefined);
 
   useEffect(() => {
     getJson<Sesion>(storageKeys.session, null).then(setSesion);
@@ -72,6 +79,11 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
     cargarEstructura()
       .then((c) => activo && setCorte(c))
       .catch((e) => activo && setError(e ?? true));
+    // The plantilla never blocks Estructura: without it, "Equipo" says so.
+    setPlantilla(undefined);
+    cargarPlantilla()
+      .then((p) => activo && setPlantilla(p))
+      .catch(() => activo && setPlantilla(null));
     return () => {
       activo = false;
     };
@@ -96,6 +108,16 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
     return buscarTiendas(corte?.tiendas || [], '', misTiendas ? sesion?.nombre : undefined);
   }, [corte, soloMisTiendas, yo, misTiendas, sesion?.nombre]);
   const ta = totales(alcance);
+  // The people of the stores in view: the whole plaza, or only "my stores".
+  const equipo = useMemo<Colaborador[]>(() => {
+    if (!plantilla) return [];
+    return misTiendas ? delAlcance(plantilla.colaboradores, alcance) : plantilla.colaboradores;
+  }, [plantilla, misTiendas, alcance]);
+  const abrirTienda = (t: { cr: string; tienda: string }) => {
+    const x = corte?.tiendas.find((y) => (t.cr ? y.cr === t.cr : y.tienda === t.tienda));
+    if (x) setDetalle(x);
+    else showAlert(t.tienda, 'Esta tienda no aparece en la estructura de la plaza (puede ser una unidad de entrenamiento o una preapertura).');
+  };
   const conHuecos = alcance.filter((x) => x.vacantes > 0);
   const vacantesPorPuesto = useMemo(() => {
     const m = new Map<string, number>();
@@ -171,6 +193,31 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
             </View>
           ) : null}
 
+          <View style={styles.vistas} accessibilityRole="tablist">
+            {([['vacantes', 'Vacantes'], ['equipo', 'Equipo']] as const).map(([k, etq]) => (
+              <Pressable key={k} accessibilityRole="tab" accessibilityState={{ selected: vista === k }} style={[styles.vistaBoton, vista === k && styles.vistaActiva]} onPress={() => setVista(k)}>
+                <Text style={[styles.vistaTexto, vista === k && styles.vistaTextoActivo]}>{etq}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {vista === 'equipo' ? (
+            plantilla === undefined ? (
+              <Esqueleto />
+            ) : plantilla === null ? (
+              <View style={[styles.card, styles.aviso]}>
+                <Icon name="user" size={26} color={colors.oxRed} />
+                <Text style={styles.avisoTitulo}>Aún no hay datos del equipo</Text>
+                <Text style={styles.avisoTexto}>RH todavía no ha subido la plantilla con demográficos de esta semana. Las vacantes siguen disponibles.</Text>
+                <Pressable accessibilityRole="button" style={styles.avisoBoton} onPress={() => setIntento((i) => i + 1)}>
+                  <Text style={styles.avisoBotonTexto}>Reintentar</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <EquipoResumen colaboradores={equipo} plantilla={plantilla} misTiendas={misTiendas} onTienda={abrirTienda} />
+            )
+          ) : (
+          <>
           <LinearGradient colors={gradients.oxGrad.colors} start={gradients.oxGrad.start} end={gradients.oxGrad.end} style={styles.hero}>
             <View style={{ flex: 1 }}>
               <Text style={styles.heroKicker}>
@@ -284,6 +331,8 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
             )}
             {resultado.length > MAX_LISTA ? <Text style={styles.nota}>Se muestran {MAX_LISTA}; usa la búsqueda para ver las demás.</Text> : null}
           </Desplegable>
+          </>
+          )}
         </ScrollView>
       )}
 
@@ -302,7 +351,7 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
               <Icon name="close" size={20} color={colors.ink} />
             </Pressable>
           </View>
-          {detalle ? <DetalleTienda t={detalle} /> : null}
+          {detalle ? <DetalleTienda t={detalle} equipo={plantilla ? delAlcance(plantilla.colaboradores, [detalle]) : []} /> : null}
         </SafeAreaView>
       </Modal>
       {pin.modal}
@@ -310,7 +359,9 @@ export function EstructuraScreen({ onBack, soloMisTiendas = false }: { onBack: (
   );
 }
 
-function DetalleTienda({ t }: { t: TiendaEstructura }) {
+// equipo: the store's people in the weekly plantilla (empty if not uploaded).
+function DetalleTienda({ t, equipo }: { t: TiendaEstructura; equipo: Colaborador[] }) {
+  const antiguedad = useMemo(() => antiguedadPorNombre(equipo), [equipo]);
   const vacantes = t.posiciones.filter((p) => !p.empleado);
   const ocupadas = t.posiciones.filter((p) => p.empleado);
   const total = t.posiciones.length;
@@ -337,6 +388,7 @@ function DetalleTienda({ t }: { t: TiendaEstructura }) {
           </View>
         </View>
       </View>
+      <EquipoDeTienda colaboradores={equipo} />
       {vacantes.length ? (
         <Desplegable titulo="Vacantes" icono="alert" inicial resumen={plural(vacantes.length, 'posición por cubrir', 'posiciones por cubrir')}>
           {vacantes.map((p, i) => {
@@ -363,7 +415,10 @@ function DetalleTienda({ t }: { t: TiendaEstructura }) {
               <View style={[styles.punto, { backgroundColor: colors.ok }]} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.posPuesto}>{p.empleado}</Text>
-                <Text style={styles.posMeta}>{titulo(p.puesto)}</Text>
+                <Text style={styles.posMeta}>
+                  {titulo(p.puesto)}
+                  {antiguedad.get(normalizarNombre(p.empleado)) ? ` · ${antiguedad.get(normalizarNombre(p.empleado))}` : ''}
+                </Text>
               </View>
             </View>
           ))
@@ -430,6 +485,11 @@ const styles = StyleSheet.create({
   avisoTexto: { ...type.caption, color: colors.ink2, textAlign: 'center', maxWidth: 300 },
   avisoBoton: { marginTop: 6, paddingHorizontal: 18, paddingVertical: 10, borderRadius: radii.pill, backgroundColor: colors.oxRed },
   avisoBotonTexto: { fontFamily: fontFamily.bold, fontSize: 13.5, color: colors.white },
+  vistas: { flexDirection: 'row', backgroundColor: colors.field, borderRadius: radii.md, padding: 4, gap: 4 },
+  vistaBoton: { flex: 1, minHeight: 40, borderRadius: radii.md - 3, alignItems: 'center', justifyContent: 'center' },
+  vistaActiva: { backgroundColor: colors.white, ...shadows.card },
+  vistaTexto: { fontFamily: fontFamily.bold, fontSize: 14, color: colors.ink2 },
+  vistaTextoActivo: { fontFamily: fontFamily.extrabold, color: colors.ink },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 13, paddingVertical: 9, borderRadius: radii.pill, backgroundColor: colors.field, borderWidth: 1, borderColor: colors.line },
   chipActivo: { backgroundColor: colors.oxRed, borderColor: colors.oxRed },
