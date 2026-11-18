@@ -18,6 +18,11 @@ export const storageKeys = {
   actaDraft: 'oxxito:actaDraft',
   storeCatalog: 'oxxito:storeCatalog',
   vacationBalance: 'oxxito:vacationBalance',
+  // Public key the phone subscribed to notifications with (avisosPush.ts).
+  pushClave: 'oxxito:pushClave',
+  // Last avisos and approved preguntas frecuentes, to show without signal.
+  avisosGuardados: 'oxxito:avisosGuardados',
+  faqGuardadas: 'oxxito:faqGuardadas',
 };
 
 export async function getBoolean(key: string) {

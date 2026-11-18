@@ -5,6 +5,8 @@
 // publish and delete them with the session key (services/sesion.ts).
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { rpcSesion } from './sesion';
+import { storageKeys } from './appStorage';
+import { guardar, leerGuardado } from '../utils/sinConexion';
 import { supabase } from './supabaseClient';
 import { Notice, NoticeKind } from '../data/notices';
 
@@ -15,7 +17,7 @@ const dateFormatter = new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 
 export async function fetchNotices(avisar = true): Promise<Notice[]> {
   const data = await rpcSesion<any[]>('sesion_avisos', {}, avisar);
 
-  return (data ?? []).map((row: any) => ({
+  const avisos = (data ?? []).map((row: any) => ({
     id: row.id,
     title: row.title,
     body: row.body,
@@ -24,8 +26,14 @@ export async function fetchNotices(avisar = true): Promise<Notice[]> {
     read: false,
     date: dateFormatter.format(new Date(row.published_at)),
     images: row.imagenes ?? [],
-  }));
+  })) as Notice[];
+  // A copy of the last 30 (text only: images need signal) for when there is none.
+  guardar<Notice[]>(storageKeys.avisosGuardados, avisos.slice(0, 30).map((a) => ({ ...a, images: [] })));
+  return avisos;
 }
+
+// The saved copy, for a screen whose request failed for lack of signal.
+export const avisosGuardados = () => leerGuardado<Notice[]>(storageKeys.avisosGuardados);
 
 // Image data as a data: URI, kept in memory once loaded.
 const cache = new Map<string, Promise<string>>();

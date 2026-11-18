@@ -36,5 +36,8 @@ jobs:
       - name: Sintaxis del Worker
         run: npm run check:worker
 
+      - name: Cifrado de notificaciones (RFC 8291)
+        run: npm run check:push
+
       - name: Compilar la app web (igual que Cloudflare)
         run: npm run build:cloudflare

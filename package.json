@@ -40,7 +40,8 @@
     "web": "expo start --web",
     "build:cloudflare": "node scripts/build-cloudflare.mjs",
     "typecheck": "tsc --noEmit",
-    "check:worker": "node scripts/check-worker.mjs"
+    "check:worker": "node scripts/check-worker.mjs",
+    "check:push": "node scripts/check-push.mjs"
   },
   "private": true
 }

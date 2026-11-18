@@ -9,3 +9,17 @@
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), payment=(), usb=()
+
+# The service worker (notifications only) must not be cached, so a change to
+# it reaches phones on the next visit.
+/sw.js
+  Cache-Control: no-cache
+  Service-Worker-Allowed: /
+
+# The page that creates the notification keys: never cached nor indexed.
+/llaves-avisos.html
+  Cache-Control: no-store
+  X-Robots-Tag: noindex
+/llaves-avisos
+  Cache-Control: no-store
+  X-Robots-Tag: noindex
