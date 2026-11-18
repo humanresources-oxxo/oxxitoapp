@@ -133,6 +133,7 @@ export async function probar(): Promise<{ ok: boolean; enviados?: number; error?
   try {
     const r = await fetch(`${BASE}/api/push/probar`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ llave }) });
     const d = await r.json().catch(() => null);
+    if (d?.ok && !d.enviados) return { ok: false, error: (d.codigos || []).includes('403') ? 'llaves' : 'no_entregado' };
     return d?.ok ? { ok: true, enviados: d.enviados } : { ok: false, error: d?.error || 'error' };
   } catch {
     return { ok: false, error: 'sin_conexion' };
