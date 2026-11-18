@@ -109,7 +109,7 @@ export async function vapid(env, endpoint) {
 
 const configurado = (env) => !!(String(env.VAPID_PUBLIC_KEY || '').trim() && String(env.VAPID_PRIVATE_KEY || '').trim());
 
-// One message to one phone. Returns 'ok' | 'vencida' (404/410: forget it) | 'error'.
+// One message to one phone. Returns 'ok' | 'vencida' (404/410: forget it) | 'error:<status>'.
 async function enviarUno(env, destino, mensaje, urgente) {
   try {
     const cuerpo = await cifrar(destino.p256dh, destino.auth, JSON.stringify(mensaje));
@@ -125,9 +125,9 @@ async function enviarUno(env, destino, mensaje, urgente) {
       body: cuerpo,
     });
     if (r.status === 404 || r.status === 410) return 'vencida';
-    return r.ok ? 'ok' : 'error';
+    return r.ok ? 'ok' : `error:${r.status}`;
   } catch {
-    return 'error';
+    return 'error:red';
   }
 }
 
@@ -138,7 +138,9 @@ async function enviarTodos(env, rpc, llave, destinos, mensaje, urgente) {
   return {
     enviados: resultados.filter((x) => x === 'ok').length,
     vencidas: vencidas.length,
-    errores: resultados.filter((x) => x === 'error').length,
+    errores: resultados.filter((x) => x.startsWith('error')).length,
+    // Only the push services' status codes (e.g. 403 = keys do not match), never who.
+    codigos: resultados.filter((x) => x.startsWith('error')).map((x) => x.slice(6)),
   };
 }
 

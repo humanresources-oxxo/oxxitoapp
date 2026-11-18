@@ -53,7 +53,19 @@ export function AvisosEnCelular() {
     const r = await probar();
     setOcupado(false);
     if (r.ok) showAlert('Prueba enviada', 'En unos segundos te debe llegar la notificación. Si no llega, revisa que el celular no esté en No molestar.');
-    else showAlert('No se pudo enviar', r.error === 'limite_diario' ? 'Ya mandaste varias pruebas; intenta en una hora.' : r.error === 'sin_celulares' ? 'Vuelve a activar los avisos en este celular.' : 'Revisa tu conexión e intenta de nuevo.');
+    else
+      showAlert(
+        'No se pudo enviar',
+        r.error === 'limite_diario'
+          ? 'Ya mandaste varias pruebas; intenta en una hora.'
+          : r.error === 'sin_celulares'
+            ? 'Vuelve a activar los avisos en este celular.'
+            : r.error === 'llaves'
+              ? 'El servicio de notificaciones rechazó la firma: revisa que las llaves de Cloudflare sean las dos del mismo par.'
+              : r.error === 'no_entregado'
+                ? 'El servicio de notificaciones no aceptó el envío. Desactiva y vuelve a activar los avisos, y prueba otra vez.'
+                : 'Revisa tu conexión e intenta de nuevo.'
+      );
   };
 
   return (
