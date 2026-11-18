@@ -7,6 +7,7 @@ import { ActivityIndicator, FlatList, Image, Modal, ScrollView, StyleSheet, Text
 import { Pressable } from '../components/Pressable';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AvisoComposer } from '../components/AvisoComposer';
+import { AvisosEnCelular } from '../components/AvisosEnCelular';
 import { BotonEncabezado, Encabezado } from '../components/Encabezado';
 import { Esqueleto, EstadoVacio } from '../components/Estado';
 import { Fondo } from '../components/Fondo';
@@ -19,7 +20,8 @@ import {
   NoticeImage,
   noticeKindMeta,
 } from '../data/notices';
-import { cargarImagenAviso, deleteNotice, fetchNotices } from '../services/notices';
+import { avisosGuardados, cargarImagenAviso, deleteNotice, fetchNotices } from '../services/notices';
+import { cuando, esFalloRed } from '../utils/sinConexion';
 import { leerLlave, olvidarLlave, puedePublicar } from '../services/sesion';
 import { confirmAlert, showAlert } from '../utils/alert';
 import { getJson, setJson, storageKeys } from '../services/appStorage';
@@ -37,6 +39,8 @@ export function NotificationsScreen() {
   const [numero, setNumero] = useState('');
   const [canPublish, setCanPublish] = useState(false);
   const [reload, setReload] = useState(0);
+  // Date of the saved copy being shown without signal ('' = live data).
+  const [sinConexion, setSinConexion] = useState('');
   // Aviso to delete once the PIN is confirmed (session without a key).
   const [pinFor, setPinFor] = useState<Notice | null>(null);
   const refresh = useCallback(() => setReload((n) => n + 1), []);
@@ -53,8 +57,17 @@ export function NotificationsScreen() {
 
     const load = async () => {
       let fallo = false;
+      let guardadoEl = '';
       const [fetched, readState] = await Promise.all([
-        fetchNotices().catch(() => {
+        fetchNotices().catch(async (e) => {
+          // No signal: the copy saved on the phone, marked as such.
+          if (esFalloRed(e)) {
+            const g = await avisosGuardados();
+            if (g) {
+              guardadoEl = g.guardado;
+              return g.datos;
+            }
+          }
           fallo = true;
           return [] as Notice[];
         }),
@@ -70,6 +83,7 @@ export function NotificationsScreen() {
         )
       );
       setFailed(fallo);
+      setSinConexion(guardadoEl);
       setLoading(false);
     };
 
@@ -163,6 +177,17 @@ export function NotificationsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => <NoticeCard notice={item} onPress={() => openNotice(item)} />}
+        ListHeaderComponent={
+          <>
+            {sinConexion ? (
+              <View style={styles.sinConexion} accessibilityRole="alert">
+                <Icon name="alert" size={16} color="#8a6100" />
+                <Text style={styles.sinConexionTexto}>Sin conexión. Estos avisos se guardaron el {cuando(sinConexion)}; las imágenes se ven cuando tengas señal.</Text>
+              </View>
+            ) : null}
+            <AvisosEnCelular />
+          </>
+        }
         refreshControl={<RefreshControl refreshing={loading && notices.length > 0} onRefresh={() => { setLoading(true); refresh(); }} tintColor={colors.oxRed} colors={[colors.oxRed]} />}
         ListEmptyComponent={
           loading ? (
@@ -409,6 +434,8 @@ const styles = StyleSheet.create({
   filterTextActive: {
     color: colors.white,
   },
+  sinConexion: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFF4E5', borderRadius: radii.md, paddingHorizontal: 12, paddingVertical: 9, marginBottom: 4 },
+  sinConexionTexto: { flex: 1, fontFamily: fontFamily.semibold, fontSize: 13, lineHeight: 18, color: '#8a6100' },
   list: {
     paddingHorizontal: 16,
     paddingTop: 14,

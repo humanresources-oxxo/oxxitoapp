@@ -6,6 +6,8 @@
 // (worker/chat.js, POST /api/chat); otherwise, or if it fails, the search.
 import { Platform } from 'react-native';
 import { esSinSesion, leerLlave, rpcSesion } from './sesion';
+import { storageKeys } from './appStorage';
+import { buscarFaq, cuando, esFalloRed, guardar, leerGuardado } from '../utils/sinConexion';
 
 export type ChatSource = {
   article: string;
@@ -81,7 +83,7 @@ export async function matchQA(question: string): Promise<QAResult> {
   // Without a session this throws (the chat says it could not connect and the
   // app asks for the PIN); any other failure is the usual "no encontré".
   const data = await rpcSesion<any[]>('sesion_buscar_reglamento', { q: question }).catch((e) => {
-    if (esSinSesion(e)) throw e;
+    if (esSinSesion(e) || esFalloRed(e)) throw e;
     return null;
   });
   if (!data || data.length === 0) return FALLBACK;
@@ -179,7 +181,15 @@ async function preguntarIa(question: string): Promise<QAResult | null> {
 // based it on has an interactive list (sanciones, items), that list goes below
 // the AI text, so the detail is one tap away and matches what it just said.
 export async function answerQuestion(question: string): Promise<QAResult> {
-  const [busqueda, ia] = await Promise.all([matchQA(question), preguntarIa(question)]);
+  let busqueda: QAResult;
+  let ia: QAResult | null;
+  try {
+    [busqueda, ia] = await Promise.all([matchQA(question), preguntarIa(question)]);
+  } catch (e) {
+    // No signal: answer from the preguntas frecuentes saved on the phone.
+    if (esFalloRed(e)) return respuestaSinConexion(question);
+    throw e;
+  }
   if (!ia) return busqueda;
   const opciones = ia.articuloNumero ? await opcionesDe(ia.articuloNumero).catch(() => null) : null;
   if (opciones) return { ...ia, ...opciones, answer: `${ia.answer}\n\nPara ver el detalle, elige un punto:` };
@@ -213,6 +223,8 @@ export const chatSuggestions = [
 export async function cargarSugerencias(): Promise<string[]> {
   try {
     const data = await rpcSesion<any[]>('sesion_faq_aprobadas', {}, false);
+    // A copy for when there is no signal (respuestaSinConexion).
+    if (Array.isArray(data) && data.length) guardar<Faq[]>(storageKeys.faqGuardadas, data.map(({ articulo, pregunta, respuesta }) => ({ articulo, pregunta, respuesta })));
     const preguntas = Array.isArray(data) ? (data as { pregunta: string }[]).map((f) => f.pregunta).filter(Boolean) : [];
     if (preguntas.length < 3) return chatSuggestions;
     return preguntas
@@ -223,6 +235,43 @@ export async function cargarSugerencias(): Promise<string[]> {
   } catch {
     return chatSuggestions;
   }
+}
+
+type Faq = { articulo: number; pregunta: string; respuesta: string };
+
+// On app open: refresh the saved copy at most once a day, so it is there even
+// for someone who never opened the chat while having signal.
+export async function precargarFaq() {
+  const g = await leerGuardado<Faq[]>(storageKeys.faqGuardadas);
+  if (g && Date.now() - new Date(g.guardado).getTime() < 24 * 3600 * 1000) return;
+  await cargarSugerencias().catch(() => {});
+}
+
+// Without signal: the closest saved pregunta frecuente, said plainly that it
+// is a saved answer. Never invents one: if nothing is close, it says so.
+export async function respuestaSinConexion(question: string): Promise<QAResult> {
+  const g = await leerGuardado<Faq[]>(storageKeys.faqGuardadas);
+  const f = g ? buscarFaq(g.datos, question) : null;
+  const nota = g ? `Sin conexión: es una respuesta guardada en tu celular el ${cuando(g.guardado)}. Cuando tengas señal, pregunta de nuevo para una respuesta completa.` : '';
+  if (!f) {
+    return {
+      ...FALLBACK,
+      answer: g
+        ? 'Estás sin conexión y no encontré esa pregunta entre las que tengo guardadas. Inténtalo cuando tengas señal.'
+        : 'Estás sin conexión. Cuando tengas señal vuelve a preguntar; después podré contestar algunas preguntas aunque no haya internet.',
+      article: 'Sin conexión',
+      title: 'Sin conexión',
+      nextStep: 'Vuelve a preguntar cuando tengas señal.',
+    };
+  }
+  return {
+    answer: f.respuesta,
+    article: f.articulo ? `Art. ${f.articulo}` : 'Reglamento',
+    title: 'Pregunta frecuente guardada',
+    summary: f.pregunta,
+    nextStep: nota,
+    contact: HR_CONTACT,
+  };
 }
 
 export const initialChatMessages: ChatMessage[] = [

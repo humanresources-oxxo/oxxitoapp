@@ -12,6 +12,7 @@ import { redactar } from './redactar.js';
 import { resumenFicha } from './resumen.js';
 import { generarFaq } from './faq.js';
 import { datosChat } from './datos.js';
+import { push } from './push.js';
 
 // The Panel Conoxxo lives on the dashboards site: only that origin may call
 // /api/faq/* from a browser (it still needs an RH session, checked by Supabase).
@@ -61,6 +62,16 @@ export default {
         return await resumenFicha(request, env, rpc);
       } catch (err) {
         console.log(JSON.stringify({ resumen_ia: true, error: String((err && (err.status || err.message)) || err) }));
+        return new Response(JSON.stringify({ ok: false, error: 'error_servidor' }), { status: 502, headers: { 'content-type': 'application/json' } });
+      }
+    }
+    // Notifications of new avisos on the phone (worker/push.js).
+    const rutaPush = url.pathname.match(/^\/api\/push\/(clave|enviar|probar)$/);
+    if (rutaPush) {
+      try {
+        return await push(request, env, rpc, rutaPush[1]);
+      } catch (err) {
+        console.log(JSON.stringify({ push: 'error', error: String((err && err.message) || err).slice(0, 120) }));
         return new Response(JSON.stringify({ ok: false, error: 'error_servidor' }), { status: 502, headers: { 'content-type': 'application/json' } });
       }
     }

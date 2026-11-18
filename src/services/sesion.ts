@@ -6,6 +6,8 @@
 // existed get one the first time they need it (PIN once).
 import { borrarDatosLocales, getJson, removeItem, setJson, storageKeys } from './appStorage';
 import { supabase } from './supabaseClient';
+// Circular with avisosPush (it reads leerLlave); only used inside functions.
+import { desactivar as desactivarPush } from './avisosPush';
 
 // Puestos that publish avisos and create, close and delete votaciones: RH and
 // Gerente de plaza. Same list as
@@ -70,6 +72,8 @@ export async function rpcSesion<T = any>(fn: string, args: Record<string, unknow
 // included) and ends the key on the server too (best effort).
 export async function cerrarSesion() {
   const llave = await leerLlave().catch(() => null);
+  // This phone stops receiving avisos (a store phone may be shared).
+  await desactivarPush(llave).catch(() => {});
   await borrarDatosLocales().catch(() => olvidarLlave());
   if (llave) await supabase.rpc('cerrar_sesion', { p_token: llave }).then(() => {}, () => {});
 }

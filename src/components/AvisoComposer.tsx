@@ -11,6 +11,7 @@ import { Pressable } from './Pressable';
 import * as ImagePicker from 'expo-image-picker';
 import { Icon } from './Icon';
 import { NoticeKind, noticeKindMeta } from '../data/notices';
+import { enviarATodos } from '../services/avisosPush';
 import { ImagenNueva, prepararImagen, publishNotice } from '../services/notices';
 import { mejorarRedaccion, Sugerencia } from '../services/redactar';
 import { leerLlave, obtenerLlave, olvidarLlave } from '../services/sesion';
@@ -128,7 +129,11 @@ export function AvisoComposer({
         reset();
         onClose();
         onPublished?.();
-        showAlert('Aviso publicado', 'Ya está visible para todos los colaboradores.');
+        // Notifications to the phones that turned them on (in the background:
+        // the composer is already closed).
+        enviarATodos()
+          .then((n) => showAlert('Aviso publicado', n === null ? 'Ya está visible para todos los colaboradores.' : `Ya está visible para todos los colaboradores. Se notificó a ${n} ${n === 1 ? 'celular' : 'celulares'}.`))
+          .catch(() => showAlert('Aviso publicado', 'Ya está visible para todos los colaboradores.'));
       } else if (r === 'no_session') {
         await olvidarLlave();
         setSinLlave(true);

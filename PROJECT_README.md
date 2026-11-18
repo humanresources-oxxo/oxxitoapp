@@ -522,3 +522,21 @@ Construir Chat Home + Conversación (`screens-chat-proto.jsx` en el handoff), qu
   género aunque la ficha solo muestre totales.
 - Tope: `DATOS_IA_LIMITE_DIA` (30) preguntas por persona al día, contado en Supabase como función
   `datos` (migración 56). El texto de las preguntas no se guarda.
+
+### Avisos en el celular (notificaciones) y sin conexión
+
+- **Notificaciones** (migración 58, `worker/push.js`, `public/sw.js`, `src/services/avisosPush.ts`):
+  en Avisos, "Activar avisos" pide permiso y guarda la suscripción del celular
+  (`sesion_push_guardar`). Al publicar un aviso, la app de quien publica pide a `/api/push/enviar`
+  lotes de 40 hasta terminar (`sesion_push_lote` marca cada lote antes de enviar: nadie recibe
+  el mismo aviso dos veces). "Enviar una prueba" (`/api/push/probar`) solo llega a los celulares
+  propios. Cerrar sesión desactiva el celular.
+- El cifrado (RFC 8291) y la firma VAPID se prueban con `npm run check:push` contra el ejemplo del
+  RFC. Las llaves son secretos de Cloudflare `VAPID_PUBLIC_KEY` y `VAPID_PRIVATE_KEY`, generadas en
+  el navegador con `/llaves-avisos.html`; sin ellas la tarjeta no aparece y no se envía nada.
+- En iPhone solo funciona con la app instalada en la pantalla de inicio (iOS 16.4 o más).
+- `public/sw.js` NO tiene manejador `fetch`: no guarda la app en caché, solo muestra notificaciones.
+- **Sin conexión**: la app guarda los últimos 30 avisos (sin imágenes) y las preguntas frecuentes
+  aprobadas (`storageKeys.avisosGuardados` / `faqGuardadas`, se borran al cerrar sesión). Solo se usan
+  si la petición no llegó al servidor; el chat contesta con la pregunta guardada más parecida o dice
+  que no la tiene. La app tiene que haber abierto antes con señal.

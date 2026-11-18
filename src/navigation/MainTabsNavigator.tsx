@@ -30,6 +30,8 @@ import { contarPendientes } from '../services/votaciones';
 import { cargarMiVacacion } from '../services/vacaciones';
 import { listarAltas, puedoAprobarAltas } from '../services/altas';
 import { alPedirPin, leerLlave } from '../services/sesion';
+import { registrar as registrarAvisos } from '../services/avisosPush';
+import { precargarFaq } from '../services/chatQa';
 import { PinUnaVez } from '../components/PinUnaVez';
 import { colors, fontFamily, gradients, radii, sombraVidrio } from '../theme/tokens';
 
@@ -69,6 +71,19 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
   useEffect(() => {
     Animated.spring(burbuja, { toValue: indiceTab, damping: 16, stiffness: 190, mass: 0.8, useNativeDriver: true }).start();
   }, [indiceTab]);
+
+  // Tapping the notification of a new aviso opens /?ir=avisos (public/sw.js):
+  // go straight to Avisos. The service worker is registered on every open so
+  // a phone that turned avisos on keeps receiving them after updates.
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    registrarAvisos();
+    precargarFaq();
+    if (new URLSearchParams(window.location.search).get('ir') === 'avisos') {
+      window.history.replaceState(null, '', window.location.pathname);
+      ir('notifications');
+    }
+  }, []);
 
   // Back goes to Inicio instead of leaving the app: the hardware button on
   // Android, the browser's back on the web (one history entry while away
