@@ -540,3 +540,13 @@ Construir Chat Home + Conversación (`screens-chat-proto.jsx` en el handoff), qu
   aprobadas (`storageKeys.avisosGuardados` / `faqGuardadas`, se borran al cerrar sesión). Solo se usan
   si la petición no llegó al servidor; el chat contesta con la pregunta guardada más parecida o dice
   que no la tiene. La app tiene que haber abierto antes con señal.
+
+### Uso de la app, sin saber quién (migración 59)
+
+- `src/services/uso.ts`: cada apartado se cuenta una vez al día por celular (`sesion_uso_registrar`).
+  En la base solo queda un hash del número con una sal de ESE día (`uso_sal`); la sal de días pasados
+  se borra, así que desde el día siguiente nadie puede saber quién abrió qué: solo cuántos.
+- "¿Te sirvió?" en las respuestas del chat (`sesion_chat_votar`): guarda el artículo, si la escribió
+  la IA y el voto. Nunca la pregunta ni quién votó; tope de 60 votos por persona al día.
+- Panel Conoxxo → pestaña **Uso de la app** (`sesion_uso_resumen`, solo RH): personas por apartado
+  (7 días), votos por artículo (60 días, primero los de más "No") y cuántos activaron los avisos.

@@ -32,7 +32,11 @@ export type ChatMessage = {
   source?: ChatSource;
   choices?: ChatChoice[];
   choiceKind?: ChoiceKind;
-  ia?: boolean; // written by the AI prototype
+  ia?: boolean; // written by the AI
+  // "¿Te sirvió?" (services/uso.ts): answers from the server can be voted.
+  votable?: boolean;
+  articulo?: number;
+  voto?: 1 | -1;
 };
 
 export type QAResult = {
@@ -46,6 +50,7 @@ export type QAResult = {
   choiceKind?: ChoiceKind;
   ia?: boolean;
   articuloNumero?: number; // article the AI answer is based on
+  guardada?: boolean; // answered offline from the saved preguntas frecuentes
 };
 
 const HR_CONTACT = { name: 'Recursos Humanos', area: 'Personas' };
@@ -261,6 +266,7 @@ export async function respuestaSinConexion(question: string): Promise<QAResult> 
         : 'Estás sin conexión. Cuando tengas señal vuelve a preguntar; después podré contestar algunas preguntas aunque no haya internet.',
       article: 'Sin conexión',
       title: 'Sin conexión',
+      guardada: true,
       nextStep: 'Vuelve a preguntar cuando tengas señal.',
     };
   }
@@ -268,6 +274,7 @@ export async function respuestaSinConexion(question: string): Promise<QAResult> 
     answer: f.respuesta,
     article: f.articulo ? `Art. ${f.articulo}` : 'Reglamento',
     title: 'Pregunta frecuente guardada',
+    guardada: true,
     summary: f.pregunta,
     nextStep: nota,
     contact: HR_CONTACT,

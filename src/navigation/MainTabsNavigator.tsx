@@ -32,6 +32,7 @@ import { listarAltas, puedoAprobarAltas } from '../services/altas';
 import { alPedirPin, leerLlave } from '../services/sesion';
 import { registrar as registrarAvisos } from '../services/avisosPush';
 import { precargarFaq } from '../services/chatQa';
+import { registrarUso } from '../services/uso';
 import { PinUnaVez } from '../components/PinUnaVez';
 import { colors, fontFamily, gradients, radii, sombraVidrio } from '../theme/tokens';
 
@@ -71,6 +72,11 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
   useEffect(() => {
     Animated.spring(burbuja, { toValue: indiceTab, damping: 16, stiffness: 190, mass: 0.8, useNativeDriver: true }).start();
   }, [indiceTab]);
+
+  // How many people open each screen per day (anonymous; services/uso.ts).
+  useEffect(() => {
+    registrarUso(activeTab);
+  }, [activeTab]);
 
   // Tapping the notification of a new aviso opens /?ir=avisos (public/sw.js):
   // go straight to Avisos. The service worker is registered on every open so

@@ -32,6 +32,7 @@ import {
 } from '../services/chatQa';
 import { getJson, setJson, storageKeys } from '../services/appStorage';
 import { colors, gradients, radii, shadows, type, fontFamily, solida, hoja, sombraVidrio } from '../theme/tokens';
+import { votarRespuesta } from '../services/uso';
 
 
 // The conversation stays on the phone (removed on logout): changing tabs or
@@ -133,6 +134,9 @@ export function ChatHomeScreen({
         choices: result.choices,
         choiceKind: result.choiceKind,
         ia: result.ia,
+        // Offline answers (saved preguntas) are not voted: they are not the server's.
+        votable: !result.guardada,
+        articulo: result.articuloNumero ?? (Number((/Art(?:í|i)culo (\d+)|Art\. (\d+)/.exec(`${result.title} ${result.article}`) || []).slice(1).find(Boolean)) || undefined),
       };
       setMessages((current) => [...current, assistantMessage]);
     } catch {
@@ -147,6 +151,11 @@ export function ChatHomeScreen({
     } finally {
       setTyping(false);
     }
+  };
+
+  const votar = (message: ChatMessage, voto: 1 | -1) => {
+    setMessages((current) => current.map((m) => (m.id === message.id ? { ...m, voto } : m)));
+    votarRespuesta(message.articulo, !!message.ia, voto);
   };
 
   const pickChoice = async (choice: ChatChoice, kind: 'sancion' | 'item' = 'sancion') => {
@@ -225,7 +234,7 @@ export function ChatHomeScreen({
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
         renderItem={({ item }) => (
-          <Bubble message={item} onOpenSource={setSelectedSource} onPickChoice={pickChoice} />
+          <Bubble message={item} onOpenSource={setSelectedSource} onPickChoice={pickChoice} onVote={votar} />
         )}
         ListFooterComponent={typing ? <TypingBubble pulse={pulse} /> : null}
       />
@@ -281,10 +290,12 @@ function Bubble({
   message,
   onOpenSource,
   onPickChoice,
+  onVote,
 }: {
   message: ChatMessage;
   onOpenSource: (source: ChatSource) => void;
   onPickChoice: (choice: ChatChoice, kind: 'sancion' | 'item') => void;
+  onVote: (message: ChatMessage, voto: 1 | -1) => void;
 }) {
   const isUser = message.role === 'user';
 
@@ -305,7 +316,7 @@ function Bubble({
         {message.ia ? (
           <View style={styles.iaBadge}>
             <Icon name="sparkle" size={12} color={colors.oxBlue} />
-            <Text style={styles.iaBadgeText}>Respuesta con IA · prueba</Text>
+            <Text style={styles.iaBadgeText}>Respuesta con IA</Text>
           </View>
         ) : null}
         <Text style={styles.assistantText}>{message.text}</Text>
@@ -336,6 +347,21 @@ function Bubble({
             </View>
             <Icon name="chevR" size={16} color={colors.ink3} />
           </Pressable>
+        ) : null}
+        {message.votable ? (
+          message.voto ? (
+            <Text style={styles.votoGracias}>{message.voto === 1 ? 'Gracias, nos ayuda a saber qué funciona.' : 'Gracias, nos ayuda a mejorar estas respuestas.'}</Text>
+          ) : (
+            <View style={styles.votoFila}>
+              <Text style={styles.votoPregunta}>¿Te sirvió?</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel="Sí me sirvió" style={styles.votoBoton} onPress={() => onVote(message, 1)}>
+                <Text style={styles.votoBotonTexto}>👍 Sí</Text>
+              </Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel="No me sirvió" style={styles.votoBoton} onPress={() => onVote(message, -1)}>
+                <Text style={styles.votoBotonTexto}>👎 No</Text>
+              </Pressable>
+            </View>
+          )
         ) : null}
       </View>
     </View>
@@ -389,6 +415,11 @@ function TypingBubble({ pulse }: { pulse: Animated.Value }) {
 }
 
 const styles = StyleSheet.create({
+  votoFila: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' },
+  votoPregunta: { fontFamily: fontFamily.semibold, fontSize: 13, color: colors.ink2 },
+  votoBoton: { borderWidth: 1, borderColor: colors.line2, borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.white },
+  votoBotonTexto: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink },
+  votoGracias: { marginTop: 10, fontFamily: fontFamily.semibold, fontSize: 13, color: colors.ok },
   screen: {
     flex: 1,
     backgroundColor: colors.bg,
