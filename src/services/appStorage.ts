@@ -23,6 +23,8 @@ export const storageKeys = {
   // Last avisos and approved preguntas frecuentes, to show without signal.
   avisosGuardados: 'oxxito:avisosGuardados',
   faqGuardadas: 'oxxito:faqGuardadas',
+  // Screens already counted today (services/uso.ts), so each counts once a day.
+  usoHoy: 'oxxito:usoHoy',
 };
 
 export async function getBoolean(key: string) {
