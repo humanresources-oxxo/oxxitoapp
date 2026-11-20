@@ -41,7 +41,8 @@
     "build:cloudflare": "node scripts/build-cloudflare.mjs",
     "typecheck": "tsc --noEmit",
     "check:worker": "node scripts/check-worker.mjs",
-    "check:push": "node scripts/check-push.mjs"
+    "check:push": "node scripts/check-push.mjs",
+    "e2e": "node scripts/e2e.mjs"
   },
   "private": true
 }

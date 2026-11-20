@@ -5,6 +5,7 @@ import {
   Animated,
   FlatList,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   StyleSheet,
@@ -33,6 +34,7 @@ import {
 import { getJson, setJson, storageKeys } from '../services/appStorage';
 import { colors, gradients, radii, shadows, type, fontFamily, solida, hoja, sombraVidrio } from '../theme/tokens';
 import { votarRespuesta } from '../services/uso';
+import { contactoRecuperarPin } from '../services/directory';
 
 
 // The conversation stays on the phone (removed on logout): changing tabs or
@@ -158,6 +160,21 @@ export function ChatHomeScreen({
     votarRespuesta(message.articulo, !!message.ia, voto);
   };
 
+  // After a "No": ask RH by WhatsApp (the reception of RH of the directory),
+  // with the question already written. The person sends it themselves.
+  const [telefonoRH, setTelefonoRH] = useState('');
+  useEffect(() => {
+    contactoRecuperarPin()
+      .then((c) => setTelefonoRH(String(c?.phone || '').replace(/\D/g, '')))
+      .catch(() => {});
+  }, []);
+  const preguntarRH = (message: ChatMessage) => {
+    const i = messages.findIndex((m) => m.id === message.id);
+    const pregunta = [...messages.slice(0, i)].reverse().find((m) => m.role === 'user')?.text ?? '';
+    const texto = `Hola, tengo una duda del reglamento que el chat de Conoxxo no me resolvió${pregunta ? `: ${pregunta}` : '.'}`;
+    Linking.openURL(`https://wa.me/${telefonoRH}?text=${encodeURIComponent(texto)}`).catch(() => {});
+  };
+
   const pickChoice = async (choice: ChatChoice, kind: 'sancion' | 'item' = 'sancion') => {
     setMessages((current) => [...current, { id: `u-${Date.now()}`, role: 'user', text: choice.label }]);
     setTyping(true);
@@ -234,7 +251,7 @@ export function ChatHomeScreen({
         showsVerticalScrollIndicator={false}
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
         renderItem={({ item }) => (
-          <Bubble message={item} onOpenSource={setSelectedSource} onPickChoice={pickChoice} onVote={votar} />
+          <Bubble message={item} onOpenSource={setSelectedSource} onPickChoice={pickChoice} onVote={votar} onPreguntarRH={telefonoRH ? preguntarRH : undefined} />
         )}
         ListFooterComponent={typing ? <TypingBubble pulse={pulse} /> : null}
       />
@@ -291,11 +308,13 @@ function Bubble({
   onOpenSource,
   onPickChoice,
   onVote,
+  onPreguntarRH,
 }: {
   message: ChatMessage;
   onOpenSource: (source: ChatSource) => void;
   onPickChoice: (choice: ChatChoice, kind: 'sancion' | 'item') => void;
   onVote: (message: ChatMessage, voto: 1 | -1) => void;
+  onPreguntarRH?: (message: ChatMessage) => void;
 }) {
   const isUser = message.role === 'user';
 
@@ -350,7 +369,15 @@ function Bubble({
         ) : null}
         {message.votable ? (
           message.voto ? (
-            <Text style={styles.votoGracias}>{message.voto === 1 ? 'Gracias, nos ayuda a saber qué funciona.' : 'Gracias, nos ayuda a mejorar estas respuestas.'}</Text>
+            <>
+              <Text style={styles.votoGracias}>{message.voto === 1 ? 'Gracias, nos ayuda a saber qué funciona.' : 'Gracias, nos ayuda a mejorar estas respuestas.'}</Text>
+              {message.voto === -1 && onPreguntarRH ? (
+                <Pressable accessibilityRole="button" style={styles.rhBoton} onPress={() => onPreguntarRH(message)}>
+                  <Icon name="whatsapp" size={17} color={colors.white} />
+                  <Text style={styles.rhBotonTexto}>Preguntar a RH por WhatsApp</Text>
+                </Pressable>
+              ) : null}
+            </>
           ) : (
             <View style={styles.votoFila}>
               <Text style={styles.votoPregunta}>¿Te sirvió?</Text>
@@ -420,6 +447,8 @@ const styles = StyleSheet.create({
   votoBoton: { borderWidth: 1, borderColor: colors.line2, borderRadius: radii.pill, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: colors.white },
   votoBotonTexto: { fontFamily: fontFamily.bold, fontSize: 13, color: colors.ink },
   votoGracias: { marginTop: 10, fontFamily: fontFamily.semibold, fontSize: 13, color: colors.ok },
+  rhBoton: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', marginTop: 8, backgroundColor: '#1F9D55', borderRadius: radii.pill, paddingHorizontal: 14, paddingVertical: 9 },
+  rhBotonTexto: { fontFamily: fontFamily.bold, fontSize: 13.5, color: colors.white },
   screen: {
     flex: 1,
     backgroundColor: colors.bg,

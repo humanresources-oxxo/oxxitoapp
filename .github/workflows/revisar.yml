@@ -1,6 +1,7 @@
 # Checks every pull request (and main) before it reaches production: Cloudflare
 # builds and publishes main on its own, so a type error or a build that fails
-# must show up here first. No secrets: it only compiles.
+# must show up here first. No secrets: it compiles and walks the main screens
+# with fixed test data (scripts/e2e.mjs), never against production.
 name: Revisar
 
 on:
@@ -41,3 +42,11 @@ jobs:
 
       - name: Compilar la app web (igual que Cloudflare)
         run: npm run build:cloudflare
+
+      # Recorre las pantallas principales en un iPhone emulado con datos de
+      # prueba (scripts/e2e.mjs): si algo se rompe, el cambio no se publica.
+      - name: Navegador para las pruebas de pantallas
+        run: npx playwright install --with-deps chromium
+
+      - name: Pantallas (oficina, tienda, sin sesión y sin señal)
+        run: npm run e2e

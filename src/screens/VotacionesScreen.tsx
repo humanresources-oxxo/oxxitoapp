@@ -14,6 +14,7 @@ import { Encabezado } from '../components/Encabezado';
 import { Fondo } from '../components/Fondo';
 import { Icon } from '../components/Icon';
 import { Desplegable } from '../components/Visual';
+import { enviarATodos } from '../services/avisosPush';
 import { getJson, storageKeys } from '../services/appStorage';
 import { leerLlave, obtenerLlave, olvidarLlave, puedePublicar } from '../services/sesion';
 import { cargarTiendas, normalizarTienda, sugerirTiendas, Tienda } from '../services/tiendas';
@@ -261,10 +262,11 @@ export function VotacionesScreen({ onBack, onCambio }: { onBack: () => void; onC
           const r = await crearVotacion(llave, datos);
           if (r === 'ok') {
             setNueva(false);
-            showAlert(
-              'Votación publicada',
-              datos.tiendas.length ? 'Ya la ven las tiendas que elegiste.' : 'Ya la ve toda la plaza y se publicó un aviso.'
-            );
+            const base = datos.tiendas.length ? 'Ya la ven las tiendas que elegiste.' : 'Ya la ve toda la plaza y se publicó un aviso.';
+            // Notifications to the phones of those stores (migration 61).
+            enviarATodos('votacion')
+              .then((n) => showAlert('Votación publicada', n === null ? base : `${base} Se notificó a ${n} ${n === 1 ? 'celular' : 'celulares'}.`))
+              .catch(() => showAlert('Votación publicada', base));
             recargar();
           }
           return r;

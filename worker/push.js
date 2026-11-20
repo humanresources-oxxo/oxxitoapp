@@ -15,6 +15,8 @@
 //   GET  /api/push/clave            -> { ok, clave } (public key, for subscribe)
 //   POST /api/push/enviar { llave } -> sends the next batch (max 40) of the
 //        newest aviso; only who may publish avisos (sesion_push_lote).
+//        With { tipo: 'votacion' }: the newest votación, only to the phones
+//        of its stores (sesion_push_lote_votacion, migration 61).
 //   POST /api/push/probar { llave } -> sends a test to the caller's own phones.
 
 const SUB = 'https://conoxxo.plaza-oaxaca.workers.dev';
@@ -166,6 +168,20 @@ export async function push(request, env, rpc, ruta) {
   const llave = String((pedido && pedido.llave) || '');
   if (!/^[0-9a-f]{64}$/.test(llave)) return json({ ok: false, error: 'sesion_conoxxo' }, 401);
   if (!configurado(env)) return json({ ok: false, error: 'push_no_configurado' }, 503);
+
+  if (ruta === 'enviar' && pedido.tipo === 'votacion') {
+    // A new votación (migration 61): only the phones of its stores.
+    const lote = await rpc(env, 'sesion_push_lote_votacion', { p_token: llave, p_limite: 40 });
+    if (!lote || lote.estado === 'no_session') return json({ ok: false, error: 'sesion_conoxxo' }, 401);
+    if (lote.estado === 'not_allowed') return json({ ok: false, error: 'no_habilitado' }, 403);
+    if (lote.estado === 'sin_votacion') return json({ ok: true, enviados: 0, quedan: 0 });
+    if (lote.estado !== 'ok') return json({ ok: false, error: 'sin_lote' }, 502);
+    const v = lote.votacion || {};
+    const mensaje = { titulo: 'Nueva votación', texto: String(v.titulo || '').slice(0, 120), url: '/?ir=votaciones', etiqueta: `votacion-${v.id}` };
+    const r = await enviarTodos(env, rpc, llave, Array.isArray(lote.destinos) ? lote.destinos : [], mensaje, false);
+    console.log(JSON.stringify({ push: 'votacion', ...r, quedan: lote.quedan }));
+    return json({ ok: true, ...r, quedan: Number(lote.quedan) || 0 });
+  }
 
   if (ruta === 'enviar') {
     const lote = await rpc(env, 'sesion_push_lote', { p_token: llave, p_limite: 40 });

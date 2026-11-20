@@ -78,16 +78,17 @@ export function MainTabsNavigator({ onLogout }: { onLogout: () => void }) {
     registrarUso(activeTab);
   }, [activeTab]);
 
-  // Tapping the notification of a new aviso opens /?ir=avisos (public/sw.js):
-  // go straight to Avisos. The service worker is registered on every open so
+  // Tapping the notification of a new aviso opens /?ir=avisos (public/sw.js),
+  // of a new votación /?ir=votaciones: go straight there. The service worker is registered on every open so
   // a phone that turned avisos on keeps receiving them after updates.
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     registrarAvisos();
     precargarFaq();
-    if (new URLSearchParams(window.location.search).get('ir') === 'avisos') {
+    const destino = new URLSearchParams(window.location.search).get('ir');
+    if (destino === 'avisos' || destino === 'votaciones') {
       window.history.replaceState(null, '', window.location.pathname);
-      ir('notifications');
+      ir(destino === 'avisos' ? 'notifications' : 'votaciones');
     }
   }, []);
 
