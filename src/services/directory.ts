@@ -4,9 +4,9 @@
 import { rpcSesion } from './sesion';
 import { supabase } from './supabaseClient';
 
+// Since migration 60 the app gets the puesto (role), never the person's name.
 export type Contact = {
   id: string;
-  name: string;
   area: string;
   role: string;
   phone: string;
@@ -20,7 +20,6 @@ export async function fetchContacts(): Promise<Contact[]> {
 
   return (data ?? []).map((row: any) => ({
     id: row.id,
-    name: row.name,
     area: row.area,
     role: row.role,
     phone: row.phone,
