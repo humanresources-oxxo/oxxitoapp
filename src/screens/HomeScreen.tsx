@@ -54,7 +54,7 @@ type HomeScreenProps = {
   vacationDays?: number | null;
 };
 
-type Herramienta = { title: string; desc: string; icon: string; target: HomeTarget; badge?: number };
+type Herramienta = { title: string; desc: string; icon: string; target: HomeTarget; badge?: number; destacada?: boolean };
 
 export function HomeScreen({
   onOpenTab,
@@ -70,8 +70,9 @@ export function HomeScreen({
   vacationDays = null,
 }: HomeScreenProps) {
   const herramientas: Herramienta[] = [
+    // The most important one: first and highlighted.
+    ...(showResumen ? [{ title: 'Resumen de plaza', desc: 'Vacantes, bajas y uso de estructura', icon: 'grid', target: 'resumen' as const, destacada: true }] : []),
     ...(showAltas ? [{ title: 'Altas por aprobar', desc: 'Cuentas nuevas de tu gente', icon: 'user', target: 'altas' as const, badge: pendingAltas }] : []),
-    ...(showResumen ? [{ title: 'Resumen de plaza', desc: 'Vacantes, bajas y uso de estructura', icon: 'grid', target: 'resumen' as const }] : []),
     ...(showActas
       ? [
           { title: 'Actas y formatos', desc: 'Levanta actas, firma en pantalla y envía a RH', icon: 'clipboard', target: 'actas' as const },
@@ -160,14 +161,20 @@ export function HomeScreen({
                 <Pressable
                   accessibilityRole="button"
                   key={h.target}
-                  style={[styles.row, i > 0 && styles.rowLine]}
+                  style={[styles.row, i > 0 && styles.rowLine, h.destacada && styles.rowDestacada]}
                   onPress={() => onOpenTab(h.target)}
                 >
-                  <View style={styles.rowIcon}>
-                    <Icon name={h.icon} size={20} color={colors.oxRedDark} />
-                  </View>
+                  {h.destacada ? (
+                    <LinearGradient colors={gradients.oxGrad.colors} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={[styles.rowIcon, styles.rowIconDestacada]}>
+                      <Icon name={h.icon} size={22} color={colors.white} strokeWidth={2.1} />
+                    </LinearGradient>
+                  ) : (
+                    <View style={styles.rowIcon}>
+                      <Icon name={h.icon} size={20} color={colors.oxRedDark} />
+                    </View>
+                  )}
                   <View style={styles.rowCopy}>
-                    <Text style={styles.rowTitle}>{h.title}</Text>
+                    <Text style={[styles.rowTitle, h.destacada && styles.rowTitleDestacada]}>{h.title}</Text>
                     <Text style={styles.rowDesc} numberOfLines={1}>
                       {h.desc}
                     </Text>
@@ -281,6 +288,9 @@ const styles = StyleSheet.create({
   rowLine: { borderTopWidth: 1, borderTopColor: 'rgba(36,26,23,.07)' },
   rowIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFE9E2', alignItems: 'center', justifyContent: 'center' },
   rowCopy: { flex: 1 },
+  rowDestacada: { minHeight: 76, backgroundColor: '#FFF1EE', borderLeftWidth: 4, borderLeftColor: colors.oxRed },
+  rowIconDestacada: { width: 46, height: 46, borderRadius: 23 },
+  rowTitleDestacada: { fontFamily: fontFamily.extrabold, fontSize: 16.5, color: colors.oxRedDark },
   rowTitle: { fontFamily: fontFamily.bold, fontSize: 15, color: colors.ink },
   rowDesc: { fontFamily: fontFamily.medium, fontSize: 13, color: colors.ink2, marginTop: 2 },
   badge: { minWidth: 24, height: 24, borderRadius: 12, paddingHorizontal: 7, backgroundColor: colors.oxRed, alignItems: 'center', justifyContent: 'center' },
