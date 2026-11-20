@@ -550,3 +550,10 @@ Construir Chat Home + Conversación (`screens-chat-proto.jsx` en el handoff), qu
   la IA y el voto. Nunca la pregunta ni quién votó; tope de 60 votos por persona al día.
 - Panel Conoxxo → pestaña **Uso de la app** (`sesion_uso_resumen`, solo RH): personas por apartado
   (7 días), votos por artículo (60 días, primero los de más "No") y cuántos activaron los avisos.
+
+### Directorio sin nombres (migración 60)
+
+- La app muestra el **puesto** (`role`) como título y el área abajo; `sesion_directorio` ya no
+  devuelve el nombre. "Olvidé mi PIN" (`contacto_recuperar_pin`) también da el puesto.
+- En el Panel Conoxxo el nombre es opcional y solo lo ve el panel (`sesion_directorio_admin`, que
+  además arregla la lista de contactos: leía `list_directory_contacts`, cerrada en la migración 50).

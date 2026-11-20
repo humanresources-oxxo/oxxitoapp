@@ -64,7 +64,7 @@ export function ProfileScreen({ onLogout }: { onLogout: () => void }) {
   const showHelp = () => {
     fetchContacts()
       .then((contacts) => {
-        const lines = contacts.map((c) => `${c.name} (${c.area}): ${c.phone}`).join('\n');
+        const lines = contacts.map((c) => `${c.role || c.area}${c.role && c.area ? ` (${c.area})` : ''}: ${c.phone}`).join('\n');
         showAlert('Ayuda y soporte', lines);
       })
       .catch(() => showAlert('Ayuda y soporte', 'No pudimos cargar los contactos. Intenta de nuevo.'));

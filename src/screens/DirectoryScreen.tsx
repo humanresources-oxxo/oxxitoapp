@@ -61,7 +61,7 @@ export function DirectoryScreen() {
     return contacts.filter((contact) => {
       const matchesFilter = filter === 'Todos' || contact.area === filter;
       const haystack = normalize(
-        `${contact.name} ${contact.area} ${contact.role} ${contact.tags.join(' ')}`
+        `${contact.role} ${contact.area} ${contact.tags.join(' ')}`
       );
       return matchesFilter && (!clean || haystack.includes(clean));
     });
@@ -155,8 +155,8 @@ export function DirectoryScreen() {
                 <LinearGradient colors={gradients.oxGrad.colors} style={styles.sheetIcon}>
                   <Icon name="phone" size={26} color={colors.white} />
                 </LinearGradient>
-                <Text style={styles.sheetTitle}>{selected.name}</Text>
-                <Text style={styles.sheetMeta}>{selected.role}</Text>
+                <Text style={styles.sheetTitle}>{selected.role || selected.area}</Text>
+                <Text style={styles.sheetMeta}>{selected.role ? selected.area : ''}</Text>
                 <View style={styles.phoneLine}>
                   <Icon name="clock" size={17} color={colors.ink2} />
                   <Text style={styles.phoneLineText}>{selected.schedule}</Text>
@@ -192,16 +192,15 @@ function ContactCard({ contact, onPress }: { contact: Contact; onPress: () => vo
         </View>
         <View style={styles.contactCopy}>
           <View style={styles.nameLine}>
-            <Text style={styles.contactName}>{contact.name}</Text>
+            <Text style={styles.contactName}>{contact.role || contact.area}</Text>
             {contact.urgent ? <Text style={styles.badge}>Prioritario</Text> : null}
           </View>
-          <Text style={styles.contactArea}>{contact.area}</Text>
+          {contact.role ? <Text style={styles.contactArea}>{contact.area}</Text> : null}
         </View>
         <View style={styles.callIcon}>
           <Icon name="phone" size={18} color={colors.white} />
         </View>
       </View>
-      <Text style={styles.contactRole}>{contact.role}</Text>
       <View style={styles.metaRow}>
         <Icon name="clock" size={15} color={colors.ink2} />
         <Text style={styles.metaText}>{contact.schedule}</Text>
@@ -329,11 +328,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.ok,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  contactRole: {
-    ...type.bodySm,
-    color: colors.ink2,
-    marginTop: 12,
   },
   metaRow: {
     flexDirection: 'row',
