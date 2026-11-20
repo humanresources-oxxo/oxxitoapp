@@ -75,10 +75,10 @@ export function HomeScreen({
     ...(showAltas ? [{ title: 'Altas por aprobar', desc: 'Cuentas nuevas de tu gente', icon: 'user', target: 'altas' as const, badge: pendingAltas }] : []),
     ...(showActas
       ? [
-          { title: 'Actas y formatos', desc: 'Levanta actas, firma en pantalla y envía a RH', icon: 'clipboard', target: 'actas' as const },
-          { title: 'Estructura', desc: 'Posiciones ocupadas y vacantes por tienda', icon: 'chart', target: 'estructura' as const },
-          { title: 'Cuota sindical', desc: 'Lo descontado por mes, tienda y puesto', icon: 'shield', target: 'cuota' as const },
-          { title: 'Contratos colectivos', desc: 'Revisión, aumento y comparativo nacional', icon: 'book', target: 'cct' as const },
+          { title: 'Actas y formatos', desc: 'Levanta, firma y envía a RH', icon: 'clipboard', target: 'actas' as const },
+          { title: 'Estructura', desc: 'Ocupadas y vacantes por tienda', icon: 'chart', target: 'estructura' as const },
+          { title: 'Cuota sindical', desc: 'Descuentos por mes y tienda', icon: 'shield', target: 'cuota' as const },
+          { title: 'Contratos colectivos', desc: 'Revisión, aumento y comparativo', icon: 'book', target: 'cct' as const },
           { title: 'Casos DILOS', desc: 'Casos abiertos de la Zona Centro Sur', icon: 'message', target: 'dilos' as const },
         ]
       : []),
@@ -131,7 +131,7 @@ export function HomeScreen({
         <View style={styles.tiles}>
           <Tile
             icon="plane"
-            value={dias ?? 'Ver'}
+            value={dias ?? undefined}
             label={dias === null ? 'Mis vacaciones' : dias === '1' ? 'día de vacaciones' : 'días de vacaciones'}
             onPress={() => onOpenTab('vacaciones')}
           />
@@ -195,22 +195,28 @@ export function HomeScreen({
   );
 }
 
-function Tile({ icon, value, label, highlight, onPress }: { icon: string; value: string; label: string; highlight?: boolean; onPress: () => void }) {
+// Compact: icon and number on one line, the label below. Without a number
+// (vacations not loaded yet) the label is the title.
+function Tile({ icon, value, label, highlight, onPress }: { icon: string; value?: string; label: string; highlight?: boolean; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`${value} ${label}`} style={[styles.tile, highlight && styles.tileOn]} onPress={onPress}>
-      {highlight ? (
-        <LinearGradient colors={gradients.oxGrad.colors} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.tileIcon}>
-          <Icon name={icon} size={18} color={colors.white} strokeWidth={2.1} />
-        </LinearGradient>
-      ) : (
-        <View style={[styles.tileIcon, styles.tileIconOff]}>
-          <Icon name={icon} size={18} color={colors.ink2} />
-        </View>
-      )}
-      <Text style={[styles.tileValue, highlight && { color: colors.oxRed }]} numberOfLines={1} adjustsFontSizeToFit>
-        {value}
-      </Text>
-      <Text style={styles.tileLabel} numberOfLines={2}>
+    <Pressable accessibilityRole="button" accessibilityLabel={value ? `${value} ${label}` : label} style={[styles.tile, highlight && styles.tileOn]} onPress={onPress}>
+      <View style={styles.tileTop}>
+        {highlight ? (
+          <LinearGradient colors={gradients.oxGrad.colors} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={styles.tileIcon}>
+            <Icon name={icon} size={17} color={colors.white} strokeWidth={2.1} />
+          </LinearGradient>
+        ) : (
+          <View style={[styles.tileIcon, styles.tileIconOff]}>
+            <Icon name={icon} size={17} color={colors.ink2} />
+          </View>
+        )}
+        {value ? (
+          <Text style={[styles.tileValue, highlight && { color: colors.oxRed }]} numberOfLines={1} adjustsFontSizeToFit>
+            {value}
+          </Text>
+        ) : null}
+      </View>
+      <Text style={[styles.tileLabel, !value && styles.tileLabelSolo]} numberOfLines={2}>
         {label}
       </Text>
     </Pressable>
@@ -266,18 +272,20 @@ const styles = StyleSheet.create({
   tiles: { flexDirection: 'row', gap: 10 },
   tile: {
     flex: 1,
-    minHeight: 124,
-    borderRadius: 24,
+    minHeight: 86,
+    borderRadius: 22,
     ...vidrio,
     backgroundColor: 'rgba(255,255,255,.7)',
     padding: 12,
     ...sombraVidrio,
   },
   tileOn: { backgroundColor: 'rgba(255,255,255,.88)' },
-  tileIcon: { width: 36, height: 36, borderRadius: 18, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  tileTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  tileIcon: { width: 32, height: 32, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   tileIconOff: { backgroundColor: 'rgba(36,26,23,.06)' },
-  tileValue: { fontFamily: fontFamily.titulo, fontSize: 28, lineHeight: 34, letterSpacing: -0.2, color: colors.ink, marginTop: 8 },
-  tileLabel: { fontFamily: fontFamily.semibold, fontSize: 12.5, lineHeight: 16, color: colors.ink2, marginTop: 2 },
+  tileValue: { flexShrink: 1, fontFamily: fontFamily.titulo, fontSize: 24, lineHeight: 30, letterSpacing: -0.2, color: colors.ink },
+  tileLabel: { fontFamily: fontFamily.semibold, fontSize: 12.5, lineHeight: 16, color: colors.ink2, marginTop: 8 },
+  tileLabelSolo: { fontFamily: fontFamily.bold, fontSize: 14, lineHeight: 18, color: colors.ink },
   list: {
     borderRadius: 24,
     ...vidrio,
