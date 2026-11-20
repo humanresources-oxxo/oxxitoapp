@@ -557,3 +557,19 @@ Construir Chat Home + Conversación (`screens-chat-proto.jsx` en el handoff), qu
   devuelve el nombre. "Olvidé mi PIN" (`contacto_recuperar_pin`) también da el puesto.
 - En el Panel Conoxxo el nombre es opcional y solo lo ve el panel (`sesion_directorio_admin`, que
   además arregla la lista de contactos: leía `list_directory_contacts`, cerrada en la migración 50).
+
+### Pruebas de pantallas antes de publicar
+
+- `npm run e2e` (después de `npm run build:cloudflare`): `scripts/e2e.mjs` abre `dist/` en un iPhone
+  emulado y recorre Inicio, Chat (respuesta, voto y "Preguntar a RH"), Avisos, Directorio y Perfil
+  como oficina, como tienda, sin sesión y sin señal. Todas las llamadas a Supabase y al Worker se
+  contestan con datos fijos: no toca producción. Corre en cada pull request (`revisar.yml`).
+- En un contenedor con otro Chromium: `PW_CHROMIUM=/ruta/al/chrome npm run e2e`.
+
+### Votaciones en el celular y "Preguntar a RH" (migración 61)
+
+- Al crear una votación, la app de quien la crea envía la notificación por lotes
+  (`/api/push/enviar` con `tipo: 'votacion'`, `sesion_push_lote_votacion`): solo a los celulares de
+  las tiendas de la votación (`voto_en_tiendas`). Tocarla abre Votaciones.
+- En el chat, después de un 👎 aparece "Preguntar a RH por WhatsApp" con el teléfono de la recepción
+  de RH del directorio y la pregunta ya escrita; la persona decide si la manda.

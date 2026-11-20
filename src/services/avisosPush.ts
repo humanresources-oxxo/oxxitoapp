@@ -140,15 +140,16 @@ export async function probar(): Promise<{ ok: boolean; enviados?: number; error?
   }
 }
 
-// After publishing an aviso: batches until none are left (max 50 rounds).
-// Returns how many phones got it, or null if notifications are not set up.
-export async function enviarATodos(): Promise<number | null> {
+// After publishing an aviso (or creating a votación, tipo 'votacion'): batches
+// until none are left (max 50 rounds). Returns how many phones got it, or null
+// if notifications are not set up.
+export async function enviarATodos(tipo: 'aviso' | 'votacion' = 'aviso'): Promise<number | null> {
   const llave = await leerLlave();
   if (!llave) return null;
   let total = 0;
   for (let i = 0; i < 50; i++) {
     try {
-      const r = await fetch(`${BASE}/api/push/enviar`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ llave }) });
+      const r = await fetch(`${BASE}/api/push/enviar`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ llave, tipo }) });
       const d = await r.json().catch(() => null);
       if (!d?.ok) return i === 0 && d?.error === 'push_no_configurado' ? null : total;
       total += Number(d.enviados) || 0;
