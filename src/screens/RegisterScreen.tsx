@@ -3,10 +3,11 @@
 // (no free-text name entry — the name comes from the roster lookup). Asks
 // the birth date first so nobody else can claim the account.
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Platform, ActivityIndicator  } from 'react-native';
+import { View, Text, StyleSheet, Platform, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StepsHeader } from '../components/StepsHeader';
 import { ZonaTexto } from '../components/ZonaTexto';
+import { Bear } from '../components/Bear';
 import { OxField, OxLabel, OxHint } from '../components/OxField';
 import { PinDots } from '../components/PinDots';
 import { OxKeypad } from '../components/OxKeypad';
@@ -15,7 +16,7 @@ import { Icon } from '../components/Icon';
 import { useOnboarding } from '../context/OnboardingContext';
 import { registerPin, verificarFecha } from '../services/auth';
 import { obtenerLlave } from '../services/sesion';
-import { colors, type } from '../theme/tokens';
+import { colors, fontFamily, radii, type } from '../theme/tokens';
 
 const MENSAJES: Record<string, string> = {
   pin_already_set: 'Este número ya tiene un PIN. Usa "Inicia sesión".',
@@ -122,22 +123,42 @@ export function RegisterScreen({
   };
 
   if (enEspera) {
+    // Centered, with the mascot and what happens next, so the screen does not
+    // look empty while the account waits for approval.
+    const pasos = [
+      { texto: 'Guardamos tu PIN', estado: 'hecho' as const },
+      { texto: 'Tu asesor o RH aprueba tu cuenta', estado: 'ahora' as const },
+      { texto: 'Entras con tu número y tu PIN', estado: 'luego' as const },
+    ];
     return (
       <View style={styles.screen}>
         <View style={[styles.body, { paddingTop: Platform.OS === 'ios' ? 8 : 4 }]}>
           <StepsHeader active={1} onBack={onBack} />
-          <View style={styles.head}>
-            <Text style={styles.kicker}>Primer ingreso</Text>
-            <Text style={styles.title}>¡Listo! Falta un paso</Text>
-            <Text style={styles.sub}>
-              Tu PIN quedó guardado. Para cuidar tu cuenta, tu asesor o Recursos Humanos tiene que aprobarla. Cuando la
-              aprueben, entra con tu número de empleado y tu PIN.
-            </Text>
-          </View>
-          <View style={styles.fields}>
-            <OxField icon="badge" label="Número de empleado" value={empNum} locked tail="En revisión" />
-            <OxHint>Si tarda, avísale a tu asesor que ya te registraste.</OxHint>
-          </View>
+          <ScrollView contentContainerStyle={styles.esperaScroll} showsVerticalScrollIndicator={false}>
+            <View style={styles.espera}>
+              <View style={styles.esperaOso}>
+                <Bear size={92} glow="rgba(227,6,19,.10)" />
+              </View>
+              <Text style={[styles.title, styles.centro]}>¡Listo! Falta un paso</Text>
+              <Text style={[styles.sub, styles.centro]}>Para cuidar tu cuenta, tu asesor o Recursos Humanos tiene que aprobarla.</Text>
+              <View style={styles.pasos}>
+                {pasos.map((p, i) => (
+                  <View key={p.texto} style={[styles.paso, i > 0 && styles.pasoLinea]}>
+                    <View style={[styles.pasoNum, p.estado === 'hecho' && styles.pasoHecho, p.estado === 'ahora' && styles.pasoAhora]}>
+                      {p.estado === 'hecho' ? (
+                        <Icon name="check" size={15} color={colors.white} />
+                      ) : (
+                        <Text style={[styles.pasoNumTexto, p.estado === 'ahora' && { color: colors.white }]}>{i + 1}</Text>
+                      )}
+                    </View>
+                    <Text style={[styles.pasoTexto, p.estado === 'luego' && { color: colors.ink3 }]}>{p.texto}</Text>
+                    {p.estado === 'ahora' ? <Text style={styles.pasoEtiqueta}>En revisión</Text> : null}
+                  </View>
+                ))}
+              </View>
+              <Text style={[styles.nota, styles.centro]}>Número {empNum}. Si tarda, avísale a tu asesor que ya te registraste.</Text>
+            </View>
+          </ScrollView>
         </View>
         <SafeAreaView edges={['bottom']} style={styles.cta}>
           <OxButton onPress={onBack} icon={<Icon name="check" size={19} color={colors.white} />}>
@@ -231,6 +252,20 @@ const styles = StyleSheet.create({
     marginTop: 10,
     maxWidth: 300,
   },
+  esperaScroll: { flexGrow: 1, justifyContent: 'center', paddingVertical: 12 },
+  espera: { alignItems: 'center', paddingHorizontal: 24, gap: 8 },
+  esperaOso: { marginBottom: 6 },
+  centro: { textAlign: 'center', alignSelf: 'center' },
+  pasos: { alignSelf: 'stretch', marginTop: 14, borderRadius: radii.xl, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.white, paddingHorizontal: 14 },
+  paso: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
+  pasoLinea: { borderTopWidth: 1, borderTopColor: colors.line },
+  pasoNum: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.field, alignItems: 'center', justifyContent: 'center' },
+  pasoHecho: { backgroundColor: colors.ok },
+  pasoAhora: { backgroundColor: colors.oxRed },
+  pasoNumTexto: { fontFamily: fontFamily.extrabold, fontSize: 13, color: colors.ink2 },
+  pasoTexto: { flex: 1, fontFamily: fontFamily.semibold, fontSize: 14.5, color: colors.ink },
+  pasoEtiqueta: { fontFamily: fontFamily.bold, fontSize: 11.5, color: colors.oxRed, backgroundColor: '#FDE7E6', borderRadius: radii.pill, paddingHorizontal: 9, paddingVertical: 3, overflow: 'hidden' },
+  nota: { marginTop: 10, fontFamily: fontFamily.medium, fontSize: 13, lineHeight: 19, color: colors.ink2, maxWidth: 300 },
   fields: {
     paddingHorizontal: 24,
     paddingTop: 18,
