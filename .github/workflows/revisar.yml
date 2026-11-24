@@ -48,5 +48,5 @@ jobs:
       - name: Navegador para las pruebas de pantallas
         run: npx playwright install --with-deps chromium
 
-      - name: Pantallas (oficina, tienda, sin sesión y sin señal)
+      - name: Pantallas (oficina, tienda, sin sesión, sin señal y celular chico)
         run: npm run e2e

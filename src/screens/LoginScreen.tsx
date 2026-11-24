@@ -1,9 +1,10 @@
 // src/screens/LoginScreen.tsx
 // Ported from PLogin in screens-proto.jsx.
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Platform, ActivityIndicator  } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StepsHeader } from '../components/StepsHeader';
+import { ZonaTexto } from '../components/ZonaTexto';
 import { OxField, OxHint } from '../components/OxField';
 import { OxKeypad } from '../components/OxKeypad';
 import { OxButton } from '../components/OxButton';
@@ -74,26 +75,27 @@ export function LoginScreen({
       <View style={[styles.body, { paddingTop: Platform.OS === 'ios' ? 8 : 4 }]}>
         <StepsHeader active={0} onBack={onBack} />
 
-        <View style={styles.head}>
-          <Text style={styles.kicker}>Identificación</Text>
-          <Text style={styles.title}>Inicia sesión</Text>
-          <Text style={styles.sub}>Ingresa tu número de empleado para acceder a Conoxxo.</Text>
-        </View>
+        {/* Text scrolls on short screens; the keypad always fits above the button. */}
+        <ZonaTexto>
+          <View style={styles.head}>
+            <Text style={styles.kicker}>Identificación</Text>
+            <Text style={styles.title}>Inicia sesión</Text>
+            <Text style={styles.sub}>Ingresa tu número de empleado para acceder a Conoxxo.</Text>
+          </View>
 
-        <View style={styles.fields}>
-          <OxField
-            icon="badge"
-            label="Número de empleado"
-            value={empNum}
-            placeholder="Ingresa tu número"
-            focused
-            tail={empNum.length ? `${empNum.length} díg.` : ''}
-          />
-          <OxHint>Lo encuentras en tu gafete o recibo de nómina. Puede tener hasta 10 dígitos.</OxHint>
-          {error ? <OxHint>{error}</OxHint> : null}
-        </View>
-
-        <View style={{ flex: 1, minHeight: 8 }} />
+          <View style={styles.fields}>
+            <OxField
+              icon="badge"
+              label="Número de empleado"
+              value={empNum}
+              placeholder="Ingresa tu número"
+              focused
+              tail={empNum.length ? `${empNum.length} díg.` : ''}
+            />
+            <OxHint>Lo encuentras en tu gafete o recibo de nómina. Puede tener hasta 10 dígitos.</OxHint>
+            {error ? <OxHint>{error}</OxHint> : null}
+          </View>
+        </ZonaTexto>
 
         <OxKeypad onKey={onKey} onDel={onDel} />
       </View>
