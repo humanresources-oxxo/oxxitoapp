@@ -181,10 +181,37 @@ const pestaña = async (page, nombre) => {
   await ctx.close();
 }
 
+// 5. Small phone (iPhone SE): the 0 key of the login keypad is not covered by
+// the Continuar button (most employee numbers have a 0).
+{
+  const ctx = await browser.newContext({ ...devices['iPhone SE'] });
+  await ctx.route('**/*', (route) => (route.request().url().startsWith(BASE) ? route.continue() : route.fulfill({ json: [] })));
+  const page = await ctx.newPage();
+  const errores = [];
+  page.on('pageerror', (e) => errores.push(e.message.slice(0, 160)));
+  await page.goto(BASE, { waitUntil: 'networkidle' });
+  const boton = await page.getByText('Comenzar').first().waitFor({ timeout: 10000 }).then(() => true, () => false);
+  if (boton) {
+    await page.getByText('Comenzar').first().click();
+    await page.waitForTimeout(800);
+    const libre = await page.evaluate(() => {
+      const ceros = [...document.querySelectorAll('div')].filter((d) => d.childElementCount === 0 && d.textContent.trim() === '0');
+      const k = ceros[ceros.length - 1];
+      if (!k) return false;
+      const r = k.getBoundingClientRect();
+      const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return !!el && el.textContent.trim() === '0';
+    });
+    revisar('celular chico: la tecla 0 no queda tapada', libre);
+  } else revisar('celular chico: bienvenida', false);
+  revisar('celular chico sin errores', !errores.length, errores.join(' | '));
+  await ctx.close();
+}
+
 await browser.close();
 servidor.close();
 if (fallas.length) {
   console.log(`Pantallas: ${fallas.length} fallas\n- ${fallas.join('\n- ')}`);
   process.exit(1);
 }
-console.log('Pantallas: todo bien (oficina, tienda, sin sesión y sin señal)');
+console.log('Pantallas: todo bien (oficina, tienda, sin sesión, sin señal y celular chico)');

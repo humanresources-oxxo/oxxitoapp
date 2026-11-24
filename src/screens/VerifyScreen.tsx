@@ -1,9 +1,10 @@
 // src/screens/VerifyScreen.tsx
 // Ported from PVerify in screens-proto.jsx.
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform  } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StepsHeader } from '../components/StepsHeader';
+import { ZonaTexto } from '../components/ZonaTexto';
 import { BearAvatar } from '../components/Bear';
 import { PinDots } from '../components/PinDots';
 import { OxKeypad } from '../components/OxKeypad';
@@ -136,27 +137,28 @@ export function VerifyScreen({
       <View style={[styles.body, { paddingTop: Platform.OS === 'ios' ? 8 : 4 }]}>
         <StepsHeader active={1} onBack={onBack} />
 
-        <View style={styles.head}>
-          <BearAvatar size={64} />
-          <Text style={[styles.kicker, { marginTop: 16 }]}>{temporal ? 'PIN nuevo' : 'Verificación'}</Text>
-          <Text style={styles.title}>{temporal ? 'Crea tu PIN' : verifiedName ? `Hola, ${verifiedName}` : 'Hola'}</Text>
-          <Text style={[styles.sub, { textAlign: 'center' }]}>
-            {temporal
-              ? nuevoError || 'RH te dio un PIN temporal. Elige uno nuevo de 4 dígitos que solo tú sepas.'
-              : lockedMessage ||
-                (sinConexion
-                  ? 'No pudimos conectar. Revisa tu conexión e intenta de nuevo.'
-                  : error
-                    ? 'PIN incorrecto, intenta de nuevo.'
-                    : 'Ingresa tu PIN de 4 dígitos para verificar tu identidad.')}
-          </Text>
-        </View>
+        {/* Text scrolls on short screens; the keypad always fits above the button. */}
+        <ZonaTexto>
+          <View style={styles.head}>
+            <BearAvatar size={64} />
+            <Text style={[styles.kicker, { marginTop: 16 }]}>{temporal ? 'PIN nuevo' : 'Verificación'}</Text>
+            <Text style={styles.title}>{temporal ? 'Crea tu PIN' : verifiedName ? `Hola, ${verifiedName}` : 'Hola'}</Text>
+            <Text style={[styles.sub, { textAlign: 'center' }]}>
+              {temporal
+                ? nuevoError || 'RH te dio un PIN temporal. Elige uno nuevo de 4 dígitos que solo tú sepas.'
+                : lockedMessage ||
+                  (sinConexion
+                    ? 'No pudimos conectar. Revisa tu conexión e intenta de nuevo.'
+                    : error
+                      ? 'PIN incorrecto, intenta de nuevo.'
+                      : 'Ingresa tu PIN de 4 dígitos para verificar tu identidad.')}
+            </Text>
+          </View>
 
-        <View style={{ marginTop: 22 }}>
-          <PinDots length={len} total={4} error={error || !!nuevoError} />
-        </View>
-
-        <View style={{ flex: 1, minHeight: 10 }} />
+          <View style={{ marginTop: 22 }}>
+            <PinDots length={len} total={4} error={error || !!nuevoError} />
+          </View>
+        </ZonaTexto>
 
         <OxKeypad onKey={onKey} onDel={onDel} />
         {!temporal ? (

@@ -59,6 +59,7 @@ export async function buscarEmpleado(numeroEmpleado: string): Promise<{ estado: 
 // First PIN (migration 38): needs the birth date RH loaded ('YYYY-MM-DD').
 export type RegisterPinResult =
   | 'ok'
+  // Only from verificarFecha: the date matches, now the PIN.
   // Registered; the account waits for its asesor / RH (migration 39).
   | 'pendiente'
   | 'not_found'
@@ -68,6 +69,15 @@ export type RegisterPinResult =
   | 'sin_fecha'
   | 'fecha_incorrecta'
   | 'rate_limited';
+
+// The birth date alone, before asking for the PIN (migration 62). Same limits
+// and counters as registerPin. null: the server could not answer (or does not
+// have migration 62 yet): the date is checked again with the PIN, as before.
+export async function verificarFecha(numeroEmpleado: string, fechaNacimiento: string): Promise<RegisterPinResult | null> {
+  const { data, error } = await supabase.rpc('registro_verificar_fecha', { p_numero: numeroEmpleado, p_fecha: fechaNacimiento });
+  if (error) return null;
+  return (data as RegisterPinResult) ?? null;
+}
 
 export async function registerPin(numeroEmpleado: string, fechaNacimiento: string, pin: string): Promise<RegisterPinResult> {
   const { data, error } = await supabase.rpc('registrar_pin', { p_numero: numeroEmpleado, p_fecha: fechaNacimiento, p_pin: pin });

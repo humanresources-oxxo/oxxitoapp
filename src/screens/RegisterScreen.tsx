@@ -3,16 +3,17 @@
 // (no free-text name entry — the name comes from the roster lookup). Asks
 // the birth date first so nobody else can claim the account.
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Platform, ActivityIndicator  } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StepsHeader } from '../components/StepsHeader';
+import { ZonaTexto } from '../components/ZonaTexto';
 import { OxField, OxLabel, OxHint } from '../components/OxField';
 import { PinDots } from '../components/PinDots';
 import { OxKeypad } from '../components/OxKeypad';
 import { OxButton } from '../components/OxButton';
 import { Icon } from '../components/Icon';
 import { useOnboarding } from '../context/OnboardingContext';
-import { registerPin } from '../services/auth';
+import { registerPin, verificarFecha } from '../services/auth';
 import { obtenerLlave } from '../services/sesion';
 import { colors, type } from '../theme/tokens';
 
@@ -79,7 +80,17 @@ export function RegisterScreen({
   const handleContinue = async () => {
     if (!ready || loading) return;
     if (paso === 'fecha') {
-      setPaso('pin');
+      // Checked right away (migration 62), so a wrong date never reaches the PIN.
+      setLoading(true);
+      setError('');
+      const st = await verificarFecha(empNum, iso ?? '').catch(() => null);
+      setLoading(false);
+      if (st === null || st === 'ok') {
+        setPaso('pin');
+        return;
+      }
+      setError(MENSAJES[st] || 'No pudimos revisar tu fecha. Intenta de nuevo.');
+      if (st === 'fecha_incorrecta') setFecha('');
       return;
     }
     setLoading(true);
@@ -142,38 +153,39 @@ export function RegisterScreen({
       <View style={[styles.body, { paddingTop: Platform.OS === 'ios' ? 8 : 4 }]}>
         <StepsHeader active={1} onBack={back} />
 
-        <View style={styles.head}>
-          <Text style={styles.kicker}>Primer ingreso</Text>
-          <Text style={styles.title}>{paso === 'fecha' ? 'Confirma que eres tú' : 'Crea tu PIN'}</Text>
-          <Text style={styles.sub}>
-            {verifiedName ? `Hola, ${verifiedName}. ` : ''}
-            {paso === 'fecha'
-              ? 'Para proteger tu cuenta, escribe tu fecha de nacimiento.'
-              : 'Crea un PIN de 4 dígitos para entrar a Conoxxo.'}
-          </Text>
-        </View>
+        {/* Text scrolls on short screens; the keypad always fits above the button. */}
+        <ZonaTexto>
+          <View style={styles.head}>
+            <Text style={styles.kicker}>Primer ingreso</Text>
+            <Text style={styles.title}>{paso === 'fecha' ? 'Confirma que eres tú' : 'Crea tu PIN'}</Text>
+            <Text style={styles.sub}>
+              {verifiedName ? `Hola, ${verifiedName}. ` : ''}
+              {paso === 'fecha'
+                ? 'Para proteger tu cuenta, escribe tu fecha de nacimiento.'
+                : 'Crea un PIN de 4 dígitos para entrar a Conoxxo.'}
+            </Text>
+          </View>
 
-        <View style={styles.fields}>
-          <OxField icon="badge" label="Número de empleado" value={empNum} locked tail="Verificado" />
-          {paso === 'fecha' ? (
-            <View>
-              <OxField icon="calendar" label="Fecha de nacimiento" value={mostrarFecha(fecha)} focused tail="DD/MM/AAAA" />
-              {fecha.length === 8 && !iso ? <OxHint>Revisa la fecha: día, mes y año completos.</OxHint> : null}
-              {error ? <OxHint>{error}</OxHint> : null}
-            </View>
-          ) : (
-            <View>
-              <OxLabel>Crea tu PIN de acceso</OxLabel>
-              <View style={{ paddingVertical: 6, paddingHorizontal: 2 }}>
-                <PinDots length={len} total={4} />
+          <View style={styles.fields}>
+            <OxField icon="badge" label="Número de empleado" value={empNum} locked tail="Verificado" />
+            {paso === 'fecha' ? (
+              <View>
+                <OxField icon="calendar" label="Fecha de nacimiento" value={mostrarFecha(fecha)} focused tail="DD/MM/AAAA" />
+                {fecha.length === 8 && !iso ? <OxHint>Revisa la fecha: día, mes y año completos.</OxHint> : null}
+                {error ? <OxHint>{error}</OxHint> : null}
               </View>
-              <OxHint>Usarás este PIN cada vez que ingreses a Conoxxo. Evita 1234, 0000 y similares.</OxHint>
-              {error ? <OxHint>{error}</OxHint> : null}
-            </View>
-          )}
-        </View>
-
-        <View style={{ flex: 1, minHeight: 8 }} />
+            ) : (
+              <View>
+                <OxLabel>Crea tu PIN de acceso</OxLabel>
+                <View style={{ paddingVertical: 6, paddingHorizontal: 2 }}>
+                  <PinDots length={len} total={4} />
+                </View>
+                <OxHint>Usarás este PIN cada vez que ingreses a Conoxxo. Evita 1234, 0000 y similares.</OxHint>
+                {error ? <OxHint>{error}</OxHint> : null}
+              </View>
+            )}
+          </View>
+        </ZonaTexto>
 
         <OxKeypad onKey={onKey} onDel={onDel} />
       </View>
